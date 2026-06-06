@@ -1,0 +1,25 @@
+# System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.iml
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+flutter_export_environment.sh
+
+# The subdirectories mobile/ and web/ will have their own specific .gitignore files 
+# which will handle flutter/npm specific ignores (like node_modules, build, etc).
+mobile/.git/
