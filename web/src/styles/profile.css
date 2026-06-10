@@ -250,7 +250,7 @@
 .sev-low  { background:#F0F5EF; color:#6E7B6C; }
 
 /* ── Seller shop stats ── */
-.shop-stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.shop-stats-row { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
 .shop-stat { background:#fff; border-radius:12px; padding:14px; text-align:center; box-shadow:0 1px 6px rgba(0,0,0,0.05); }
 .shop-stat-val { font-size:18px; font-weight:700; color:#006B2C; }
 .shop-stat-lbl { font-size:11px; color:#6E7B6C; margin-top:2px; }

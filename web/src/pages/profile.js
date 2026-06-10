@@ -152,13 +152,6 @@ function renderMember(container, p) {
       ${identityBarHtml(p, cta)}
       <div class="profile-page-body">
         <div>
-          <div class="profile-stats-bar">
-            <div class="profile-stat-item"><span class="stat-value">${p.stats.sold}</span><span class="stat-label">Đã bán</span></div>
-            <div class="profile-stat-item"><span class="stat-value">${p.stats.bought}</span><span class="stat-label">Đã mua</span></div>
-            <div class="profile-stat-item"><span class="stat-value">${p.stats.donated}</span><span class="stat-label">Đã tặng</span></div>
-            <div class="profile-stat-item"><span class="stat-value">${p.stats.rating}⭐</span><span class="stat-label">${p.reviewCount} đánh giá</span></div>
-          </div>
-          <div class="p-card"><p class="p-card-title">Giới thiệu</p><p style="font-size:14px;color:#6E7B6C;line-height:1.7">${p.bio}</p></div>
           <div class="tab-bar" id="member-tabs">
             <button class="tab-btn is-active" data-tab="posts">Bài đăng (${p.posts?.length ?? 0})</button>
             <button class="tab-btn" data-tab="reviews">Đánh giá (${p.reviews?.length ?? 0})</button>
@@ -168,7 +161,15 @@ function renderMember(container, p) {
           <div id="panel-reviews" class="tab-panel">${reviewsHtml(p.reviews)}</div>
           <div id="panel-donations" class="tab-panel">${donationsHtml(p.donations)}</div>
         </div>
-        <div></div>
+        <div>
+          <div class="profile-stats-bar">
+            <div class="profile-stat-item"><span class="stat-value">${p.stats.sold}</span><span class="stat-label">Đã bán</span></div>
+            <div class="profile-stat-item"><span class="stat-value">${p.stats.bought}</span><span class="stat-label">Đã mua</span></div>
+            <div class="profile-stat-item"><span class="stat-value">${p.stats.donated}</span><span class="stat-label">Đã tặng</span></div>
+            <div class="profile-stat-item"><span class="stat-value">${p.stats.rating}⭐</span><span class="stat-label">${p.reviewCount} đánh giá</span></div>
+          </div>
+          <div class="p-card"><p class="p-card-title">Giới thiệu</p><p style="font-size:14px;color:#6E7B6C;line-height:1.7">${p.bio}</p></div>
+        </div>
       </div>
     </div>`;
   bindTabs(container.querySelector('#member-tabs').parentElement);
@@ -185,13 +186,6 @@ function renderSeller(container, p) {
       ${identityBarHtml(p, cta)}
       <div class="profile-page-body">
         <div>
-          <div class="shop-stats-row">
-            <div class="shop-stat"><div class="shop-stat-val">${fmt(p.stats.sold)}</div><div class="shop-stat-lbl">Đã bán</div></div>
-            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.activeListings}</div><div class="shop-stat-lbl">Đang đăng</div></div>
-            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.responseRate}</div><div class="shop-stat-lbl">Phản hồi</div></div>
-            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.responseTime}</div><div class="shop-stat-lbl">Thời gian TL</div></div>
-          </div>
-          <div class="p-card"><p class="p-card-title">Giới thiệu cửa hàng</p><p style="font-size:14px;color:#6E7B6C;line-height:1.7">${p.bio}</p></div>
           <div class="tab-bar" id="seller-tabs">
             <button class="tab-btn is-active" data-tab="posts">Sản phẩm (${p.posts?.length ?? 0})</button>
             <button class="tab-btn" data-tab="events">Sự kiện (${p.events?.length ?? 0})</button>
@@ -203,7 +197,15 @@ function renderSeller(container, p) {
           <div id="panel-donations" class="tab-panel">${donationsHtml(p.donations)}</div>
           <div id="panel-reviews" class="tab-panel">${reviewsHtml(p.reviews)}</div>
         </div>
-        <div></div>
+        <div>
+          <div class="shop-stats-row">
+            <div class="shop-stat"><div class="shop-stat-val">${fmt(p.stats.sold)}</div><div class="shop-stat-lbl">Đã bán</div></div>
+            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.activeListings}</div><div class="shop-stat-lbl">Đang đăng</div></div>
+            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.responseRate}</div><div class="shop-stat-lbl">Phản hồi</div></div>
+            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.responseTime}</div><div class="shop-stat-lbl">Thời gian TL</div></div>
+          </div>
+          <div class="p-card"><p class="p-card-title">Giới thiệu cửa hàng</p><p style="font-size:14px;color:#6E7B6C;line-height:1.7">${p.bio}</p></div>
+        </div>
       </div>
     </div>`;
   bindTabs(container.querySelector('#seller-tabs').parentElement);
