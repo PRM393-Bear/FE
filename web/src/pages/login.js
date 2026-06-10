@@ -85,12 +85,6 @@ export function renderLoginPage(container) {
     <div class="auth-layout">
       <main class="auth-card" role="main" aria-label="Đăng nhập">
 
-        <!-- Brand -->
-        <a href="#/" class="brand-logo" aria-label="EcoCycle trang chủ">
-          <span class="brand-logo__icon">${ICON_LEAF}</span>
-          <span class="brand-logo__name">EcoCycle</span>
-        </a>
-
         <!-- Heading -->
         <h1 class="auth-title">Tham gia cộng đồng</h1>
         <p class="auth-subtitle">Đăng nhập để tiếp tục hành trình sống xanh cùng chúng tôi.</p>

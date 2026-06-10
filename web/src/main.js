@@ -1,18 +1,21 @@
 /**
  * EcoCycle Web – SPA Router
- * Hash-based routing: #/login | #/register | #/logout | #/dashboard
+ * Hash-based routing: #/login | #/register | #/logout | #/profile | #/dashboard
  */
 
 import { renderLoginPage    } from './pages/login.js';
 import { renderRegisterPage } from './pages/register.js';
+import { renderProfilePage  } from './pages/profile.js';
+import { renderHeader       } from './components/header.js';
 import { logoutApi, isAuthenticated } from './services/auth.service.js';
 
 const app = document.getElementById('app');
 
 /* ── Route definitions ── */
 const routes = {
-  '#/login':    () => renderLoginPage(app),
-  '#/register': () => renderRegisterPage(app),
+  '#/login':    () => { renderHeader({ activePage: 'login'    }); renderLoginPage(app);    },
+  '#/register': () => { renderHeader({ activePage: 'register' }); renderRegisterPage(app); },
+  '#/profile':  () => { renderHeader({ activePage: 'profile'  }); renderProfilePage(app);  },
   '#/logout':   handleLogout,
   '#/':         handleRoot,
   '':           handleRoot,
@@ -21,6 +24,7 @@ const routes = {
 /* ── Root redirect ── */
 function handleRoot() {
   if (isAuthenticated()) {
+    renderHeader({ activePage: '' });
     renderDashboardPlaceholder();
   } else {
     window.location.hash = '#/login';
@@ -29,7 +33,7 @@ function handleRoot() {
 
 /* ── Logout handler ── */
 async function handleLogout() {
-  // Show brief feedback
+  renderHeader({ activePage: '' });
   app.innerHTML = `
     <div style="
       min-height:100dvh; display:flex; align-items:center; justify-content:center;
