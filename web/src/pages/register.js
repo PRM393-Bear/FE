@@ -8,6 +8,7 @@ import '../styles/auth.css';
 import { registerApi } from '../services/auth.service.js';
 import {
   validateFullName,
+  validateUsername,
   validateEmail,
   validatePhone,
   validatePassword,
@@ -97,16 +98,28 @@ export function renderRegisterPage(container) {
 
           <form id="register-form" novalidate>
 
-            <!-- Full Name -->
-            <div class="form-group">
-              <label class="form-label" for="reg-name">Họ và tên</label>
-              <div class="form-input-wrapper">
-                <input id="reg-name" type="text" class="form-input"
-                  placeholder="Nhập tên đầy đủ của bạn"
-                  autocomplete="name" aria-required="true"
-                  aria-describedby="reg-name-error"/>
+            <!-- Full Name + Username row -->
+            <div class="form-row">
+              <div class="form-group form-group--half">
+                <label class="form-label" for="reg-name">Họ và tên</label>
+                <div class="form-input-wrapper">
+                  <input id="reg-name" type="text" class="form-input"
+                    placeholder="Nhập tên đầy đủ"
+                    autocomplete="name" aria-required="true"
+                    aria-describedby="reg-name-error"/>
+                </div>
+                <span class="form-error" id="reg-name-error" role="alert" aria-live="polite"></span>
               </div>
-              <span class="form-error" id="reg-name-error" role="alert" aria-live="polite"></span>
+              <div class="form-group form-group--half">
+                <label class="form-label" for="reg-username">Tên đăng nhập</label>
+                <div class="form-input-wrapper">
+                  <input id="reg-username" type="text" class="form-input"
+                    placeholder="Nhập tên đăng nhập"
+                    autocomplete="username" aria-required="true"
+                    aria-describedby="reg-username-error"/>
+                </div>
+                <span class="form-error" id="reg-username-error" role="alert" aria-live="polite"></span>
+              </div>
             </div>
 
             <!-- Email + Phone row -->
@@ -244,6 +257,8 @@ export function renderRegisterPage(container) {
   const form        = document.getElementById('register-form');
   const nameInput   = document.getElementById('reg-name');
   const nameError   = document.getElementById('reg-name-error');
+  const usernameInput = document.getElementById('reg-username');
+  const usernameError = document.getElementById('reg-username-error');
   const emailInput  = document.getElementById('reg-email');
   const emailError  = document.getElementById('reg-email-error');
   const phoneInput  = document.getElementById('reg-phone');
@@ -273,6 +288,7 @@ export function renderRegisterPage(container) {
 
   /* ── Real-time validation on blur ── */
   nameInput.addEventListener('blur',    () => setFieldError(nameInput,    nameError,    validateFullName(nameInput.value)));
+  usernameInput.addEventListener('blur',() => setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value)));
   emailInput.addEventListener('blur',   () => setFieldError(emailInput,   emailError,   validateEmail(emailInput.value)));
   phoneInput.addEventListener('blur',   () => setFieldError(phoneInput,   phoneError,   validatePhone(phoneInput.value)));
   passInput.addEventListener('blur',    () => setFieldError(passInput,    passError,    validatePassword(passInput.value)));
@@ -289,6 +305,7 @@ export function renderRegisterPage(container) {
     e.preventDefault();
 
     const nameOk    = setFieldError(nameInput,    nameError,    validateFullName(nameInput.value));
+    const usernameOk= setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value));
     const emailOk   = setFieldError(emailInput,   emailError,   validateEmail(emailInput.value));
     const phoneOk   = setFieldError(phoneInput,   phoneError,   validatePhone(phoneInput.value));
     const passOk    = setFieldError(passInput,    passError,    validatePassword(passInput.value));
@@ -305,7 +322,7 @@ export function renderRegisterPage(container) {
       termsError.classList.remove('visible');
     }
 
-    if (!nameOk || !emailOk || !phoneOk || !passOk || !confirmOk || !termsOk) return;
+    if (!nameOk || !usernameOk || !emailOk || !phoneOk || !passOk || !confirmOk || !termsOk) return;
 
     submitBtn.classList.add('is-loading');
     submitBtn.disabled = true;
@@ -313,6 +330,7 @@ export function renderRegisterPage(container) {
     try {
       await registerApi({
         fullName: nameInput.value.trim(),
+        username: usernameInput.value.trim(),
         email:    emailInput.value.trim(),
         phone:    phoneInput.value.trim(),
         password: passInput.value,

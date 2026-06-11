@@ -47,3 +47,10 @@ export function validateFullName(value) {
   if (value.trim().length < 2) return 'Họ tên quá ngắn';
   return null;
 }
+
+/** Validates a username (required) */
+export function validateUsername(value) {
+  if (!value || !value.trim()) return 'Vui lòng nhập tên đăng nhập';
+  if (value.trim().length < 4) return 'Tên đăng nhập tối thiểu 4 ký tự';
+  return null;
+}

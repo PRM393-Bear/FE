@@ -5,15 +5,15 @@
 
 import '../styles/auth.css';
 import { loginApi, isAuthenticated } from '../services/auth.service.js';
-import { validateEmail, validatePassword } from '../utils/validators.js';
+import { validateUsername, validatePassword } from '../utils/validators.js';
 
 /* ── SVG Icons ── */
 const ICON_LEAF = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
   <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2-8 2 1-3 8-3 8-3S19 4 17 8Z"/>
 </svg>`;
 
-const ICON_EMAIL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+const ICON_USER = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
 </svg>`;
 
 const ICON_LOCK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -92,22 +92,22 @@ export function renderLoginPage(container) {
         <!-- Form -->
         <form id="login-form" novalidate>
 
-          <!-- Email -->
+          <!-- Username -->
           <div class="form-group">
-            <label class="form-label" for="login-email">Địa chỉ Email</label>
+            <label class="form-label" for="login-username">Tên đăng nhập</label>
             <div class="form-input-wrapper">
-              <span class="input-icon">${ICON_EMAIL}</span>
+              <span class="input-icon">${ICON_USER}</span>
               <input
-                id="login-email"
-                type="email"
+                id="login-username"
+                type="text"
                 class="form-input has-icon"
-                placeholder="name@company.com"
-                autocomplete="email"
+                placeholder="Nhập tên đăng nhập"
+                autocomplete="username"
                 aria-required="true"
-                aria-describedby="login-email-error"
+                aria-describedby="login-username-error"
               />
             </div>
-            <span class="form-error" id="login-email-error" role="alert" aria-live="polite"></span>
+            <span class="form-error" id="login-username-error" role="alert" aria-live="polite"></span>
           </div>
 
           <!-- Password -->
@@ -175,9 +175,9 @@ export function renderLoginPage(container) {
   `;
 
   /* ── Bind logic ── */
-  const form        = document.getElementById('login-form');
-  const emailInput  = document.getElementById('login-email');
-  const emailError  = document.getElementById('login-email-error');
+  const form          = document.getElementById('login-form');
+  const usernameInput = document.getElementById('login-username');
+  const usernameError = document.getElementById('login-username-error');
   const passInput   = document.getElementById('login-password');
   const passError   = document.getElementById('login-password-error');
   const toggleBtn   = document.getElementById('toggle-password');
@@ -192,7 +192,7 @@ export function renderLoginPage(container) {
   });
 
   // Real-time validation on blur
-  emailInput.addEventListener('blur', () => setFieldError(emailInput, emailError, validateEmail(emailInput.value)));
+  usernameInput.addEventListener('blur', () => setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value)));
   passInput.addEventListener('blur',  () => setFieldError(passInput,  passError,  validatePassword(passInput.value)));
 
   // Social buttons (placeholder)
@@ -205,9 +205,9 @@ export function renderLoginPage(container) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const emailOk = setFieldError(emailInput, emailError, validateEmail(emailInput.value));
-    const passOk  = setFieldError(passInput,  passError,  validatePassword(passInput.value));
-    if (!emailOk || !passOk) return;
+    const usernameOk = setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value));
+    const passOk     = setFieldError(passInput,  passError,  validatePassword(passInput.value));
+    if (!usernameOk || !passOk) return;
 
     // Loading state
     submitBtn.classList.add('is-loading');
@@ -215,7 +215,7 @@ export function renderLoginPage(container) {
 
     try {
       await loginApi({
-        email:      emailInput.value.trim(),
+        username:   usernameInput.value.trim(),
         password:   passInput.value,
         rememberMe: document.getElementById('login-remember').checked,
       });

@@ -5,16 +5,16 @@
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 const TOKEN_KEY = 'ecocycle_token';
-const USER_KEY  = 'ecocycle_user';
+const USER_KEY = 'ecocycle_user';
 
 /* ── Token helpers ── */
-export function saveToken(token)  { localStorage.setItem(TOKEN_KEY, token); }
-export function getToken()        { return localStorage.getItem(TOKEN_KEY); }
-export function removeToken()     { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); }
+export function saveToken(token) { localStorage.setItem(TOKEN_KEY, token); }
+export function getToken() { return localStorage.getItem(TOKEN_KEY); }
+export function removeToken() { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); }
 export function isAuthenticated() { return !!getToken(); }
 
-export function saveUser(user)    { localStorage.setItem(USER_KEY, JSON.stringify(user)); }
-export function getUser()         {
+export function saveUser(user) { localStorage.setItem(USER_KEY, JSON.stringify(user)); }
+export function getUser() {
   try { return JSON.parse(localStorage.getItem(USER_KEY)); }
   catch { return null; }
 }
@@ -57,10 +57,10 @@ async function apiFetch(path, options = {}) {
 }
 
 /* ── Login ── */
-export async function loginApi({ email, password, rememberMe = false }) {
+export async function loginApi({ username, password, rememberMe = false }) {
   const data = await apiFetch('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ username: email, password }),
+    body: JSON.stringify({ username, password }),
   });
 
   if (data?.token) saveToken(data.token);
@@ -70,10 +70,10 @@ export async function loginApi({ email, password, rememberMe = false }) {
 }
 
 /* ── Register ── */
-export async function registerApi({ fullName, email, phone, password }) {
+export async function registerApi({ fullName, username, email, phone, password }) {
   const data = await apiFetch('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ username: email, fullName, email, phone, password }),
+    body: JSON.stringify({ username, fullName, email, phone, password }),
   });
 
   if (data?.token) saveToken(data.token);
