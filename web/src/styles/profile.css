@@ -1,7 +1,85 @@
 /* EcoCycle – Profile Page Styles */
 
 /* ── Layout ── */
-.profile-layout { min-height:100dvh; background:#F0F5EF; font-family:'Be Vietnam Pro',sans-serif; }
+.profile-dashboard-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100dvh;
+  background: #F0F5EF;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.profile-layout {
+  background: #F0F5EF; 
+  font-family: 'Be Vietnam Pro', sans-serif; 
+}
+
+/* ── Sidebar ── */
+.profile-sidebar {
+  background: #fff;
+  border-right: 1px solid #DDE5DB;
+  padding: 32px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+.profile-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #F0F5EF;
+}
+.profile-sidebar-user img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.profile-sidebar-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+.profile-sidebar-role {
+  font-size: 12px;
+  color: #6E7B6C;
+}
+.profile-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: #6E7B6C;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.profile-sidebar-link:hover {
+  background: #F0F5EF;
+  color: #006B2C;
+}
+.profile-sidebar-link.is-active {
+  background: rgba(0, 107, 44, 0.08);
+  color: #006B2C;
+}
+.profile-sidebar-link--danger {
+  color: #BA1A1A;
+  margin-top: auto;
+}
+.profile-sidebar-link--danger:hover {
+  background: rgba(186, 26, 26, 0.08);
+  color: #BA1A1A;
+}
 
 /* ── Cover ── */
 .profile-cover {
@@ -270,6 +348,8 @@
 
 /* ── Responsive ── */
 @media(max-width:900px) {
+  .profile-dashboard-layout { grid-template-columns: 1fr; }
+  .profile-sidebar { display: none; } /* Hide sidebar on small screens for now */
   .profile-page-body { grid-template-columns:1fr; padding:0 20px 48px; }
   .profile-identity-bar { padding:0 20px 24px; flex-wrap:wrap; }
   .profile-cta-area { width:100%; margin-left:0; }

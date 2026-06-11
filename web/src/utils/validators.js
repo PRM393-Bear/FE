@@ -1,7 +1,7 @@
 /**
  * EcoCycle – Validation Rules
  * 100% synchronized with mobile (Flutter) validation logic
- * Password: minimum 8 characters (per Web requirements)
+ * Password: minimum 6 characters (per Web requirements)
  */
 
 /** Validates a Vietnamese/international email address */
@@ -30,7 +30,7 @@ export function validatePhone(value) {
  */
 export function validatePassword(value) {
   if (!value || !value.trim()) return 'Vui lòng nhập mật khẩu';
-  if (value.length < 8) return 'Mật khẩu tối thiểu 8 ký tự';
+  if (value.length < 6) return 'Mật khẩu tối thiểu 6 ký tự';
   return null;
 }
 

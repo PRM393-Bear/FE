@@ -139,7 +139,7 @@ export function renderRegisterPage(container) {
                 <label class="form-label" for="reg-password">Mật khẩu</label>
                 <div class="form-input-wrapper">
                   <input id="reg-password" type="password" class="form-input has-suffix"
-                    placeholder="Tối thiểu 8 ký tự"
+                    placeholder="Tối thiểu 6 ký tự"
                     autocomplete="new-password" aria-required="true"
                     aria-describedby="reg-password-error"/>
                   <button type="button" class="btn-toggle-password" id="toggle-password" aria-label="Hiện/ẩn mật khẩu">
@@ -318,7 +318,8 @@ export function renderRegisterPage(container) {
         password: passInput.value,
       });
       showToast('Đăng ký thành công! Chào mừng đến với EcoCycle 🌿', 'success');
-      setTimeout(() => { window.location.hash = '#/login'; }, 1000);
+      sessionStorage.setItem('ecocycle_new_user', nameInput.value.trim());
+      setTimeout(() => { window.location.hash = '#/profile'; }, 1000);
     } catch (err) {
       showToast(err.message || 'Đăng ký thất bại. Vui lòng thử lại.', 'error');
     } finally {

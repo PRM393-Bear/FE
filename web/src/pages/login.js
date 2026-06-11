@@ -77,7 +77,7 @@ function setFieldError(inputEl, errorEl, message) {
 export function renderLoginPage(container) {
   // Redirect if already logged in
   if (isAuthenticated()) {
-    window.location.hash = '#/dashboard';
+    window.location.hash = '#/';
     return;
   }
 
@@ -220,7 +220,7 @@ export function renderLoginPage(container) {
         rememberMe: document.getElementById('login-remember').checked,
       });
       showToast('Đăng nhập thành công! Chào mừng bạn 🌿', 'success');
-      setTimeout(() => { window.location.hash = '#/dashboard'; }, 800);
+      setTimeout(() => { window.location.hash = '#/'; }, 800);
     } catch (err) {
       showToast(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.', 'error');
     } finally {

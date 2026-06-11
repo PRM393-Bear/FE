@@ -3,7 +3,7 @@
  * Synchronized with mobile API endpoints
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 const TOKEN_KEY = 'ecocycle_token';
 const USER_KEY  = 'ecocycle_user';
 
@@ -60,11 +60,11 @@ async function apiFetch(path, options = {}) {
 export async function loginApi({ email, password, rememberMe = false }) {
   const data = await apiFetch('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password, rememberMe }),
+    body: JSON.stringify({ username: email, password }),
   });
 
   if (data?.token) saveToken(data.token);
-  if (data?.user)  saveUser(data.user);
+  if (data?.username) saveUser({ username: data.username, role: data.role?.roleName || 'member' });
 
   return data;
 }
@@ -73,8 +73,11 @@ export async function loginApi({ email, password, rememberMe = false }) {
 export async function registerApi({ fullName, email, phone, password }) {
   const data = await apiFetch('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ fullName, email, phone, password }),
+    body: JSON.stringify({ username: email, fullName, email, phone, password }),
   });
+
+  if (data?.token) saveToken(data.token);
+  if (data?.username) saveUser({ username: data.username, role: data.role?.roleName || 'member' });
 
   return data;
 }

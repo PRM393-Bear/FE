@@ -57,6 +57,26 @@ function identityBarHtml(p, ctaHtml = '') {
     </div>`;
 }
 
+function profileSidebarHtml(p) {
+  return `
+    <aside class="profile-sidebar">
+      <div class="profile-sidebar-user">
+        <img src="${p.avatar}" alt="${p.name}" onerror="this.style.display='none'"/>
+        <div>
+          <div class="profile-sidebar-name">${p.name}</div>
+          <div class="profile-sidebar-role">${roleLabel(p.role)}</div>
+        </div>
+      </div>
+      <a href="#/" class="profile-sidebar-link">🏠 Trang chủ</a>
+      <a href="#/explore" class="profile-sidebar-link">🔍 Khám phá</a>
+      <a href="#/donate" class="profile-sidebar-link">🎁 Tặng đồ</a>
+      <a href="#/requests" class="profile-sidebar-link">📋 Yêu cầu của tôi</a>
+      <a href="#/settings" class="profile-sidebar-link">⚙️ Cài đặt</a>
+      <a href="#/logout" class="profile-sidebar-link profile-sidebar-link--danger">🚪 Đăng xuất</a>
+    </aside>
+  `;
+}
+
 /* Tab engine */
 function bindTabs(wrapper) {
   const btns   = wrapper.querySelectorAll('.tab-btn');
@@ -147,7 +167,9 @@ function donationsHtml(donations, viewerIsOrg = false) {
 function renderMember(container, p) {
   const cta = `<button class="btn-cta-ghost">💬 Nhắn tin</button>`;
   container.innerHTML = `
-    <div class="profile-layout">
+    <div class="profile-dashboard-layout">
+      ${profileSidebarHtml(p)}
+      <div class="profile-layout">
       ${coverHtml(p)}
       ${identityBarHtml(p, cta)}
       <div class="profile-page-body">
@@ -171,7 +193,8 @@ function renderMember(container, p) {
           <div class="p-card"><p class="p-card-title">Giới thiệu</p><p style="font-size:14px;color:#6E7B6C;line-height:1.7">${p.bio}</p></div>
         </div>
       </div>
-    </div>`;
+    </div>
+  </div>`;
   bindTabs(container.querySelector('#member-tabs').parentElement);
 }
 
@@ -181,7 +204,9 @@ function renderMember(container, p) {
 function renderSeller(container, p) {
   const cta = `<button class="btn-cta-ghost">💬 Nhắn tin</button><button class="btn-cta-primary">🏪 Xem cửa hàng</button>`;
   container.innerHTML = `
-    <div class="profile-layout">
+    <div class="profile-dashboard-layout">
+      ${profileSidebarHtml(p)}
+      <div class="profile-layout">
       ${coverHtml(p)}
       ${identityBarHtml(p, cta)}
       <div class="profile-page-body">
@@ -207,7 +232,8 @@ function renderSeller(container, p) {
           <div class="p-card"><p class="p-card-title">Giới thiệu cửa hàng</p><p style="font-size:14px;color:#6E7B6C;line-height:1.7">${p.bio}</p></div>
         </div>
       </div>
-    </div>`;
+    </div>
+  </div>`;
   bindTabs(container.querySelector('#seller-tabs').parentElement);
 }
 
@@ -319,7 +345,8 @@ function renderOrg(container, p) {
           </div>
         </div>
       </div>
-    </div>`;
+    </div>
+  </div>`;
   bindTabs(container.querySelector('#org-tabs').parentElement);
 }
 
@@ -367,7 +394,8 @@ function renderAdmin(container, p) {
           </div>`).join('')}
         </div>
       </div>
-    </div>`;
+    </div>
+  </div>`;
 }
 
 /* ══════════════════════════════════════
@@ -406,6 +434,40 @@ export async function renderProfilePage(container) {
         <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
       </div>
     </div>`;
+
+  const newUser = sessionStorage.getItem('ecocycle_new_user');
+  if (newUser) {
+    const welcomeToast = document.createElement('div');
+    welcomeToast.style.cssText = `
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: #006B2C;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 9999;
+      font-weight: 600;
+      animation: slideInRight 0.5s ease-out;
+    `;
+    welcomeToast.innerHTML = `Xin chào, ${newUser} 🎉`;
+    document.body.appendChild(welcomeToast);
+    
+    if (!document.getElementById('welcome-toast-style')) {
+      const style = document.createElement('style');
+      style.id = 'welcome-toast-style';
+      style.innerHTML = `@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
+      document.head.appendChild(style);
+    }
+
+    setTimeout(() => {
+      welcomeToast.style.opacity = '0';
+      welcomeToast.style.transition = 'opacity 0.5s ease';
+      setTimeout(() => welcomeToast.remove(), 500);
+    }, 5000);
+    sessionStorage.removeItem('ecocycle_new_user');
+  }
 
   let profile;
   try { profile = await getMyProfile(); }
