@@ -8,6 +8,7 @@ import { renderRegisterPage } from './pages/register.js';
 import { renderProfilePage  } from './pages/profile.js';
 import { renderHomePage     } from './pages/home.js';
 import { renderProductsPage } from './pages/products.js';
+import { renderProductDetailPage } from './pages/product-detail.js';
 import { renderHeader       } from './components/header.js';
 import { renderFooter       } from './components/footer.js';
 import { logoutApi, isAuthenticated } from './services/auth.service.js';
@@ -68,6 +69,18 @@ function navigate() {
   const hash   = window.location.hash || '';
   // strip query params from hash if any
   const route  = hash.split('?')[0];
+  
+  // Dynamic Route for Product Detail
+  if (route.startsWith('#/product/')) {
+    const productId = route.replace('#/product/', '');
+    if (productId) {
+      renderHeader({ activePage: 'products' });
+      renderProductDetailPage(app, productId);
+      renderFooter();
+      return;
+    }
+  }
+
   const handler = routes[route] ?? routes['#/'];
   handler();
 }
