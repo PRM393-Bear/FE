@@ -9,6 +9,7 @@ import { renderProfilePage  } from './pages/profile.js';
 import { renderHomePage     } from './pages/home.js';
 import { renderProductsPage } from './pages/products.js';
 import { renderProductDetailPage } from './pages/product-detail.js';
+import { renderAdminPage } from './pages/admin.js';
 import { renderHeader       } from './components/header.js';
 import { renderFooter       } from './components/footer.js';
 import { logoutApi, isAuthenticated } from './services/auth.service.js';
@@ -20,6 +21,7 @@ const routes = {
   '#/register': () => { renderHeader({ activePage: 'register' }); renderRegisterPage(app); removeFooter(); },
   '#/profile':  () => { renderHeader({ activePage: 'profile'  }); renderProfilePage(app);  renderFooter(); },
   '#/products': () => { renderHeader({ activePage: 'products' }); renderProductsPage(app); renderFooter(); },
+  '#/admin':    () => { removeHeader(); renderAdminPage(app); removeFooter(); },
   '#/logout':   handleLogout,
   '#/':         handleHome,
   '':           handleHome,
@@ -34,6 +36,11 @@ function handleHome() {
 
 function removeFooter() {
   const existing = document.getElementById('site-footer');
+  if (existing) existing.remove();
+}
+
+function removeHeader() {
+  const existing = document.getElementById('site-header');
   if (existing) existing.remove();
 }
 

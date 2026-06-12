@@ -1,494 +1,325 @@
 /**
- * EcoCycle – Profile Page
- * 4 actor types: member | seller | org | admin
+ * EcoCycle – Private Profile Dashboard
+ * This is the private view (Tài khoản của tôi) for the logged-in user.
+ * Displays different management panels based on the user's role.
  */
+
 import '../styles/profile.css';
-import { getUser } from '../services/auth.service.js';
 import { getMyProfile, MOCK_PROFILES } from '../services/profile.service.js';
 
 /* ══════════════════════════════════════
-   SHARED HELPERS
+   HELPERS & UI GENERATORS
 ══════════════════════════════════════ */
 
-function stars(n) {
-  return Array.from({length:5}, (_,i) =>
-    `<span class="star">${i < n ? '⭐' : '☆'}</span>`
-  ).join('');
-}
-
-function fmt(n) {
-  return n >= 1000 ? (n/1000).toFixed(1).replace('.0','') + 'K' : String(n);
-}
-
 function roleLabel(role) {
-  return { member:'Thành viên', seller:'Cửa hàng', org:'Tổ chức từ thiện', admin:'Quản trị viên' }[role] ?? role;
+  return { member: 'Thành viên', seller: 'Cửa hàng', org: 'Tổ chức từ thiện', admin: 'Quản trị viên' }[role] ?? role;
 }
 
-function coverHtml(p) {
+function emptyStateHtml(icon, text) {
   return `
-    <div class="profile-cover">
-      <img src="${p.cover}" alt="Ảnh bìa" loading="lazy" onerror="this.style.display='none'"/>
-      <div class="profile-cover-overlay"></div>
-    </div>`;
-}
-
-function identityBarHtml(p, ctaHtml = '') {
-  const initials = (p.name ?? 'U')[0].toUpperCase();
-  return `
-    <div class="profile-identity-bar">
-      <div class="profile-avatar-wrap">
-        ${p.avatar
-          ? `<img src="${p.avatar}" alt="${p.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-             <div class="profile-avatar-initials" style="display:none">${initials}</div>`
-          : `<div class="profile-avatar-initials">${initials}</div>`}
-      </div>
-      <div class="profile-identity-info">
-        <div class="profile-name-row">
-          <h1 class="profile-name">${p.name}</h1>
-          ${p.verified ? '<span class="verified-badge">✓</span>' : ''}
-        </div>
-        <div class="profile-meta-row">
-          <span class="role-chip chip--${p.role}">${roleLabel(p.role)}</span>
-          ${p.location ? `<span class="profile-location">📍 ${p.location}</span>` : ''}
-          ${p.joinedDate ? `<span class="profile-location">🗓 Tham gia ${p.joinedDate}</span>` : ''}
-        </div>
-      </div>
-      <div class="profile-cta-area">${ctaHtml}</div>
-    </div>`;
-}
-
-function profileSidebarHtml(p) {
-  return `
-    <aside class="profile-sidebar">
-      <div class="profile-sidebar-user">
-        <img src="${p.avatar}" alt="${p.name}" onerror="this.style.display='none'"/>
-        <div>
-          <div class="profile-sidebar-name">${p.name}</div>
-          <div class="profile-sidebar-role">${roleLabel(p.role)}</div>
-        </div>
-      </div>
-      <a href="#/" class="profile-sidebar-link">🏠 Trang chủ</a>
-      <a href="#/explore" class="profile-sidebar-link">🔍 Khám phá</a>
-      <a href="#/donate" class="profile-sidebar-link">🎁 Tặng đồ</a>
-      <a href="#/requests" class="profile-sidebar-link">📋 Yêu cầu của tôi</a>
-      <a href="#/settings" class="profile-sidebar-link">⚙️ Cài đặt</a>
-      <a href="#/logout" class="profile-sidebar-link profile-sidebar-link--danger">🚪 Đăng xuất</a>
-    </aside>
+    <div class="empty-state">
+      <div class="empty-state-icon">${icon}</div>
+      <div class="empty-state-text">${text}</div>
+    </div>
   `;
 }
 
-/* Tab engine */
-function bindTabs(wrapper) {
-  const btns   = wrapper.querySelectorAll('.tab-btn');
-  const panels = wrapper.querySelectorAll('.tab-panel');
-  btns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      btns.forEach(b => b.classList.remove('is-active'));
-      panels.forEach(p => p.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      wrapper.querySelector(`#panel-${btn.dataset.tab}`)?.classList.add('is-active');
-    });
-  });
+function renderSidebarItem(id, icon, label, isActive = false) {
+  return `
+    <button class="sidebar-nav-item ${isActive ? 'is-active' : ''}" data-target="${id}">
+      <span class="sidebar-nav-icon">${icon}</span>
+      <span class="sidebar-nav-label">${label}</span>
+    </button>
+  `;
 }
 
-/* Posts grid */
-function postsGridHtml(posts, isSeller = false) {
-  if (!posts?.length) return '<p style="color:#6E7B6C;text-align:center;padding:32px 0">Chưa có bài đăng nào.</p>';
-  return `<div class="posts-grid">${posts.map(p => `
-    <a class="post-card" href="#/product/${p.id}">
-      <img src="${p.image}" alt="${p.title}" loading="lazy"/>
-      <div class="post-card-body">
-        <p class="post-card-title">${p.title}</p>
-        <span class="post-card-price">${Number(p.price).toLocaleString('vi')}đ</span>
-        <div class="post-card-meta">
-          <span class="post-condition">${p.condition}</span>
-          ${isSeller && p.qty > 1 ? `<span class="post-qty-badge">x${p.qty}</span>` : '<span class="post-condition" style="background:#E8F5E9">SL: 1</span>'}
-        </div>
+function renderSettingsPanel(p, role) {
+  const isOrg = role === 'org';
+  const isSeller = role === 'seller';
+  
+  return `
+    <div class="dashboard-panel is-active" id="panel-settings">
+      <div class="panel-header">
+        <h2 class="panel-title">Hồ sơ cá nhân</h2>
+        <p class="panel-desc">Quản lý thông tin hồ sơ để bảo mật tài khoản</p>
       </div>
-    </a>`).join('')}</div>`;
-}
-
-/* Events */
-function eventsHtml(events) {
-  if (!events?.length) return '<p style="color:#6E7B6C;text-align:center;padding:32px 0">Chưa có sự kiện nào.</p>';
-  return events.map(e => `
-    <div class="event-card">
-      <img src="${e.image}" alt="${e.title}" loading="lazy"/>
-      <div class="event-card-body">
-        <span class="event-card-status ${e.status === 'Sắp diễn ra' ? 'status--upcoming' : 'status--ended'}">${e.status}</span>
-        <p class="event-card-title">${e.title}</p>
-        <div class="event-card-detail">
-          <span>📅 ${e.date}</span>
-          <span>📍 ${e.location}</span>
-          ${e.role ? `<span>🏷 ${e.role}</span>` : ''}
-        </div>
-        ${e.participants ? `<p class="event-participants">👥 ${e.participants.toLocaleString('vi')} người tham gia</p>` : ''}
-      </div>
-    </div>`).join('');
-}
-
-/* Reviews */
-function reviewsHtml(reviews) {
-  if (!reviews?.length) return '<p style="color:#6E7B6C;text-align:center;padding:32px 0">Chưa có đánh giá nào.</p>';
-  return reviews.map(r => `
-    <div class="review-item">
-      <div class="review-header">
-        <img class="review-author-avatar" src="${r.avatar}" alt="${r.author}" loading="lazy"/>
-        <div>
-          <div class="review-author-name">${r.author}</div>
-          <div class="review-date">${r.date}</div>
-        </div>
-        <div class="review-stars">${stars(r.rating)}</div>
-      </div>
-      <p class="review-comment">${r.comment}</p>
-    </div>`).join('');
-}
-
-/* Donations */
-function donationsHtml(donations, viewerIsOrg = false) {
-  if (!donations?.length) return '<p style="color:#6E7B6C;text-align:center;padding:32px 0">Chưa có lịch sử quyên góp.</p>';
-  return donations.map(d => `
-    <div class="donation-item">
-      <img class="donation-org-avatar" src="${d.orgAvatar ?? d.donorAvatar}" alt="" loading="lazy"/>
-      <div class="donation-info">
-        <div class="donation-org-name">${viewerIsOrg ? (d.donor ?? '') : (d.org ?? '')}</div>
-        <div class="donation-items-text">${d.items}</div>
-      </div>
-      <div class="donation-meta">
-        <span class="donation-date">${d.date}</span>
-        <span class="donation-status">✓ ${d.status}</span>
-      </div>
-    </div>`).join('');
-}
-
-/* ══════════════════════════════════════
-   MEMBER PROFILE
-══════════════════════════════════════ */
-function renderMember(container, p) {
-  const cta = `<button class="btn-cta-ghost">💬 Nhắn tin</button>`;
-  container.innerHTML = `
-    <div class="profile-dashboard-layout">
-      ${profileSidebarHtml(p)}
-      <div class="profile-layout">
-      ${coverHtml(p)}
-      ${identityBarHtml(p, cta)}
-      <div class="profile-page-body">
-        <div>
-          <div class="tab-bar" id="member-tabs">
-            <button class="tab-btn is-active" data-tab="posts">Bài đăng (${p.posts?.length ?? 0})</button>
-            <button class="tab-btn" data-tab="reviews">Đánh giá (${p.reviews?.length ?? 0})</button>
-            <button class="tab-btn" data-tab="donations">Quyên góp (${p.donations?.length ?? 0})</button>
-          </div>
-          <div id="panel-posts" class="tab-panel is-active">${postsGridHtml(p.posts, false)}</div>
-          <div id="panel-reviews" class="tab-panel">${reviewsHtml(p.reviews)}</div>
-          <div id="panel-donations" class="tab-panel">${donationsHtml(p.donations)}</div>
-        </div>
-        <div>
-          <div class="profile-stats-bar">
-            <div class="profile-stat-item"><span class="stat-value">${p.stats.sold}</span><span class="stat-label">Đã bán</span></div>
-            <div class="profile-stat-item"><span class="stat-value">${p.stats.bought}</span><span class="stat-label">Đã mua</span></div>
-            <div class="profile-stat-item"><span class="stat-value">${p.stats.donated}</span><span class="stat-label">Đã tặng</span></div>
-            <div class="profile-stat-item"><span class="stat-value">${p.stats.rating}⭐</span><span class="stat-label">${p.reviewCount} đánh giá</span></div>
-          </div>
-          <div class="p-card"><p class="p-card-title">Giới thiệu</p><p style="font-size:14px;color:#6E7B6C;line-height:1.7">${p.bio}</p></div>
-        </div>
-      </div>
-    </div>
-  </div>`;
-  bindTabs(container.querySelector('#member-tabs').parentElement);
-}
-
-/* ══════════════════════════════════════
-   SELLER PROFILE
-══════════════════════════════════════ */
-function renderSeller(container, p) {
-  const cta = `<button class="btn-cta-ghost">💬 Nhắn tin</button><button class="btn-cta-primary">🏪 Xem cửa hàng</button>`;
-  container.innerHTML = `
-    <div class="profile-dashboard-layout">
-      ${profileSidebarHtml(p)}
-      <div class="profile-layout">
-      ${coverHtml(p)}
-      ${identityBarHtml(p, cta)}
-      <div class="profile-page-body">
-        <div>
-          <div class="tab-bar" id="seller-tabs">
-            <button class="tab-btn is-active" data-tab="posts">Sản phẩm (${p.posts?.length ?? 0})</button>
-            <button class="tab-btn" data-tab="events">Sự kiện (${p.events?.length ?? 0})</button>
-            <button class="tab-btn" data-tab="donations">Quyên góp (${p.donations?.length ?? 0})</button>
-            <button class="tab-btn" data-tab="reviews">Đánh giá (${p.reviews?.length ?? 0})</button>
-          </div>
-          <div id="panel-posts" class="tab-panel is-active">${postsGridHtml(p.posts, true)}</div>
-          <div id="panel-events" class="tab-panel">${eventsHtml(p.events)}</div>
-          <div id="panel-donations" class="tab-panel">${donationsHtml(p.donations)}</div>
-          <div id="panel-reviews" class="tab-panel">${reviewsHtml(p.reviews)}</div>
-        </div>
-        <div>
-          <div class="shop-stats-row">
-            <div class="shop-stat"><div class="shop-stat-val">${fmt(p.stats.sold)}</div><div class="shop-stat-lbl">Đã bán</div></div>
-            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.activeListings}</div><div class="shop-stat-lbl">Đang đăng</div></div>
-            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.responseRate}</div><div class="shop-stat-lbl">Phản hồi</div></div>
-            <div class="shop-stat"><div class="shop-stat-val">${p.shopStats.responseTime}</div><div class="shop-stat-lbl">Thời gian TL</div></div>
-          </div>
-          <div class="p-card"><p class="p-card-title">Giới thiệu cửa hàng</p><p style="font-size:14px;color:#6E7B6C;line-height:1.7">${p.bio}</p></div>
-        </div>
-      </div>
-    </div>
-  </div>`;
-  bindTabs(container.querySelector('#seller-tabs').parentElement);
-}
-
-/* ══════════════════════════════════════
-   ORGANIZATION PROFILE (matches image)
-══════════════════════════════════════ */
-function renderOrg(container, p) {
-  const cta = `<button class="btn-cta-primary">🎁 Tặng đồ cho tổ chức này</button>`;
-  const cats = p.acceptedCategories.map(c => `<span class="category-chip">🏷 ${c}</span>`).join('');
-  const imp  = p.impactStats;
-
-  container.innerHTML = `
-    <div class="profile-layout">
-      ${coverHtml(p)}
-      ${identityBarHtml(p, cta)}
-
-      <div class="profile-page-body">
-        <!-- LEFT: mission + categories + activity + tabs -->
-        <div>
-          <div class="p-card">
-            <p class="p-card-title">Về sứ mệnh của chúng tôi</p>
-            <p style="font-size:14px;color:#6E7B6C;line-height:1.75">${p.bio}</p>
-          </div>
-
-          <div class="p-card">
-            <p class="p-card-title">Loại đồ nhận quyên góp</p>
-            <div class="category-chips">${cats}</div>
-          </div>
-
-          <div class="p-card">
-            <div class="p-card-title-row">
-              <span class="p-card-title" style="margin:0">Hoạt động gần đây</span>
-              <a href="#/events" class="p-card-link">Xem tất cả</a>
+      <div class="panel-body">
+        <div class="settings-layout">
+          <form class="settings-form" onsubmit="event.preventDefault(); alert('Cập nhật thành công!');">
+            <div class="form-group">
+              <label class="form-label">Tên đăng nhập</label>
+              <div class="form-static">${p.id}</div>
             </div>
-            <div class="activity-grid">
-              ${p.recentEvents.map(e => `
-              <div class="activity-event-card">
-                <img src="${e.image}" alt="${e.title}" loading="lazy"/>
-                <div class="activity-event-overlay">
-                  <span class="activity-event-badge">${e.type}</span>
-                  <div class="activity-event-title">${e.title}</div>
-                  <div class="activity-event-sub">${e.description}</div>
+            <div class="form-group">
+              <label class="form-label">Tên hiển thị</label>
+              <input type="text" class="form-input" value="${p.name}" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <div class="form-static">user@ecocycle.vn <span style="color:#006B2C;font-size:12px;margin-left:8px;cursor:pointer;text-decoration:underline;">Thay đổi</span></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Số điện thoại</label>
+              <div class="form-static">*********89 <span style="color:#006B2C;font-size:12px;margin-left:8px;cursor:pointer;text-decoration:underline;">Thay đổi</span></div>
+            </div>
+            ${isSeller || isOrg ? `
+              <div class="form-group">
+                <label class="form-label">Địa chỉ / Vị trí</label>
+                <input type="text" class="form-input" value="${p.location || ''}" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Mô tả / Giới thiệu</label>
+                <textarea class="form-input" rows="4" style="resize:vertical">${p.bio || ''}</textarea>
+              </div>
+            ` : ''}
+            <button type="submit" class="btn-save">Lưu Thay Đổi</button>
+          </form>
+          
+          <div class="avatar-upload">
+            <img src="${p.avatar || 'https://i.pravatar.cc/150?img=11'}" alt="Avatar" class="avatar-preview" />
+            <button type="button" class="btn-upload">Chọn ảnh</button>
+            <div class="upload-hint">Dụng lượng file tối đa 1 MB<br/>Định dạng: .JPEG, .PNG</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderOrdersPanel() {
+  // Mock orders data
+  const orders = [
+    { id: 'DH012391', item: 'Áo khoác denim Levi\'s', price: 350000, img: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=100', status: 'Đang giao', statusClass: 'info' },
+    { id: 'DH012345', item: 'Giày Nike Air Max 90', price: 1200000, img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100', status: 'Đã hoàn thành', statusClass: 'success' },
+  ];
+
+  return `
+    <div class="dashboard-panel" id="panel-orders">
+      <div class="panel-header">
+        <h2 class="panel-title">Đơn hàng của tôi</h2>
+        <p class="panel-desc">Theo dõi trạng thái các đơn hàng bạn đã mua</p>
+      </div>
+      <div class="panel-body">
+        <div class="data-list">
+          ${orders.map(o => `
+            <div class="data-item">
+              <img src="${o.img}" alt="" class="data-item-img" />
+              <div class="data-item-info">
+                <h3 class="data-item-title">${o.item}</h3>
+                <span class="data-item-meta">Mã ĐH: ${o.id}</span>
+              </div>
+              <div class="data-item-status">
+                <span class="status-badge ${o.statusClass}">${o.status}</span>
+                <span class="data-item-price">${o.price.toLocaleString('vi')}đ</span>
+                <button class="data-item-action" onclick="alert('Tính năng đang phát triển')">Xem chi tiết</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderClosetPanel(p) {
+  const posts = p.posts || [];
+  return `
+    <div class="dashboard-panel" id="panel-closet">
+      <div class="panel-header">
+        <h2 class="panel-title">Tủ đồ / Sản phẩm đã đăng</h2>
+        <p class="panel-desc">Quản lý các sản phẩm bạn đang rao bán hoặc tặng</p>
+      </div>
+      <div class="panel-body">
+        ${posts.length === 0 ? emptyStateHtml('👕', 'Tủ đồ của bạn đang trống. Hãy đăng sản phẩm mới!') : `
+          <div style="margin-bottom: 20px;"><button class="btn-save">+ Đăng sản phẩm mới</button></div>
+          <div class="data-list">
+            ${posts.map(post => `
+              <div class="data-item">
+                <img src="${post.image}" alt="" class="data-item-img" />
+                <div class="data-item-info">
+                  <h3 class="data-item-title">${post.title}</h3>
+                  <span class="data-item-meta">Tình trạng: ${post.condition} | Phân loại: ${post.category}</span>
                 </div>
-              </div>`).join('')}
-              ${p.recentTestimonials.map(t => `
-              <div class="activity-testimonial">
-                <p class="testimonial-text">"${t.comment}"</p>
-                <div class="testimonial-author">
-                  <img src="${t.avatar}" alt="${t.author}" loading="lazy"/>
+                <div class="data-item-status">
+                  <span class="status-badge success">Đang hiển thị</span>
+                  <span class="data-item-price">${post.price.toLocaleString('vi')}đ</span>
                   <div>
-                    <div style="font-size:13px;font-weight:600;color:#1A1A1A">${t.author}</div>
-                    <div class="testimonial-time">${t.time}</div>
+                    <button class="data-item-action" style="margin-right: 8px;">Sửa</button>
+                    <button class="data-item-action" style="color:#BA1A1A; border-color:#BA1A1A;">Xóa</button>
                   </div>
                 </div>
-              </div>`).join('')}
-            </div>
-          </div>
-
-          <!-- Tabs -->
-          <div class="tab-bar" id="org-tabs">
-            <button class="tab-btn is-active" data-tab="events">Sự kiện (${p.events?.length ?? 0})</button>
-            <button class="tab-btn" data-tab="donations">Quyên góp (${p.donations?.length ?? 0})</button>
-            <button class="tab-btn" data-tab="reviews">Đánh giá (${p.reviews?.length ?? 0})</button>
-          </div>
-          <div id="panel-events" class="tab-panel is-active">${eventsHtml(p.events)}</div>
-          <div id="panel-donations" class="tab-panel">${donationsHtml(p.donations, true)}</div>
-          <div id="panel-reviews" class="tab-panel">${reviewsHtml(p.reviews)}</div>
-        </div>
-
-        <!-- RIGHT: stats + map + contact -->
-        <div>
-          <div class="impact-card">
-            <p class="impact-card__title">Số liệu tác động</p>
-            <div class="impact-stat">
-              <div class="impact-stat__value">${Number(imp.itemsReceived).toLocaleString('vi')}+</div>
-              <div class="impact-stat__label">Tổng vật phẩm đã nhận</div>
-            </div>
-            <div class="impact-stat">
-              <div class="impact-stat__value">${imp.eventsOrganized}</div>
-              <div class="impact-stat__label">Sự kiện đã tổ chức</div>
-            </div>
-            <div class="impact-stat">
-              <div class="impact-stat__value">${Number(imp.trustedDonors).toLocaleString('vi')}</div>
-              <div class="impact-stat__label">Người hiến tặng tin cậy</div>
-            </div>
-          </div>
-
-          <div class="location-card">
-            <div class="location-map-placeholder">🗺️</div>
-            <div class="location-info">
-              <div class="location-address">
-                <span>📍</span>
-                <span>${p.address}</span>
               </div>
-              <button class="btn-directions" onclick="window.open('https://maps.google.com/?q=${encodeURIComponent(p.address)}','_blank')">Chỉ đường</button>
-            </div>
+            `).join('')}
           </div>
-
-          <div class="p-card" style="margin-bottom:0">
-            <p class="p-card-title">Liên hệ hỗ trợ</p>
-            <div class="contact-item">
-              <div class="contact-icon">📞</div>
-              <a href="tel:${p.phone}" style="color:#1A1A1A;text-decoration:none">${p.phone}</a>
-            </div>
-            <div class="contact-item">
-              <div class="contact-icon">✉️</div>
-              <a href="mailto:${p.email}" style="color:#006B2C;text-decoration:none">${p.email}</a>
-            </div>
-          </div>
-        </div>
+        `}
       </div>
     </div>
-  </div>`;
-  bindTabs(container.querySelector('#org-tabs').parentElement);
+  `;
 }
 
-/* ══════════════════════════════════════
-   ADMIN PROFILE
-══════════════════════════════════════ */
-function renderAdmin(container, p) {
-  const s = p.platformStats;
-  container.innerHTML = `
-    <div class="profile-layout">
-      ${coverHtml(p)}
-      ${identityBarHtml(p, '')}
-      <div class="profile-page-body profile-page-body--full" style="max-width:1100px;margin:0 auto;padding:0 32px 48px">
-        <div class="p-card">
-          <p class="p-card-title">Thống kê nền tảng hôm nay</p>
-          <div class="admin-stats-grid">
-            <div class="admin-stat-card"><span class="admin-stat-value">${Number(s.totalUsers).toLocaleString('vi')}</span><div class="admin-stat-label">Tổng người dùng</div></div>
-            <div class="admin-stat-card"><span class="admin-stat-value">${Number(s.activeListings).toLocaleString('vi')}</span><div class="admin-stat-label">Tin đăng đang hoạt động</div></div>
-            <div class="admin-stat-card"><span class="admin-stat-value">${s.eventsThisMonth}</span><div class="admin-stat-label">Sự kiện tháng này</div></div>
-            <div class="admin-stat-card"><span class="admin-stat-value">${Number(s.donationsThisMonth).toLocaleString('vi')}</span><div class="admin-stat-label">Quyên góp tháng này</div></div>
-            <div class="admin-stat-card"><span class="admin-stat-value">${s.newUsersToday}</span><div class="admin-stat-label">Người dùng mới hôm nay</div></div>
-            <div class="admin-stat-card alert"><span class="admin-stat-value">${s.pendingReports}</span><div class="admin-stat-label">Báo cáo chờ xử lý</div></div>
+function renderEventsPanel(p) {
+  const events = p.events || [];
+  return `
+    <div class="dashboard-panel" id="panel-events">
+      <div class="panel-header">
+        <h2 class="panel-title">Quản lý Sự kiện quyên góp</h2>
+        <p class="panel-desc">Tạo và theo dõi các chiến dịch quyên góp của tổ chức</p>
+      </div>
+      <div class="panel-body">
+        ${events.length === 0 ? emptyStateHtml('🎪', 'Chưa có sự kiện nào.') : `
+          <div style="margin-bottom: 20px;"><button class="btn-save">+ Tạo sự kiện mới</button></div>
+          <div class="data-list">
+            ${events.map(e => `
+              <div class="data-item">
+                <img src="${e.image}" alt="" class="data-item-img" />
+                <div class="data-item-info">
+                  <h3 class="data-item-title">${e.title}</h3>
+                  <span class="data-item-meta">Ngày: ${e.date} | Địa điểm: ${e.location}</span>
+                </div>
+                <div class="data-item-status">
+                  <span class="status-badge ${e.status === 'Đã kết thúc' ? 'warning' : 'success'}">${e.status}</span>
+                  <span class="data-item-meta">${e.participants} người tham gia</span>
+                  <button class="data-item-action">Cập nhật tiến độ</button>
+                </div>
+              </div>
+            `).join('')}
           </div>
-        </div>
-        <div class="p-card">
-          <p class="p-card-title">Quản lý hệ thống</p>
-          <div class="admin-links-grid">
-            ${p.quickLinks.map(l => `
-            <a class="admin-link-card" href="${l.href}">
-              <span class="admin-link-icon">${l.icon}</span>
-              <span class="admin-link-label">${l.label}${l.badge ? `<span class="admin-badge">${l.count}</span>` : ''}</span>
-              ${l.count !== null && !l.badge ? `<span class="admin-link-count">${Number(l.count).toLocaleString('vi')} mục</span>` : ''}
-            </a>`).join('')}
-          </div>
-        </div>
-        <div class="admin-reports p-card">
-          <p class="p-card-title">Báo cáo vi phạm gần đây</p>
-          ${p.recentReports.map(r => `
-          <div class="report-row">
-            <span style="font-weight:600;color:#1A1A1A">${r.type}</span>
-            <span style="color:#6E7B6C">@${r.user}</span>
-            <span style="color:#AAAAAA">${r.time}</span>
-            <span class="report-severity sev-${r.severity}">${r.severity === 'high' ? 'Cao' : 'Thấp'}</span>
-            <a href="#/admin/reports/${r.id}" style="font-size:13px;font-weight:600;color:#006B2C">Xem →</a>
-          </div>`).join('')}
-        </div>
+        `}
       </div>
     </div>
-  </div>`;
+  `;
 }
 
 /* ══════════════════════════════════════
-   DEV ROLE SWITCHER
+   MAIN RENDERING LOGIC
 ══════════════════════════════════════ */
-let _currentRole = null;
 
-function injectDevSwitcher(onSwitch) {
-  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-  if (!isLocal) return;
-  document.getElementById('dev-switcher')?.remove();
-  const sw = document.createElement('div');
-  sw.id = 'dev-switcher';
-  sw.className = 'dev-switcher';
-  sw.innerHTML = `
-    <div class="dev-switcher-label">🛠 Dev: Vai trò</div>
-    ${['member','seller','org','admin'].map(r => `
-      <button class="dev-role-btn ${_currentRole===r?'is-active':''}" data-role="${r}">
-        ${{ member:'👤 Thành viên', seller:'🏪 Người bán', org:'🏢 Tổ chức', admin:'🔧 Admin' }[r]}
-      </button>`).join('')}`;
-  document.body.appendChild(sw);
-  sw.querySelectorAll('.dev-role-btn').forEach(btn => {
-    btn.addEventListener('click', () => { _currentRole = btn.dataset.role; onSwitch(_currentRole); });
-  });
-}
-
-/* ══════════════════════════════════════
-   MAIN ENTRY POINT
-══════════════════════════════════════ */
 export async function renderProfilePage(container) {
+  // Show loading
   container.innerHTML = `
-    <div style="min-height:60vh;display:flex;align-items:center;justify-content:center;background:#F0F5EF">
+    <div style="min-height:60vh;display:flex;align-items:center;justify-content:center;background:#F5F5F5">
       <div style="text-align:center;color:#6E7B6C;font-family:'Be Vietnam Pro',sans-serif">
         <div style="width:40px;height:40px;border:3px solid #DDE5DB;border-top-color:#006B2C;border-radius:50%;animation:spin .75s linear infinite;margin:0 auto 12px"></div>
-        <p>Đang tải hồ sơ…</p>
+        <p>Đang tải dữ liệu hồ sơ…</p>
         <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
       </div>
-    </div>`;
-
-  const newUser = sessionStorage.getItem('ecocycle_new_user');
-  if (newUser) {
-    const welcomeToast = document.createElement('div');
-    welcomeToast.style.cssText = `
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      background: #006B2C;
-      color: white;
-      padding: 16px 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 9999;
-      font-weight: 600;
-      animation: slideInRight 0.5s ease-out;
-    `;
-    welcomeToast.innerHTML = `Xin chào, ${newUser} 🎉`;
-    document.body.appendChild(welcomeToast);
-    
-    if (!document.getElementById('welcome-toast-style')) {
-      const style = document.createElement('style');
-      style.id = 'welcome-toast-style';
-      style.innerHTML = `@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
-      document.head.appendChild(style);
-    }
-
-    setTimeout(() => {
-      welcomeToast.style.opacity = '0';
-      welcomeToast.style.transition = 'opacity 0.5s ease';
-      setTimeout(() => welcomeToast.remove(), 500);
-    }, 5000);
-    sessionStorage.removeItem('ecocycle_new_user');
-  }
+    </div>
+  `;
 
   let profile;
-  try { profile = await getMyProfile(); }
-  catch { profile = MOCK_PROFILES.member; }
+  try { 
+    profile = await getMyProfile(); 
+  } catch { 
+    profile = MOCK_PROFILES.member; 
+  }
 
-  if (!_currentRole) _currentRole = profile.role ?? 'member';
-  profile = MOCK_PROFILES[_currentRole] ?? profile;
+  const role = profile.role ?? 'member';
 
-  const render = (role) => {
-    const p = MOCK_PROFILES[role] ?? MOCK_PROFILES.member;
-    _currentRole = role;
-    // Re-inject switcher to update active state
-    injectDevSwitcher(render);
-    switch (role) {
-      case 'seller': renderSeller(container, p); break;
-      case 'org':    renderOrg(container, p);    break;
-      case 'admin':  renderAdmin(container, p);  break;
-      default:       renderMember(container, p); break;
-    }
-  };
+  // Build Sidebar based on role
+  let sidebarHtml = '';
+  let contentHtml = '';
 
-  render(_currentRole);
-  injectDevSwitcher(render);
+  if (role === 'admin') {
+    sidebarHtml = `
+      ${renderSidebarItem('panel-settings', '⚙️', 'Cài đặt cá nhân', true)}
+      <a href="#/admin" class="sidebar-nav-item"><span class="sidebar-nav-icon">📊</span><span class="sidebar-nav-label">Bảng điều khiển Admin</span></a>
+    `;
+    contentHtml = renderSettingsPanel(profile, role);
+  } else if (role === 'org') {
+    sidebarHtml = `
+      ${renderSidebarItem('panel-settings', '🏢', 'Hồ sơ Tổ chức', true)}
+      ${renderSidebarItem('panel-events', '🎪', 'Sự kiện quyên góp')}
+      ${renderSidebarItem('panel-donations', '🎁', 'Lịch sử nhận đồ')}
+    `;
+    contentHtml = `
+      ${renderSettingsPanel(profile, role)}
+      ${renderEventsPanel(profile)}
+      <div class="dashboard-panel" id="panel-donations">
+        <div class="panel-header">
+          <h2 class="panel-title">Lịch sử nhận đồ</h2>
+          <p class="panel-desc">Theo dõi các lượt quyên góp từ cộng đồng</p>
+        </div>
+        <div class="panel-body">${emptyStateHtml('📦', 'Chưa có dữ liệu')}</div>
+      </div>
+    `;
+  } else if (role === 'seller') {
+    sidebarHtml = `
+      ${renderSidebarItem('panel-settings', '⚙️', 'Hồ sơ cá nhân', true)}
+      ${renderSidebarItem('panel-closet', '📦', 'Quản lý Sản phẩm')}
+      ${renderSidebarItem('panel-orders', '📋', 'Quản lý Đơn hàng')}
+      ${renderSidebarItem('panel-shop', '🏪', 'Cài đặt Gian hàng')}
+    `;
+    contentHtml = `
+      ${renderSettingsPanel(profile, role)}
+      ${renderClosetPanel(profile)}
+      <div class="dashboard-panel" id="panel-orders">
+        <div class="panel-header">
+          <h2 class="panel-title">Đơn hàng của khách</h2>
+          <p class="panel-desc">Quản lý và giao hàng cho khách</p>
+        </div>
+        <div class="panel-body">${emptyStateHtml('🚚', 'Chưa có đơn hàng nào')}</div>
+      </div>
+      <div class="dashboard-panel" id="panel-shop">
+        <div class="panel-header">
+          <h2 class="panel-title">Cài đặt Gian hàng</h2>
+          <p class="panel-desc">Thay đổi ảnh bìa, chính sách cửa hàng</p>
+        </div>
+        <div class="panel-body">${emptyStateHtml('🔧', 'Tính năng đang phát triển')}</div>
+      </div>
+    `;
+  } else {
+    // Default: User (Member)
+    sidebarHtml = `
+      ${renderSidebarItem('panel-settings', '👤', 'Hồ sơ của tôi', true)}
+      ${renderSidebarItem('panel-orders', '🛍️', 'Đơn Mua')}
+      ${renderSidebarItem('panel-closet', '👕', 'Tủ đồ của tôi')}
+    `;
+    contentHtml = `
+      ${renderSettingsPanel(profile, role)}
+      ${renderOrdersPanel()}
+      ${renderClosetPanel(profile)}
+    `;
+  }
+
+  // Assemble the layout
+  container.innerHTML = `
+    <div class="profile-dashboard-layout">
+      <aside class="dashboard-sidebar">
+        <div class="sidebar-user">
+          <img src="${profile.avatar || 'https://i.pravatar.cc/150?img=11'}" alt="Avatar" class="sidebar-avatar" />
+          <div class="sidebar-user-info">
+            <span class="sidebar-name">${profile.name || profile.id}</span>
+            <span class="sidebar-role">✏️ ${roleLabel(role)}</span>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          ${sidebarHtml}
+        </nav>
+      </aside>
+      
+      <main class="dashboard-content">
+        ${contentHtml}
+      </main>
+    </div>
+  `;
+
+  // Bind tab clicking
+  const navItems = container.querySelectorAll('.sidebar-nav-item[data-target]');
+  const panels = container.querySelectorAll('.dashboard-panel');
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      // Deactivate all
+      navItems.forEach(n => n.classList.remove('is-active'));
+      panels.forEach(p => p.classList.remove('is-active'));
+
+      // Activate clicked
+      item.classList.add('is-active');
+      const targetId = item.getAttribute('data-target');
+      const targetPanel = container.querySelector(`#${targetId}`);
+      if (targetPanel) {
+        targetPanel.classList.add('is-active');
+      }
+    });
+  });
 }

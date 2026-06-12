@@ -48,26 +48,25 @@ export function renderHeader(opts = {}) {
         <a href="#/explore" class="site-header__nav-link ${opts.activePage === 'explore' ? 'is-active' : ''}">Khám phá</a>
         <a href="#/map"     class="site-header__nav-link ${opts.activePage === 'map'     ? 'is-active' : ''}">Bản đồ</a>
         <a href="#/community" class="site-header__nav-link ${opts.activePage === 'community' ? 'is-active' : ''}">Cộng đồng</a>
-        <a href="#/profile" class="site-header__nav-link ${opts.activePage === 'profile' ? 'is-active' : ''}">Hồ sơ</a>
       </nav>
 
       <!-- Auth actions -->
       <div class="site-header__actions">
         ${authenticated
           ? `
-            <div class="site-header__user" id="header-user-menu">
-              <span class="site-header__user-avatar">
-                ${(user?.fullName ?? user?.name ?? 'U')[0].toUpperCase()}
-              </span>
-              <span class="site-header__user-name">${user?.fullName ?? user?.name ?? 'Tài khoản'}</span>
-              <button class="site-header__logout-btn" id="header-logout-btn" aria-label="Đăng xuất">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                  <polyline points="16 17 21 12 16 7"/>
-                  <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-              </button>
+            <div class="site-header__user-dropdown" id="header-user-menu">
+              <div class="site-header__user-trigger">
+                <span class="site-header__user-avatar">
+                  ${(user?.fullName ?? user?.name ?? 'U')[0].toUpperCase()}
+                </span>
+                <span class="site-header__user-name">${user?.fullName ?? user?.name ?? 'Tài khoản'}</span>
+              </div>
+              <div class="site-header__dropdown-menu">
+                <a href="#/profile" class="site-header__dropdown-item">Tài Khoản Của Tôi</a>
+                <a href="javascript:void(0)" class="site-header__dropdown-item" onclick="alert('Tính năng Đơn mua sẽ sớm ra mắt!')">Đơn Mua</a>
+                ${user?.role === 'admin' ? `<a href="#/admin" class="site-header__dropdown-item">Trang Quản Trị</a>` : ''}
+                <button class="site-header__dropdown-item" id="header-logout-btn">Đăng Xuất</button>
+              </div>
             </div>
           `
           : `
@@ -100,6 +99,7 @@ export function renderHeader(opts = {}) {
         <a href="#/map"       class="site-header__drawer-link">Bản đồ</a>
         <a href="#/community" class="site-header__drawer-link">Cộng đồng</a>
         <a href="#/profile"   class="site-header__drawer-link">Hồ sơ của tôi</a>
+        ${user?.role === 'admin' ? `<a href="#/admin" class="site-header__drawer-link" style="color: #006B2C; font-weight: 600;">Trang Quản trị</a>` : ''}
         <hr class="site-header__drawer-divider"/>
         ${authenticated
           ? `<a href="#/logout" class="site-header__drawer-link site-header__drawer-link--danger">Đăng xuất</a>`

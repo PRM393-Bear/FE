@@ -145,8 +145,13 @@
 }
 .site-header__btn-primary:active { transform: translateY(0); }
 
-/* ── Authenticated user pill ── */
-.site-header__user {
+/* ── Authenticated user dropdown ── */
+.site-header__user-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.site-header__user-trigger {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -154,6 +159,12 @@
   border: 1.5px solid #DDE5DB;
   border-radius: 24px;
   padding: 4px 12px 4px 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.site-header__user-dropdown:hover .site-header__user-trigger {
+  border-color: #006B2C;
 }
 
 .site-header__user-avatar {
@@ -182,19 +193,80 @@
   white-space: nowrap;
 }
 
-.site-header__logout-btn {
+.site-header__dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  min-width: 180px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  border: 1px solid #E4EBE4;
+  padding: 8px 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+}
+
+.site-header__user-dropdown:hover .site-header__dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Arrow pointer */
+.site-header__dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 24px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #fff;
+}
+
+/* Arrow border to match box */
+.site-header__dropdown-menu::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  right: 23px;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid #E4EBE4;
+  z-index: -1;
+}
+
+.site-header__dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4A5568;
+  text-decoration: none;
   background: none;
   border: none;
   cursor: pointer;
-  color: #6E7B6C;
-  display: flex;
-  align-items: center;
-  padding: 4px;
-  border-radius: 6px;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition: background 0.2s, color 0.2s;
+  font-family: 'Be Vietnam Pro', sans-serif;
 }
-.site-header__logout-btn:hover { color: #BA1A1A; background: rgba(186, 26, 26, 0.08); }
-.site-header__logout-btn svg { width: 16px; height: 16px; }
+
+.site-header__dropdown-item:hover {
+  background: #F0F5EF;
+  color: #006B2C;
+}
+
+#header-logout-btn {
+  color: #BA1A1A;
+}
+
+#header-logout-btn:hover {
+  background: rgba(186, 26, 26, 0.05);
+}
 
 /* ── Hamburger (mobile) ── */
 .site-header__hamburger {
