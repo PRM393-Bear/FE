@@ -7,6 +7,7 @@ import { renderLoginPage    } from './pages/login.js';
 import { renderRegisterPage } from './pages/register.js';
 import { renderProfilePage  } from './pages/profile.js';
 import { renderHomePage     } from './pages/home.js';
+import { renderProductsPage } from './pages/products.js';
 import { renderHeader       } from './components/header.js';
 import { renderFooter       } from './components/footer.js';
 import { logoutApi, isAuthenticated } from './services/auth.service.js';
@@ -17,6 +18,7 @@ const routes = {
   '#/login':    () => { renderHeader({ activePage: 'login'    }); renderLoginPage(app);    removeFooter(); },
   '#/register': () => { renderHeader({ activePage: 'register' }); renderRegisterPage(app); removeFooter(); },
   '#/profile':  () => { renderHeader({ activePage: 'profile'  }); renderProfilePage(app);  renderFooter(); },
+  '#/products': () => { renderHeader({ activePage: 'products' }); renderProductsPage(app); renderFooter(); },
   '#/logout':   handleLogout,
   '#/':         handleHome,
   '':           handleHome,

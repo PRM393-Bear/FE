@@ -3,6 +3,7 @@
  */
 
 import '../styles/home.css';
+import { getAllProducts } from '../services/product.service.js';
 
 /* ── MOCK DATA ── */
 const CATEGORIES = [
@@ -117,25 +118,10 @@ export function renderHomePage(container) {
       <section class="home-section">
         <div class="home-section__header">
           <h2 class="home-section__title">Mới đăng hôm nay</h2>
-          <a href="#/explore" class="home-section__link">Xem tất cả →</a>
+          <a href="#/products" class="home-section__link">Xem tất cả →</a>
         </div>
-        <div class="home-posts-grid">
-          ${NEW_POSTS.map(p => `
-            <a href="#/product/${p.id}" class="home-post-card">
-              <img src="${p.image}" alt="${p.title}" loading="lazy" />
-              <div class="home-post-card-body">
-                <h3 class="home-post-card-title">${p.title}</h3>
-                <span class="home-post-card-price">${p.price.toLocaleString('vi')}đ</span>
-                <div class="home-post-card-meta">
-                  <span class="home-post-condition">${p.condition}</span>
-                  <div class="home-post-user">
-                    <img src="${p.user.avatar}" alt="${p.user.name}"/>
-                    <span>${p.user.name}</span>
-                  </div>
-                </div>
-              </div>
-            </a>
-          `).join('')}
+        <div class="home-posts-grid" id="home-latest-products">
+          <p style="padding: 20px;">Đang tải...</p>
         </div>
       </section>
 
@@ -188,4 +174,56 @@ export function renderHomePage(container) {
   `;
 
   initCarousel(container);
+  loadLatestProducts();
+}
+
+/* ── API INTEGRATION ── */
+async function loadLatestProducts() {
+  const container = document.getElementById('home-latest-products');
+  if (!container) return;
+
+  try {
+    const products = await getAllProducts();
+    const latest = products.slice(0, 4);
+
+    if (latest.length === 0) {
+      container.innerHTML = `<p style="padding: 20px; grid-column: 1/-1; text-align: center; color: #6E7B6C;">Chưa có sản phẩm nào.</p>`;
+      return;
+    }
+
+    container.innerHTML = latest.map(p => {
+      const imageUrl = (p.images && p.images.length > 0) ? p.images[0] : 'https://placehold.co/400x400/E4EBE4/6E7B6C?text=No+Image';
+      const price = p.price != null ? p.price.toLocaleString('vi') + 'đ' : 'Liên hệ';
+      
+      let conditionText = 'Khác';
+      if (p.condition === 1) conditionText = 'Mới (Nguyên tag)';
+      else if (p.condition === 2) conditionText = 'Như mới';
+      else if (p.condition === 3) conditionText = 'Tốt';
+      else if (p.condition === 4) conditionText = 'Khá';
+      else if (p.condition === 5) conditionText = 'Đã sử dụng nhiều';
+
+      const sellerName = p.sellerName || 'Eco Seller';
+      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(sellerName)}&background=006B2C&color=fff`;
+
+      return `
+        <a href="#/product/${p.id}" class="home-post-card">
+          <img src="${imageUrl}" alt="${p.title}" loading="lazy" style="aspect-ratio: 1/1; object-fit: cover;" />
+          <div class="home-post-card-body">
+            <h3 class="home-post-card-title" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${p.title || 'Sản phẩm mới'}</h3>
+            <span class="home-post-card-price">${price}</span>
+            <div class="home-post-card-meta">
+              <span class="home-post-condition">${conditionText}</span>
+              <div class="home-post-user">
+                <img src="${avatarUrl}" alt="${sellerName}"/>
+                <span>${sellerName}</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      `;
+    }).join('');
+
+  } catch (error) {
+    container.innerHTML = `<p style="padding: 20px; color: red; grid-column: 1/-1; text-align: center;">Lỗi tải sản phẩm.</p>`;
+  }
 }

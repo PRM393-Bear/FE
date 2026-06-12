@@ -44,6 +44,7 @@ export function renderHeader(opts = {}) {
 
       <!-- Nav links (desktop) -->
       <nav class="site-header__nav" aria-label="Điều hướng chính">
+        <a href="#/products" class="site-header__nav-link ${opts.activePage === 'products' ? 'is-active' : ''}">Sản phẩm</a>
         <a href="#/explore" class="site-header__nav-link ${opts.activePage === 'explore' ? 'is-active' : ''}">Khám phá</a>
         <a href="#/map"     class="site-header__nav-link ${opts.activePage === 'map'     ? 'is-active' : ''}">Bản đồ</a>
         <a href="#/community" class="site-header__nav-link ${opts.activePage === 'community' ? 'is-active' : ''}">Cộng đồng</a>
@@ -94,6 +95,7 @@ export function renderHeader(opts = {}) {
     <!-- Mobile drawer -->
     <div class="site-header__drawer" id="header-drawer" aria-hidden="true">
       <nav class="site-header__drawer-nav">
+        <a href="#/products"  class="site-header__drawer-link">Sản phẩm</a>
         <a href="#/explore"   class="site-header__drawer-link">Khám phá</a>
         <a href="#/map"       class="site-header__drawer-link">Bản đồ</a>
         <a href="#/community" class="site-header__drawer-link">Cộng đồng</a>
