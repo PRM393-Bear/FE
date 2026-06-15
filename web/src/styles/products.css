@@ -1,0 +1,238 @@
+/* 
+ * EcoCycle Web - Product List Styles
+ * Grid layout and product card styling
+ */
+
+.products-container {
+  padding: 40px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 150px);
+}
+
+.products-header {
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.products-header h1 {
+  font-size: 32px;
+  color: #006B2C; /* EcoCycle Primary */
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.products-header p {
+  color: #6E7B6C;
+  font-size: 16px;
+  margin: 0;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+/* Product Card */
+.product-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #E4EBE4;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 107, 44, 0.08);
+}
+
+.product-card__image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: #F0F5EF;
+}
+
+.product-card__content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  text-align: left;
+}
+
+.product-card__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.product-card__price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #006B2C;
+  margin: 0 0 12px 0;
+}
+
+.product-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  font-size: 14px;
+  color: #6E7B6C;
+}
+
+.product-card__rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #F59E0B; /* Amber for stars */
+  font-weight: 500;
+}
+
+.product-card__seller {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.product-card__seller-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #006B2C;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* Condition Tag */
+.product-card__condition {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #006B2C;
+  backdrop-filter: blur(4px);
+}
+
+/* Error State */
+.products-error {
+  text-align: center;
+  padding: 60px 20px;
+  color: #DC2626;
+  background: #FEF2F2;
+  border-radius: 12px;
+}
+
+/* Empty State */
+.products-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6E7B6C;
+  grid-column: 1 / -1;
+}
+
+/* Loading Skeleton */
+.skeleton-card {
+  background: #fff;
+  border: 1px solid #E4EBE4;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.skeleton-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #E4EBE4;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-content {
+  padding: 16px;
+}
+
+.skeleton-line {
+  height: 20px;
+  background: #E4EBE4;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-line.short {
+  width: 60%;
+  margin-bottom: 16px;
+}
+
+.skeleton-line.price {
+  height: 24px;
+  width: 40%;
+  margin-bottom: 12px;
+}
+
+.skeleton-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.skeleton-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #E4EBE4;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@media (max-width: 768px) {
+  .products-container {
+    padding: 24px 16px;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  
+  .product-card__title {
+    font-size: 16px;
+  }
+  
+  .product-card__price {
+    font-size: 18px;
+  }
+  
+  .product-card__content {
+    padding: 12px;
+  }
+}
