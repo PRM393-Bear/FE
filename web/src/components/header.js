@@ -1,7 +1,6 @@
 /**
- * EcoCycle – Site Header Component
- * Renders a sticky navigation header with the official logo + wordmark.
- * Used across Login, Register, and all future pages.
+ * EcoCycle – Site Header Component (Figma V2)
+ * Renders a sticky navigation header with the official logo + search bar.
  */
 
 import "./header.css";
@@ -13,13 +12,12 @@ import {
 
 /**
  * Inject the header as the first child of <body>.
- * Call once per page render — it replaces any existing header.
+ * Call once per page render.
  *
  * @param {object} [opts]
- * @param {string} [opts.activePage] - 'login' | 'register' | '' — highlights correct nav link
+ * @param {string} [opts.activePage] - 'home' | 'explore' | 'donate'
  */
 export function renderHeader(opts = {}) {
-  // Remove any existing header to avoid duplicates on re-render
   const existing = document.getElementById("site-header");
   if (existing) existing.remove();
 
@@ -32,128 +30,55 @@ export function renderHeader(opts = {}) {
   header.setAttribute("role", "banner");
 
   header.innerHTML = `
-    <div class="site-header__inner">
-
-      <!-- Logo + Wordmark -->
+    <!-- Left: Logo & Search -->
+    <div class="site-header__left">
       <a href="#/" class="site-header__brand" aria-label="EcoCycle – Trang chủ">
-        <img
-          src="/logo.svg"
-          alt="EcoCycle logo"
-          class="site-header__logo"
-          width="36"
-          height="36"
-        />
-        <span class="site-header__wordmark">EcoCycle</span>
+        <img src="/logo.svg" alt="EcoCycle logo" class="site-header__logo" />
+        <span>EcoCycle</span>
       </a>
-
-      <!-- Nav links (desktop) -->
-      <nav class="site-header__nav" aria-label="Điều hướng chính">
-        <a href="#/products" class="site-header__nav-link ${opts.activePage === "products" ? "is-active" : ""}">Sản phẩm</a>
-        <a href="#/explore" class="site-header__nav-link ${opts.activePage === "explore" ? "is-active" : ""}">Khám phá</a>
-        <a href="#/map"     class="site-header__nav-link ${opts.activePage === "map" ? "is-active" : ""}">Bản đồ</a>
-        <a href="#/community" class="site-header__nav-link ${opts.activePage === "community" ? "is-active" : ""}">Cộng đồng</a>
-      </nav>
-
-      <!-- Auth actions -->
-      <div class="site-header__actions">
-        ${
-          authenticated
-            ? `
-            <div class="site-header__user-dropdown" id="header-user-menu">
-              <div class="site-header__user-trigger">
-                <span class="site-header__user-avatar">
-                  ${(user?.fullName ?? user?.name ?? "U")[0].toUpperCase()}
-                </span>
-                <span class="site-header__user-name">${user?.fullName ?? user?.name ?? "Tài khoản"}</span>
-              </div>
-              <div class="site-header__dropdown-menu">
-                <a href="#/profile" class="site-header__dropdown-item">Tài Khoản Của Tôi</a>
-                <a href="javascript:void(0)" class="site-header__dropdown-item" onclick="alert('Tính năng Đơn mua sẽ sớm ra mắt!')">Đơn Mua</a>
-                ${user?.role === "admin" ? `<a href="#/admin" class="site-header__dropdown-item">Trang Quản Trị</a>` : ""}
-                <button class="site-header__dropdown-item" id="header-logout-btn">Đăng Xuất</button>
-              </div>
-            </div>
-          `
-            : `
-            <a href="#/login"
-               class="site-header__btn-ghost ${opts.activePage === "login" ? "is-active" : ""}"
-               id="header-login-link">
-              Đăng nhập
-            </a>
-            <a href="#/register"
-               class="site-header__btn-primary ${opts.activePage === "register" ? "is-active" : ""}"
-               id="header-register-link">
-              Đăng ký
-            </a>
-          `
-        }
+      
+      <div class="site-header__search">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" placeholder="Tìm kiếm sản phẩm, người bán..." />
       </div>
-
-      <!-- Mobile hamburger -->
-      <button class="site-header__hamburger" id="header-hamburger" aria-label="Mở menu" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-
     </div>
 
-    <!-- Mobile drawer -->
-    <div class="site-header__drawer" id="header-drawer" aria-hidden="true">
-      <nav class="site-header__drawer-nav">
-        <a href="#/products"  class="site-header__drawer-link">Sản phẩm</a>
-        <a href="#/explore"   class="site-header__drawer-link">Khám phá</a>
-        <a href="#/map"       class="site-header__drawer-link">Bản đồ</a>
-        <a href="#/community" class="site-header__drawer-link">Cộng đồng</a>
-        <a href="#/profile"   class="site-header__drawer-link">Hồ sơ của tôi</a>
-        ${user?.role === "admin" ? `<a href="#/admin" class="site-header__drawer-link" style="color: #006B2C; font-weight: 600;">Trang Quản trị</a>` : ""}
-        <hr class="site-header__drawer-divider"/>
-        ${
-          authenticated
-            ? `<a href="#/logout" class="site-header__drawer-link site-header__drawer-link--danger">Đăng xuất</a>`
-            : `
-            <a href="#/login"    class="site-header__drawer-link">Đăng nhập</a>
-            <a href="#/register" class="site-header__drawer-link site-header__drawer-link--primary">Đăng ký miễn phí</a>
-          `
-        }
+    <!-- Right: Nav & Auth -->
+    <div class="site-header__right">
+      <nav class="site-header__nav">
+        <a href="#/" class="site-header__nav-link ${opts.activePage === 'home' || !opts.activePage ? 'is-active' : ''}">Trang chủ</a>
+        <a href="#/explore" class="site-header__nav-link ${opts.activePage === 'explore' ? 'is-active' : ''}">Khám phá</a>
+        <a href="#/donate" class="site-header__nav-link ${opts.activePage === 'donate' ? 'is-active' : ''}">Quyên góp</a>
       </nav>
+
+      <div class="site-header__actions">
+        ${authenticated ? `
+          <button class="site-header__icon-btn"><span class="material-symbols-outlined">notifications</span></button>
+          <button class="site-header__icon-btn"><span class="material-symbols-outlined">shopping_cart</span></button>
+          
+          <div class="site-header__user-dropdown">
+            <!-- Fixed default profile image or dynamic initial -->
+            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrlaW40yOoCWpNiBstKzrHVSAW72kTTU7p7v-pQe_rDsKJlX4PUBigCH7nF9WKXRK45Hq6mv2ZViHgaMBqK_PzLjMsrJQtoQ7WPS8GcEarFolyXAqS7jbNSdJlJcUyBz0_sENDF3UKiHJHXNm6vDX5pGfiZ8hjHKTp5MmI7N_p6LIdCDQXHfQKbP1-icv_i8Xmu9xMsG4F9g8qj582KVvK_iG9i5t-tv9IOPrLI1X22ZoC-_ytAYpEbfSxleQikMrt6CY9cmPiUP2J" alt="User profile" class="site-header__avatar" />
+            
+            <div class="site-header__dropdown-menu">
+              <a href="#/profile" class="site-header__dropdown-item">Tài Khoản Của Tôi</a>
+              ${user?.role === 'admin' ? '<a href="#/admin" class="site-header__dropdown-item">Trang Quản Trị</a>' : ''}
+              <button class="site-header__dropdown-item" id="header-logout-btn">Đăng Xuất</button>
+            </div>
+          </div>
+        ` : `
+          <a href="#/login" class="site-header__btn-ghost">Đăng nhập</a>
+          <a href="#/register" class="site-header__btn-primary">Đăng ký</a>
+        `}
+      </div>
     </div>
   `;
 
-  // Insert before everything else in body
   document.body.insertBefore(header, document.body.firstChild);
 
-  /* ── Hamburger toggle ── */
-  const hamburger = document.getElementById("header-hamburger");
-  const drawer = document.getElementById("header-drawer");
-
-  hamburger?.addEventListener("click", () => {
-    const open = drawer.classList.toggle("is-open");
-    hamburger.setAttribute("aria-expanded", String(open));
-    drawer.setAttribute("aria-hidden", String(!open));
-    hamburger.classList.toggle("is-open", open);
+  // Logout listener
+  document.getElementById("header-logout-btn")?.addEventListener("click", async () => {
+    await logoutApi();
+    window.location.hash = "#/login";
   });
-
-  // Close drawer on any drawer link click
-  drawer?.querySelectorAll(".site-header__drawer-link").forEach((link) => {
-    link.addEventListener("click", () => {
-      drawer.classList.remove("is-open");
-      hamburger.setAttribute("aria-expanded", "false");
-      drawer.setAttribute("aria-hidden", "true");
-      hamburger.classList.remove("is-open");
-    });
-  });
-
-  /* ── Logout button (desktop) ── */
-  document
-    .getElementById("header-logout-btn")
-    ?.addEventListener("click", async () => {
-      await logoutApi();
-      window.location.hash = "#/login";
-    });
-
-  /* ── Scroll shadow ── */
-  const onScroll = () => {
-    header.classList.toggle("is-scrolled", window.scrollY > 4);
-  };
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
 }

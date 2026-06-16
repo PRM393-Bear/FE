@@ -1,14 +1,9 @@
 /**
- * EcoCycle – Site Footer Component
- * Reusable footer across all pages.
+ * EcoCycle – Site Footer Component (Figma V2)
  */
 
 import "./footer.css";
 
-/**
- * Inject the footer as the last child of <body>.
- * Call once per page render.
- */
 export function renderFooter() {
   const existing = document.getElementById("site-footer");
   if (existing) existing.remove();
@@ -16,63 +11,70 @@ export function renderFooter() {
   const footer = document.createElement("footer");
   footer.id = "site-footer";
   footer.className = "site-footer";
-  footer.setAttribute("role", "contentinfo");
 
   footer.innerHTML = `
     <div class="site-footer__inner">
-      
-      <!-- Brand & Desc -->
+      <!-- Col 1: Brand -->
       <div class="site-footer__brand-col">
         <a href="#/" class="site-footer__brand" aria-label="EcoCycle">
-          <img src="/logo.svg" alt="EcoCycle logo" class="site-footer__logo" width="36" height="36" />
-          <span class="site-footer__wordmark">EcoCycle</span>
+          <img src="/logo.svg" alt="EcoCycle logo" />
+          <span>EcoCycle</span>
         </a>
         <p class="site-footer__desc">
-          Nền tảng kết nối những người yêu thích đồ cũ, trao đổi đồ cũ và quyên góp từ thiện nhằm giảm thiểu rác thải, bảo vệ môi trường.
+          Nền tảng mua bán và quyên góp đồ cũ thông minh, hướng tới lối sống bền vững.
         </p>
+        <div class="site-footer__socials">
+          <a href="#" class="site-footer__social-btn"><span class="material-symbols-outlined">public</span></a>
+          <a href="#" class="site-footer__social-btn"><span class="material-symbols-outlined">mail</span></a>
+        </div>
       </div>
 
-      <!-- Links: Về chúng tôi -->
+      <!-- Col 2: About -->
       <div>
-        <h3 class="site-footer__title">Về chúng tôi</h3>
+        <h6 class="site-footer__title">Về chúng tôi</h6>
         <ul class="site-footer__links">
-          <li><a href="#/about" class="site-footer__link">Câu chuyện EcoCycle</a></li>
-          <li><a href="#/careers" class="site-footer__link">Tuyển dụng</a></li>
-          <li><a href="#/blog" class="site-footer__link">Blog & Tin tức</a></li>
-          <li><a href="#/partners" class="site-footer__link">Đối tác từ thiện</a></li>
+          <li><a href="#">Giới thiệu</a></li>
+          <li><a href="#">Tuyển dụng</a></li>
+          <li><a href="#">Blog cộng đồng</a></li>
+          <li><a href="#">Báo chí</a></li>
         </ul>
       </div>
 
-      <!-- Links: Hỗ trợ -->
+      <!-- Col 3: Support -->
       <div>
-        <h3 class="site-footer__title">Hỗ trợ khách hàng</h3>
+        <h6 class="site-footer__title">Hỗ trợ</h6>
         <ul class="site-footer__links">
-          <li><a href="#/faq" class="site-footer__link">Câu hỏi thường gặp</a></li>
-          <li><a href="#/guide" class="site-footer__link">Hướng dẫn sử dụng</a></li>
-          <li><a href="#/policy" class="site-footer__link">Chính sách bảo mật</a></li>
-          <li><a href="#/terms" class="site-footer__link">Điều khoản dịch vụ</a></li>
+          <li><a href="#">Trung tâm trợ giúp</a></li>
+          <li><a href="#">Quy tắc cộng đồng</a></li>
+          <li><a href="#">An toàn mua bán</a></li>
+          <li><a href="#">Chính sách bảo mật</a></li>
         </ul>
       </div>
 
-      <!-- Newsletter -->
-      <div class="site-footer__newsletter-col">
-        <h3 class="site-footer__title">Đăng ký nhận tin</h3>
-        <p class="site-footer__newsletter-desc">Nhận thông tin mới nhất về các sự kiện quyên góp và đồ cũ nổi bật.</p>
-        <form class="site-footer__form" onsubmit="event.preventDefault(); alert('Cảm ơn bạn đã đăng ký!');">
-          <input type="email" class="site-footer__input" placeholder="Nhập email của bạn..." required />
-          <button type="submit" class="site-footer__submit">Đăng ký</button>
-        </form>
+      <!-- Col 4: Apps -->
+      <div>
+        <h6 class="site-footer__title">Tải ứng dụng</h6>
+        <div class="site-footer__apps">
+          <button class="site-footer__app-btn">
+            <span class="material-symbols-outlined">apps</span>
+            <div class="site-footer__app-text">
+              <span class="site-footer__app-subtitle">Download on</span>
+              <span class="site-footer__app-title">App Store</span>
+            </div>
+          </button>
+          <button class="site-footer__app-btn">
+            <span class="material-symbols-outlined">play_arrow</span>
+            <div class="site-footer__app-text">
+              <span class="site-footer__app-subtitle">Get it on</span>
+              <span class="site-footer__app-title">Google Play</span>
+            </div>
+          </button>
+        </div>
       </div>
-
     </div>
 
     <div class="site-footer__bottom">
-      <span>&copy; ${new Date().getFullYear()} EcoCycle. Mọi quyền được bảo lưu.</span>
-      <div class="site-footer__social">
-        <a href="#" class="site-footer__social-link" aria-label="Facebook">Facebook</a>
-        <a href="#" class="site-footer__social-link" aria-label="Instagram">Instagram</a>
-        <a href="#" class="site-footer__social-link" aria-label="Twitter">Twitter</a>
-      </div>
+      © ${new Date().getFullYear()} EcoCycle Marketplace. All rights reserved.
     </div>
   `;
 
