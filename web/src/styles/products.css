@@ -176,6 +176,7 @@ body {
   background: var(--surface-variant);
   border-radius: var(--rounded-lg);
   -webkit-appearance: none;
+  appearance: none;
   accent-color: var(--primary);
   cursor: pointer;
 }

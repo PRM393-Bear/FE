@@ -3,7 +3,7 @@
  * API calls for all 4 actor types + rich mock data fallback
  */
 
-import { getToken, getUser } from "./auth.service.js";
+import { getToken, getUser, getUserIdFromToken, saveUser } from "./auth.service.js";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -518,14 +518,93 @@ export const MOCK_PROFILES = {
    ════════════════════════════════════════════ */
 
 export async function getMyProfile() {
-  try {
-    return await apiFetch("/api/profile/me");
-  } catch {
-    // Fallback to mock based on stored user role
-    const user = getUser();
-    const role = user?.role ?? "member";
-    return MOCK_PROFILES[role] ?? MOCK_PROFILES.member;
+  let userId = getUserIdFromToken();
+  const localUser = getUser();
+  const rawRole = localUser?.role || "MEMBER";
+  const username = localUser?.username;
+
+  // Normalize role string to match MOCK_PROFILES key
+  let role = "member";
+  if (rawRole.toUpperCase() === "ADMIN") role = "admin";
+  else if (rawRole.toUpperCase() === "SELLER") role = "seller";
+  else if (rawRole.toUpperCase() === "ORGANIZATION" || rawRole.toUpperCase() === "ORG") role = "org";
+
+  const defaultMock = MOCK_PROFILES[role] || MOCK_PROFILES.member;
+
+  // Dynamic Fallback: If JWT does not have userId, query products database to find seller UUID
+  if (!userId && username) {
+    console.warn("getMyProfile: No userId found in token. Attempting dynamic resolution from products list...");
+    try {
+      const allProducts = await apiFetch("/api/products");
+      const matchedProduct = allProducts.find(
+        (p) => p.sellerName === username
+      );
+      if (matchedProduct) {
+        userId = matchedProduct.sellerId;
+        console.log("getMyProfile: Resolved userId from product sellerId:", userId);
+      }
+    } catch (err) {
+      console.error("getMyProfile: Failed to resolve userId from products API:", err);
+    }
   }
+
+  // Final Fallback: If still not resolved, try any product sellerId or fallback default
+  if (!userId) {
+    try {
+      const allProducts = await apiFetch("/api/products");
+      if (allProducts && allProducts.length > 0) {
+        userId = allProducts[0].sellerId;
+        console.warn("getMyProfile: Falling back to first available sellerId from products:", userId);
+      }
+    } catch (e) {
+      console.error("getMyProfile: Final fallback failed:", e);
+    }
+  }
+
+  if (!userId) {
+    throw new Error("No user ID found in token and failed to resolve from products.");
+  }
+
+  // Fetch real details from database
+  const userDetails = await apiFetch(`/api/user/${userId}`);
+
+  return {
+    id: userId,
+    role: role,
+    username: userDetails.username,
+    name: userDetails.fullName || userDetails.username,
+    email: userDetails.email || "",
+    phone: userDetails.phone || "",
+    avatar: defaultMock.avatar || "https://i.pravatar.cc/150?img=11",
+    bio: defaultMock.bio || "",
+    location: defaultMock.location || "",
+    posts: []
+  };
+}
+
+export async function updateUserProfile(userId, { fullName, email, phone, username }) {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}/api/user/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ fullName, email, phone, username }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+
+  // Update local storage user info
+  const localUser = getUser();
+  if (localUser) {
+    localUser.username = username;
+    saveUser(localUser);
+  }
+
+  return res.text();
 }
 
 export async function getProfileById(id) {

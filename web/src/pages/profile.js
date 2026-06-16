@@ -5,11 +5,13 @@
  */
 
 import "../styles/profile.css";
-import { getMyProfile, MOCK_PROFILES } from "../services/profile.service.js";
+import { getMyProfile, MOCK_PROFILES, updateUserProfile } from "../services/profile.service.js";
+import { isAuthenticated, getUser } from "../services/auth.service.js";
+import { getAllProducts } from "../services/product.service.js";
 
 /* ══════════════════════════════════════
    HELPERS & UI GENERATORS
-══════════════════════════════════════ */
+   ══════════════════════════════════════ */
 
 function roleLabel(role) {
   return (
@@ -25,8 +27,8 @@ function roleLabel(role) {
 function emptyStateHtml(icon, text) {
   return `
     <div class="empty-state">
-      <div class="empty-state-icon">${icon}</div>
-      <div class="empty-state-text">${text}</div>
+      <span class="material-symbols-outlined empty-state-icon">${icon}</span>
+      <p class="empty-state-text">${text}</p>
     </div>
   `;
 }
@@ -34,16 +36,32 @@ function emptyStateHtml(icon, text) {
 function renderSidebarItem(id, icon, label, isActive = false) {
   return `
     <button class="sidebar-nav-item ${isActive ? "is-active" : ""}" data-target="${id}">
-      <span class="sidebar-nav-icon">${icon}</span>
+      <span class="material-symbols-outlined sidebar-nav-icon">${icon}</span>
       <span class="sidebar-nav-label">${label}</span>
     </button>
   `;
 }
 
-function renderSettingsPanel(p, role) {
-  const isOrg = role === "org";
-  const isSeller = role === "seller";
+function showToast(message, type = "success") {
+  const existing = document.getElementById("profile-toast");
+  if (existing) existing.remove();
 
+  const toast = document.createElement("div");
+  toast.id = "profile-toast";
+  toast.className = `profile-toast ${type}`;
+  toast.innerHTML = `
+    <span class="material-symbols-outlined">${type === 'success' ? 'check_circle' : 'error'}</span>
+    <span>${message}</span>
+  `;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("fade-out");
+    setTimeout(() => toast.remove(), 500);
+  }, 3000);
+}
+
+function renderSettingsPanel(p, role) {
   return `
     <div class="dashboard-panel is-active" id="panel-settings">
       <div class="panel-header">
@@ -52,44 +70,34 @@ function renderSettingsPanel(p, role) {
       </div>
       <div class="panel-body">
         <div class="settings-layout">
-          <form class="settings-form" onsubmit="event.preventDefault(); alert('Cập nhật thành công!');">
+          <form class="settings-form">
             <div class="form-group">
-              <label class="form-label">Tên đăng nhập</label>
-              <div class="form-static">${p.id}</div>
+              <label class="form-label" for="settings-username">Tên đăng nhập</label>
+              <input type="text" id="settings-username" class="form-input" value="${p.username || p.name}" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Tên hiển thị</label>
-              <input type="text" class="form-input" value="${p.name}" required />
+              <label class="form-label" for="settings-fullname">Tên hiển thị</label>
+              <input type="text" id="settings-fullname" class="form-input" value="${p.name}" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Email</label>
-              <div class="form-static">user@ecocycle.vn <span style="color:#006B2C;font-size:12px;margin-left:8px;cursor:pointer;text-decoration:underline;">Thay đổi</span></div>
+              <label class="form-label" for="settings-email">Email</label>
+              <input type="email" id="settings-email" class="form-input" value="${p.email}" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Số điện thoại</label>
-              <div class="form-static">*********89 <span style="color:#006B2C;font-size:12px;margin-left:8px;cursor:pointer;text-decoration:underline;">Thay đổi</span></div>
+              <label class="form-label" for="settings-phone">Số điện thoại</label>
+              <input type="text" id="settings-phone" class="form-input" value="${p.phone}" required />
             </div>
-            ${
-              isSeller || isOrg
-                ? `
-              <div class="form-group">
-                <label class="form-label">Địa chỉ / Vị trí</label>
-                <input type="text" class="form-input" value="${p.location || ""}" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Mô tả / Giới thiệu</label>
-                <textarea class="form-input" rows="4" style="resize:vertical">${p.bio || ""}</textarea>
-              </div>
-            `
-                : ""
-            }
+            
             <button type="submit" class="btn-save">Lưu Thay Đổi</button>
           </form>
           
           <div class="avatar-upload">
             <img src="${p.avatar || "https://i.pravatar.cc/150?img=11"}" alt="Avatar" class="avatar-preview" />
-            <button type="button" class="btn-upload">Chọn ảnh</button>
-            <div class="upload-hint">Dụng lượng file tối đa 1 MB<br/>Định dạng: .JPEG, .PNG</div>
+            <button type="button" class="btn-upload">
+              <span class="material-symbols-outlined" style="font-size:16px;">upload</span>
+              Chọn ảnh
+            </button>
+            <div class="upload-hint">Dung lượng file tối đa 1 MB<br/>Định dạng: .JPEG, .PNG</div>
           </div>
         </div>
       </div>
@@ -98,7 +106,6 @@ function renderSettingsPanel(p, role) {
 }
 
 function renderOrdersPanel() {
-  // Mock orders data
   const orders = [
     {
       id: "DH012391",
@@ -150,43 +157,55 @@ function renderOrdersPanel() {
   `;
 }
 
-function renderClosetPanel(p) {
-  const posts = p.posts || [];
+function renderClosetPanel(posts) {
   return `
     <div class="dashboard-panel" id="panel-closet">
       <div class="panel-header">
         <h2 class="panel-title">Tủ đồ / Sản phẩm đã đăng</h2>
-        <p class="panel-desc">Quản lý các sản phẩm bạn đang rao bán hoặc tặng</p>
+        <p class="panel-desc">Quản lý các sản phẩm bạn đang rao bán hoặc tặng từ cơ sở dữ liệu</p>
       </div>
       <div class="panel-body">
         ${
           posts.length === 0
-            ? emptyStateHtml(
-                "👕",
-                "Tủ đồ của bạn đang trống. Hãy đăng sản phẩm mới!",
-              )
+            ? `
+            ${emptyStateHtml("checkroom", "Tủ đồ của bạn đang trống. Hãy đăng sản phẩm mới!")}
+            <div style="text-align: center; margin-top: 16px;">
+              <button class="btn-primary" onclick="window.location.hash='#/products'">+ Đăng sản phẩm mới</button>
+            </div>
+            `
             : `
-          <div style="margin-bottom: 20px;"><button class="btn-save">+ Đăng sản phẩm mới</button></div>
+          <div style="margin-bottom: 24px; display: flex; justify-content: flex-end;">
+            <button class="btn-primary" onclick="window.location.hash='#/products'">+ Đăng sản phẩm mới</button>
+          </div>
           <div class="data-list">
             ${posts
               .map(
-                (post) => `
-              <div class="data-item">
-                <img src="${post.image}" alt="" class="data-item-img" />
-                <div class="data-item-info">
-                  <h3 class="data-item-title">${post.title}</h3>
-                  <span class="data-item-meta">Tình trạng: ${post.condition} | Phân loại: ${post.category}</span>
-                </div>
-                <div class="data-item-status">
-                  <span class="status-badge success">Đang hiển thị</span>
-                  <span class="data-item-price">${post.price.toLocaleString("vi")}đ</span>
-                  <div>
-                    <button class="data-item-action" style="margin-right: 8px;">Sửa</button>
-                    <button class="data-item-action" style="color:#BA1A1A; border-color:#BA1A1A;">Xóa</button>
-                  </div>
-                </div>
-              </div>
-            `,
+                (post) => {
+                  const imgUrl = (post.images && post.images.length > 0) 
+                    ? post.images[0] 
+                    : "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=100";
+                  
+                  const statusLabel = post.status === "AVAILABLE" ? "Còn hàng" : (post.status === "SOLD" ? "Đã bán" : post.status);
+                  const statusClass = post.status === "AVAILABLE" ? "success" : "warning";
+                  
+                  return `
+                    <div class="data-item">
+                      <img src="${imgUrl}" alt="${post.title}" class="data-item-img" />
+                      <div class="data-item-info">
+                        <h3 class="data-item-title">${post.title}</h3>
+                        <span class="data-item-meta">Tình trạng: Độ mới ${post.condition ? post.condition * 10 : 90}% | Phân loại: ${post.category || "Chưa phân loại"}</span>
+                      </div>
+                      <div class="data-item-status">
+                        <span class="status-badge ${statusClass}">${statusLabel}</span>
+                        <span class="data-item-price">${(post.price || 0).toLocaleString("vi")}₫</span>
+                        <div>
+                          <button class="data-item-action secondary" onclick="alert('Tính năng đang phát triển')">Sửa</button>
+                          <button class="data-item-action danger" onclick="alert('Tính năng đang phát triển')">Xóa</button>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }
               )
               .join("")}
           </div>
@@ -208,9 +227,9 @@ function renderEventsPanel(p) {
       <div class="panel-body">
         ${
           events.length === 0
-            ? emptyStateHtml("🎪", "Chưa có sự kiện nào.")
+            ? emptyStateHtml("campaign", "Chưa có sự kiện nào.")
             : `
-          <div style="margin-bottom: 20px;"><button class="btn-save">+ Tạo sự kiện mới</button></div>
+          <div style="margin-bottom: 20px;"><button class="btn-primary">+ Tạo sự kiện mới</button></div>
           <div class="data-list">
             ${events
               .map(
@@ -223,7 +242,7 @@ function renderEventsPanel(p) {
                 </div>
                 <div class="data-item-status">
                   <span class="status-badge ${e.status === "Đã kết thúc" ? "warning" : "success"}">${e.status}</span>
-                  <span class="data-item-meta">${e.participants} người tham gia</span>
+                  <span class="data-item-meta">${e.participants || 0} người tham gia</span>
                   <button class="data-item-action">Cập nhật tiến độ</button>
                 </div>
               </div>
@@ -240,25 +259,47 @@ function renderEventsPanel(p) {
 
 /* ══════════════════════════════════════
    MAIN RENDERING LOGIC
-══════════════════════════════════════ */
+   ══════════════════════════════════════ */
 
 export async function renderProfilePage(container) {
-  // Show loading
+  // Auth redirect
+  if (!isAuthenticated()) {
+    window.location.hash = "#/login";
+    return;
+  }
+
+  // Show loading state
   container.innerHTML = `
-    <div style="min-height:60vh;display:flex;align-items:center;justify-content:center;background:#F5F5F5">
-      <div style="text-align:center;color:#6E7B6C;font-family:'Be Vietnam Pro',sans-serif">
-        <div style="width:40px;height:40px;border:3px solid #DDE5DB;border-top-color:#006B2C;border-radius:50%;animation:spin .75s linear infinite;margin:0 auto 12px"></div>
-        <p>Đang tải dữ liệu hồ sơ…</p>
-        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-      </div>
+    <div class="profile-loading-container">
+      <div class="profile-spinner"></div>
+      <p>Đang tải dữ liệu hồ sơ từ hệ thống…</p>
     </div>
   `;
 
   let profile;
+  let closetProducts = [];
   try {
     profile = await getMyProfile();
-  } catch {
-    profile = MOCK_PROFILES.member;
+
+    // Fetch closet products dynamically
+    try {
+      const allProducts = await getAllProducts();
+      closetProducts = allProducts.filter(
+        (p) => p.sellerId === profile.id || p.sellerName === profile.username
+      );
+    } catch (err) {
+      console.error("Failed to fetch products for user closet:", err);
+    }
+  } catch (err) {
+    console.error("Failed to load profile:", err);
+    container.innerHTML = `
+      <div class="profile-error-container">
+        <span class="material-symbols-outlined">error</span>
+        <p>Lỗi khi kết nối với máy chủ. Vui lòng thử lại sau.</p>
+        <button class="btn-primary" onclick="location.reload()">Tải lại trang</button>
+      </div>
+    `;
+    return;
   }
 
   const role = profile.role ?? "member";
@@ -269,15 +310,18 @@ export async function renderProfilePage(container) {
 
   if (role === "admin") {
     sidebarHtml = `
-      ${renderSidebarItem("panel-settings", "⚙️", "Cài đặt cá nhân", true)}
-      <a href="#/admin" class="sidebar-nav-item"><span class="sidebar-nav-icon">📊</span><span class="sidebar-nav-label">Bảng điều khiển Admin</span></a>
+      ${renderSidebarItem("panel-settings", "settings", "Cài đặt cá nhân", true)}
+      <a href="#/admin" class="sidebar-nav-item">
+        <span class="material-symbols-outlined sidebar-nav-icon">analytics</span>
+        <span class="sidebar-nav-label">Trang Admin</span>
+      </a>
     `;
     contentHtml = renderSettingsPanel(profile, role);
   } else if (role === "org") {
     sidebarHtml = `
-      ${renderSidebarItem("panel-settings", "🏢", "Hồ sơ Tổ chức", true)}
-      ${renderSidebarItem("panel-events", "🎪", "Sự kiện quyên góp")}
-      ${renderSidebarItem("panel-donations", "🎁", "Lịch sử nhận đồ")}
+      ${renderSidebarItem("panel-settings", "corporate_fare", "Hồ sơ Tổ chức", true)}
+      ${renderSidebarItem("panel-events", "campaign", "Sự kiện quyên góp")}
+      ${renderSidebarItem("panel-donations", "inventory", "Lịch sử nhận đồ")}
     `;
     contentHtml = `
       ${renderSettingsPanel(profile, role)}
@@ -287,67 +331,80 @@ export async function renderProfilePage(container) {
           <h2 class="panel-title">Lịch sử nhận đồ</h2>
           <p class="panel-desc">Theo dõi các lượt quyên góp từ cộng đồng</p>
         </div>
-        <div class="panel-body">${emptyStateHtml("📦", "Chưa có dữ liệu")}</div>
+        <div class="panel-body">${emptyStateHtml("package_2", "Chưa có dữ liệu nhận đồ")}</div>
       </div>
     `;
   } else if (role === "seller") {
     sidebarHtml = `
-      ${renderSidebarItem("panel-settings", "⚙️", "Hồ sơ cá nhân", true)}
-      ${renderSidebarItem("panel-closet", "📦", "Quản lý Sản phẩm")}
-      ${renderSidebarItem("panel-orders", "📋", "Quản lý Đơn hàng")}
-      ${renderSidebarItem("panel-shop", "🏪", "Cài đặt Gian hàng")}
+      ${renderSidebarItem("panel-settings", "settings", "Hồ sơ cá nhân", true)}
+      ${renderSidebarItem("panel-closet", "checkroom", "Quản lý Sản phẩm")}
+      ${renderSidebarItem("panel-orders", "receipt_long", "Quản lý Đơn hàng")}
+      ${renderSidebarItem("panel-shop", "storefront", "Cài đặt Gian hàng")}
     `;
     contentHtml = `
       ${renderSettingsPanel(profile, role)}
-      ${renderClosetPanel(profile)}
+      ${renderClosetPanel(closetProducts)}
       <div class="dashboard-panel" id="panel-orders">
         <div class="panel-header">
           <h2 class="panel-title">Đơn hàng của khách</h2>
           <p class="panel-desc">Quản lý và giao hàng cho khách</p>
         </div>
-        <div class="panel-body">${emptyStateHtml("🚚", "Chưa có đơn hàng nào")}</div>
+        <div class="panel-body">${emptyStateHtml("local_shipping", "Chưa có đơn hàng nào của khách")}</div>
       </div>
       <div class="dashboard-panel" id="panel-shop">
         <div class="panel-header">
           <h2 class="panel-title">Cài đặt Gian hàng</h2>
           <p class="panel-desc">Thay đổi ảnh bìa, chính sách cửa hàng</p>
         </div>
-        <div class="panel-body">${emptyStateHtml("🔧", "Tính năng đang phát triển")}</div>
+        <div class="panel-body">${emptyStateHtml("build", "Tính năng quản lý gian hàng đang phát triển")}</div>
       </div>
     `;
   } else {
     // Default: User (Member)
     sidebarHtml = `
-      ${renderSidebarItem("panel-settings", "👤", "Hồ sơ của tôi", true)}
-      ${renderSidebarItem("panel-orders", "🛍️", "Đơn Mua")}
-      ${renderSidebarItem("panel-closet", "👕", "Tủ đồ của tôi")}
+      ${renderSidebarItem("panel-settings", "person", "Hồ sơ của tôi", true)}
+      ${renderSidebarItem("panel-orders", "receipt_long", "Đơn Mua")}
+      ${renderSidebarItem("panel-closet", "checkroom", "Tủ đồ của tôi")}
     `;
     contentHtml = `
       ${renderSettingsPanel(profile, role)}
       ${renderOrdersPanel()}
-      ${renderClosetPanel(profile)}
+      ${renderClosetPanel(closetProducts)}
     `;
   }
 
-  // Assemble the layout
+  // Assemble the layout with breadcrumbs
   container.innerHTML = `
-    <div class="profile-dashboard-layout">
-      <aside class="dashboard-sidebar">
-        <div class="sidebar-user">
-          <img src="${profile.avatar || "https://i.pravatar.cc/150?img=11"}" alt="Avatar" class="sidebar-avatar" />
-          <div class="sidebar-user-info">
-            <span class="sidebar-name">${profile.name || profile.id}</span>
-            <span class="sidebar-role">✏️ ${roleLabel(role)}</span>
+    <div class="profile-page-wrapper">
+      <nav class="profile-breadcrumbs">
+        <a href="#/">Trang chủ</a>
+        <span class="material-symbols-outlined">chevron_right</span>
+        <span class="active-crumb">Tài khoản của tôi</span>
+      </nav>
+
+      <div class="profile-dashboard-layout">
+        <aside class="dashboard-sidebar">
+          <div class="sidebar-user">
+            <div class="sidebar-avatar-wrapper">
+              <img src="${profile.avatar || "https://i.pravatar.cc/150?img=11"}" alt="Avatar" class="sidebar-avatar" />
+            </div>
+            <div class="sidebar-user-info">
+              <span class="sidebar-name">${profile.name}</span>
+              <span class="sidebar-role">
+                <span class="material-symbols-outlined" style="font-size:14px;">verified_user</span>
+                ${roleLabel(role)}
+              </span>
+            </div>
           </div>
-        </div>
-        <nav class="sidebar-nav">
-          ${sidebarHtml}
-        </nav>
-      </aside>
-      
-      <main class="dashboard-content">
-        ${contentHtml}
-      </main>
+          <nav class="sidebar-nav">
+            ${sidebarHtml}
+          </nav>
+        </aside>
+        
+        <main class="dashboard-content">
+          ${contentHtml}
+        </main>
+      </div>
     </div>
   `;
 
@@ -370,4 +427,45 @@ export async function renderProfilePage(container) {
       }
     });
   });
+
+  // Handle settings form submit
+  const form = container.querySelector(".settings-form");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const submitBtn = form.querySelector(".btn-save");
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <div style="width:16px;height:16px;border:2px solid #ffffff;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;"></div>
+        Đang lưu...
+      `;
+
+      const usernameVal = form.querySelector("#settings-username").value;
+      const fullNameVal = form.querySelector("#settings-fullname").value;
+      const emailVal = form.querySelector("#settings-email").value;
+      const phoneVal = form.querySelector("#settings-phone").value;
+
+      try {
+        await updateUserProfile(profile.id, {
+          username: usernameVal,
+          fullName: fullNameVal,
+          email: emailVal,
+          phone: phoneVal
+        });
+
+        showToast("Cập nhật thông tin tài khoản thành công!", "success");
+        // Re-render to show updated info
+        setTimeout(() => {
+          renderProfilePage(container);
+        }, 1000);
+      } catch (err) {
+        console.error(err);
+        showToast("Cập nhật thất bại: " + err.message, "error");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+    });
+  }
 }
