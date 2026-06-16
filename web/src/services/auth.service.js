@@ -3,27 +3,41 @@
  * Synchronized with mobile API endpoints
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
-const TOKEN_KEY = 'ecocycle_token';
-const USER_KEY = 'ecocycle_user';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const TOKEN_KEY = "ecocycle_token";
+const USER_KEY = "ecocycle_user";
 
 /* ── Token helpers ── */
-export function saveToken(token) { localStorage.setItem(TOKEN_KEY, token); }
-export function getToken() { return localStorage.getItem(TOKEN_KEY); }
-export function removeToken() { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); }
-export function isAuthenticated() { return !!getToken(); }
+export function saveToken(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+export function removeToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+export function isAuthenticated() {
+  return !!getToken();
+}
 
-export function saveUser(user) { localStorage.setItem(USER_KEY, JSON.stringify(user)); }
+export function saveUser(user) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
 export function getUser() {
-  try { return JSON.parse(localStorage.getItem(USER_KEY)); }
-  catch { return null; }
+  try {
+    return JSON.parse(localStorage.getItem(USER_KEY));
+  } catch {
+    return null;
+  }
 }
 
 /* ── Internal fetch helper ── */
 async function apiFetch(path, options = {}) {
   const token = getToken();
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -35,8 +49,8 @@ async function apiFetch(path, options = {}) {
 
   // Parse body regardless of status
   let body = null;
-  const ct = res.headers.get('content-type') ?? '';
-  if (ct.includes('application/json')) {
+  const ct = res.headers.get("content-type") ?? "";
+  if (ct.includes("application/json")) {
     body = await res.json();
   } else {
     body = await res.text();
@@ -44,8 +58,8 @@ async function apiFetch(path, options = {}) {
 
   if (!res.ok) {
     const message =
-      (typeof body === 'object' && body?.message) ||
-      (typeof body === 'string' && body) ||
+      (typeof body === "object" && body?.message) ||
+      (typeof body === "string" && body) ||
       `HTTP ${res.status}`;
     const err = new Error(message);
     err.status = res.status;
@@ -58,26 +72,40 @@ async function apiFetch(path, options = {}) {
 
 /* ── Login ── */
 export async function loginApi({ username, password, rememberMe = false }) {
-  const data = await apiFetch('/api/auth/login', {
-    method: 'POST',
+  const data = await apiFetch("/api/auth/login", {
+    method: "POST",
     body: JSON.stringify({ username, password }),
   });
 
   if (data?.token) saveToken(data.token);
-  if (data?.username) saveUser({ username: data.username, role: data.role?.roleName || 'member' });
+  if (data?.username)
+    saveUser({
+      username: data.username,
+      role: data.role?.roleName || "member",
+    });
 
   return data;
 }
 
 /* ── Register ── */
-export async function registerApi({ fullName, username, email, phone, password }) {
-  const data = await apiFetch('/api/auth/register', {
-    method: 'POST',
+export async function registerApi({
+  fullName,
+  username,
+  email,
+  phone,
+  password,
+}) {
+  const data = await apiFetch("/api/auth/register", {
+    method: "POST",
     body: JSON.stringify({ username, fullName, email, phone, password }),
   });
 
   if (data?.token) saveToken(data.token);
-  if (data?.username) saveUser({ username: data.username, role: data.role?.roleName || 'member' });
+  if (data?.username)
+    saveUser({
+      username: data.username,
+      role: data.role?.roleName || "member",
+    });
 
   return data;
 }
@@ -86,7 +114,7 @@ export async function registerApi({ fullName, username, email, phone, password }
 export async function logoutApi() {
   try {
     // Best-effort server-side logout (invalidate token)
-    await apiFetch('/api/auth/logout', { method: 'POST' });
+    await apiFetch("/api/auth/logout", { method: "POST" });
   } catch (_) {
     // Even if server call fails, clear local state
   } finally {

@@ -3,9 +3,9 @@
  * Handles API calls for products.
  */
 
-import { getToken } from './auth.service.js';
+import { getToken } from "./auth.service.js";
 
-const API_BASE = '/api/products';
+const API_BASE = "/api/products";
 
 /**
  * Fetch all products from the backend.
@@ -15,25 +15,27 @@ export async function getAllProducts() {
   try {
     const token = getToken();
     const headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     const response = await fetch(API_BASE, {
-      method: 'GET',
+      method: "GET",
       headers: headers,
     });
 
     if (!response.ok) {
-      throw new Error(`Error fetching products: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Error fetching products: ${response.status} ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('getAllProducts failed:', error);
+    console.error("getAllProducts failed:", error);
     throw error;
   }
 }
@@ -47,25 +49,27 @@ export async function getProductById(id) {
   try {
     const token = getToken();
     const headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_BASE}/${id}`, {
-      method: 'GET',
+      method: "GET",
       headers: headers,
     });
 
     if (!response.ok) {
-      throw new Error(`Error fetching product: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Error fetching product: ${response.status} ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('getProductById failed:', error);
+    console.error("getProductById failed:", error);
     throw error;
   }
 }
