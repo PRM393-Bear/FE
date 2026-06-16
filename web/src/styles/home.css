@@ -708,3 +708,174 @@
   font-size: 10px;
   margin-top: 4px;
 }
+
+/* ── Arrivals Slider CSS ── */
+.arrivals-slider-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.arrivals-slider-container {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  padding: 8px 0;
+}
+
+.arrivals-slider-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.arrivals-slider-track {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  min-width: max-content; /* Ensure items don't squeeze */
+}
+
+/* 4 items visible on desktop */
+.arrivals-slider-track .product-card {
+  flex: 0 0 calc((100% - 3 * 24px) / 4);
+  max-width: calc((100% - 3 * 24px) / 4);
+}
+
+@media (max-width: 1024px) {
+  .arrivals-slider-track .product-card {
+    flex: 0 0 calc((100% - 2 * 24px) / 3);
+    max-width: calc((100% - 2 * 24px) / 3);
+  }
+}
+
+@media (max-width: 768px) {
+  .arrivals-slider-track .product-card {
+    flex: 0 0 calc((100% - 1 * 16px) / 2);
+    max-width: calc((100% - 1 * 16px) / 2);
+  }
+}
+
+@media (max-width: 480px) {
+  .arrivals-slider-track .product-card {
+    flex: 0 0 85%;
+    max-width: 85%;
+  }
+}
+
+/* Arrows */
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--on-surface);
+  border: 1px solid var(--outline-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.3s, transform 0.2s, background 0.2s;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.arrivals-slider-wrapper:hover .slider-arrow {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.slider-arrow:hover {
+  background: var(--surface-container-high);
+  transform: translateY(-50%) scale(1.1);
+  color: var(--primary);
+}
+
+.slider-arrow:disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.slider-arrow--prev {
+  left: -22px;
+}
+
+.slider-arrow--next {
+  right: -22px;
+}
+
+@media (max-width: 1024px) {
+  /* Show arrows always on mobile/tablet because hover is not available */
+  .slider-arrow {
+    opacity: 1;
+    pointer-events: auto;
+    width: 36px;
+    height: 36px;
+  }
+  .slider-arrow--prev {
+    left: -10px;
+  }
+  .slider-arrow--next {
+    right: -10px;
+  }
+}
+
+/* Loading/Empty States */
+.slider-loading,
+.slider-empty,
+.slider-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 250px;
+  color: var(--on-surface-variant);
+  text-align: center;
+}
+
+.slider-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--surface-container-highest);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.slider-empty .empty-icon {
+  font-size: 48px;
+  color: var(--primary);
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
+.slider-empty p {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.slider-empty .empty-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--primary);
+  color: white;
+  border-radius: var(--rounded-lg);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.slider-empty .empty-btn:hover {
+  background: var(--primary-hover, #005a24);
+}

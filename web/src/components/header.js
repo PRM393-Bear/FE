@@ -47,7 +47,7 @@ export function renderHeader(opts = {}) {
     <div class="site-header__right">
       <nav class="site-header__nav">
         <a href="#/" class="site-header__nav-link ${opts.activePage === 'home' || !opts.activePage ? 'is-active' : ''}">Trang chủ</a>
-        <a href="#/explore" class="site-header__nav-link ${opts.activePage === 'explore' ? 'is-active' : ''}">Khám phá</a>
+        <a href="#/products" class="site-header__nav-link ${opts.activePage === 'products' || opts.activePage === 'explore' ? 'is-active' : ''}">Khám phá</a>
         <a href="#/donate" class="site-header__nav-link ${opts.activePage === 'donate' ? 'is-active' : ''}">Quyên góp</a>
       </nav>
 
@@ -80,5 +80,13 @@ export function renderHeader(opts = {}) {
   document.getElementById("header-logout-btn")?.addEventListener("click", async () => {
     await logoutApi();
     window.location.hash = "#/login";
+  });
+
+  // Brand click listener to scroll to top if already home
+  header.querySelector(".site-header__brand")?.addEventListener("click", (e) => {
+    if (window.location.hash === "#/" || window.location.hash === "") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   });
 }
