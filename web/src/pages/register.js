@@ -4,8 +4,8 @@
  * Synchronized with mobile design and validation rules.
  */
 
-import '../styles/auth.css';
-import { registerApi } from '../services/auth.service.js';
+import "../styles/auth.css";
+import { registerApi } from "../services/auth.service.js";
 import {
   validateFullName,
   validateUsername,
@@ -13,7 +13,7 @@ import {
   validatePhone,
   validatePassword,
   validateConfirmPassword,
-} from '../utils/validators.js';
+} from "../utils/validators.js";
 
 /* ── SVG Icons ── */
 const ICON_LEAF = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -46,34 +46,34 @@ const ICON_FACEBOOK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 2
 </svg>`;
 
 /* ── Toast helper ── */
-function showToast(message, type = 'error') {
-  let el = document.getElementById('ecocycle-toast');
+function showToast(message, type = "error") {
+  let el = document.getElementById("ecocycle-toast");
   if (!el) {
-    el = document.createElement('div');
-    el.id = 'ecocycle-toast';
-    el.className = 'toast';
+    el = document.createElement("div");
+    el.id = "ecocycle-toast";
+    el.className = "toast";
     document.body.appendChild(el);
   }
   el.textContent = message;
   el.className = `toast toast--${type}`;
-  requestAnimationFrame(() => el.classList.add('toast--visible'));
+  requestAnimationFrame(() => el.classList.add("toast--visible"));
   clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove('toast--visible'), 3500);
+  el._timer = setTimeout(() => el.classList.remove("toast--visible"), 3500);
 }
 
 /* ── Field validation helper ── */
 function setFieldError(inputEl, errorEl, message) {
   if (message) {
-    inputEl.classList.add('is-error');
-    inputEl.classList.remove('is-valid');
+    inputEl.classList.add("is-error");
+    inputEl.classList.remove("is-valid");
     errorEl.textContent = message;
-    errorEl.classList.add('visible');
+    errorEl.classList.add("visible");
     return false;
   } else {
-    inputEl.classList.remove('is-error');
-    inputEl.classList.add('is-valid');
-    errorEl.textContent = '';
-    errorEl.classList.remove('visible');
+    inputEl.classList.remove("is-error");
+    inputEl.classList.add("is-valid");
+    errorEl.textContent = "";
+    errorEl.classList.remove("visible");
     return true;
   }
 }
@@ -244,104 +244,174 @@ export function renderRegisterPage(container) {
   `;
 
   /* ── Show mobile brand on small screens ── */
-  const mq = window.matchMedia('(max-width: 800px)');
+  const mq = window.matchMedia("(max-width: 800px)");
   function handleMQ(e) {
     const show = e.matches;
-    document.getElementById('register-mobile-brand').style.display = show ? 'flex' : 'none';
-    document.getElementById('register-mobile-login-link').style.display = show ? 'block' : 'none';
+    document.getElementById("register-mobile-brand").style.display = show
+      ? "flex"
+      : "none";
+    document.getElementById("register-mobile-login-link").style.display = show
+      ? "block"
+      : "none";
   }
   handleMQ(mq);
-  mq.addEventListener('change', handleMQ);
+  mq.addEventListener("change", handleMQ);
 
   /* ── Elements ── */
-  const form        = document.getElementById('register-form');
-  const nameInput   = document.getElementById('reg-name');
-  const nameError   = document.getElementById('reg-name-error');
-  const usernameInput = document.getElementById('reg-username');
-  const usernameError = document.getElementById('reg-username-error');
-  const emailInput  = document.getElementById('reg-email');
-  const emailError  = document.getElementById('reg-email-error');
-  const phoneInput  = document.getElementById('reg-phone');
-  const phoneError  = document.getElementById('reg-phone-error');
-  const passInput   = document.getElementById('reg-password');
-  const passError   = document.getElementById('reg-password-error');
-  const confirmInput= document.getElementById('reg-confirm');
-  const confirmError= document.getElementById('reg-confirm-error');
-  const termsCheck  = document.getElementById('reg-terms');
-  const termsError  = document.getElementById('reg-terms-error');
-  const submitBtn   = document.getElementById('register-submit');
+  const form = document.getElementById("register-form");
+  const nameInput = document.getElementById("reg-name");
+  const nameError = document.getElementById("reg-name-error");
+  const usernameInput = document.getElementById("reg-username");
+  const usernameError = document.getElementById("reg-username-error");
+  const emailInput = document.getElementById("reg-email");
+  const emailError = document.getElementById("reg-email-error");
+  const phoneInput = document.getElementById("reg-phone");
+  const phoneError = document.getElementById("reg-phone-error");
+  const passInput = document.getElementById("reg-password");
+  const passError = document.getElementById("reg-password-error");
+  const confirmInput = document.getElementById("reg-confirm");
+  const confirmError = document.getElementById("reg-confirm-error");
+  const termsCheck = document.getElementById("reg-terms");
+  const termsError = document.getElementById("reg-terms-error");
+  const submitBtn = document.getElementById("register-submit");
 
   /* ── Password toggles ── */
-  let passVisible = false, confirmVisible = false;
+  let passVisible = false,
+    confirmVisible = false;
 
-  document.getElementById('toggle-password').addEventListener('click', () => {
+  document.getElementById("toggle-password").addEventListener("click", () => {
     passVisible = !passVisible;
-    passInput.type = passVisible ? 'text' : 'password';
-    document.getElementById('toggle-password').innerHTML = passVisible ? ICON_EYE : ICON_EYE_OFF;
+    passInput.type = passVisible ? "text" : "password";
+    document.getElementById("toggle-password").innerHTML = passVisible
+      ? ICON_EYE
+      : ICON_EYE_OFF;
   });
 
-  document.getElementById('toggle-confirm').addEventListener('click', () => {
+  document.getElementById("toggle-confirm").addEventListener("click", () => {
     confirmVisible = !confirmVisible;
-    confirmInput.type = confirmVisible ? 'text' : 'password';
-    document.getElementById('toggle-confirm').innerHTML = confirmVisible ? ICON_EYE : ICON_EYE_OFF;
+    confirmInput.type = confirmVisible ? "text" : "password";
+    document.getElementById("toggle-confirm").innerHTML = confirmVisible
+      ? ICON_EYE
+      : ICON_EYE_OFF;
   });
 
   /* ── Real-time validation on blur ── */
-  nameInput.addEventListener('blur',    () => setFieldError(nameInput,    nameError,    validateFullName(nameInput.value)));
-  usernameInput.addEventListener('blur',() => setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value)));
-  emailInput.addEventListener('blur',   () => setFieldError(emailInput,   emailError,   validateEmail(emailInput.value)));
-  phoneInput.addEventListener('blur',   () => setFieldError(phoneInput,   phoneError,   validatePhone(phoneInput.value)));
-  passInput.addEventListener('blur',    () => setFieldError(passInput,    passError,    validatePassword(passInput.value)));
-  confirmInput.addEventListener('blur', () => setFieldError(confirmInput, confirmError, validateConfirmPassword(confirmInput.value, passInput.value)));
+  nameInput.addEventListener("blur", () =>
+    setFieldError(nameInput, nameError, validateFullName(nameInput.value)),
+  );
+  usernameInput.addEventListener("blur", () =>
+    setFieldError(
+      usernameInput,
+      usernameError,
+      validateUsername(usernameInput.value),
+    ),
+  );
+  emailInput.addEventListener("blur", () =>
+    setFieldError(emailInput, emailError, validateEmail(emailInput.value)),
+  );
+  phoneInput.addEventListener("blur", () =>
+    setFieldError(phoneInput, phoneError, validatePhone(phoneInput.value)),
+  );
+  passInput.addEventListener("blur", () =>
+    setFieldError(passInput, passError, validatePassword(passInput.value)),
+  );
+  confirmInput.addEventListener("blur", () =>
+    setFieldError(
+      confirmInput,
+      confirmError,
+      validateConfirmPassword(confirmInput.value, passInput.value),
+    ),
+  );
 
   /* ── Social buttons (sidebar) ── */
-  document.getElementById('sidebar-google').addEventListener('click', () =>
-    showToast('Đăng nhập bằng Google sẽ sớm được hỗ trợ', 'error'));
-  document.getElementById('sidebar-facebook').addEventListener('click', () =>
-    showToast('Đăng nhập bằng Facebook sẽ sớm được hỗ trợ', 'error'));
+  document
+    .getElementById("sidebar-google")
+    .addEventListener("click", () =>
+      showToast("Đăng nhập bằng Google sẽ sớm được hỗ trợ", "error"),
+    );
+  document
+    .getElementById("sidebar-facebook")
+    .addEventListener("click", () =>
+      showToast("Đăng nhập bằng Facebook sẽ sớm được hỗ trợ", "error"),
+    );
 
   /* ── Form submit ── */
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const nameOk    = setFieldError(nameInput,    nameError,    validateFullName(nameInput.value));
-    const usernameOk= setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value));
-    const emailOk   = setFieldError(emailInput,   emailError,   validateEmail(emailInput.value));
-    const phoneOk   = setFieldError(phoneInput,   phoneError,   validatePhone(phoneInput.value));
-    const passOk    = setFieldError(passInput,    passError,    validatePassword(passInput.value));
-    const confirmOk = setFieldError(confirmInput, confirmError, validateConfirmPassword(confirmInput.value, passInput.value));
+    const nameOk = setFieldError(
+      nameInput,
+      nameError,
+      validateFullName(nameInput.value),
+    );
+    const usernameOk = setFieldError(
+      usernameInput,
+      usernameError,
+      validateUsername(usernameInput.value),
+    );
+    const emailOk = setFieldError(
+      emailInput,
+      emailError,
+      validateEmail(emailInput.value),
+    );
+    const phoneOk = setFieldError(
+      phoneInput,
+      phoneError,
+      validatePhone(phoneInput.value),
+    );
+    const passOk = setFieldError(
+      passInput,
+      passError,
+      validatePassword(passInput.value),
+    );
+    const confirmOk = setFieldError(
+      confirmInput,
+      confirmError,
+      validateConfirmPassword(confirmInput.value, passInput.value),
+    );
 
     // Terms check
     let termsOk = true;
     if (!termsCheck.checked) {
-      termsError.textContent = 'Vui lòng đồng ý với điều khoản để tiếp tục';
-      termsError.classList.add('visible');
+      termsError.textContent = "Vui lòng đồng ý với điều khoản để tiếp tục";
+      termsError.classList.add("visible");
       termsOk = false;
     } else {
-      termsError.textContent = '';
-      termsError.classList.remove('visible');
+      termsError.textContent = "";
+      termsError.classList.remove("visible");
     }
 
-    if (!nameOk || !usernameOk || !emailOk || !phoneOk || !passOk || !confirmOk || !termsOk) return;
+    if (
+      !nameOk ||
+      !usernameOk ||
+      !emailOk ||
+      !phoneOk ||
+      !passOk ||
+      !confirmOk ||
+      !termsOk
+    )
+      return;
 
-    submitBtn.classList.add('is-loading');
+    submitBtn.classList.add("is-loading");
     submitBtn.disabled = true;
 
     try {
       await registerApi({
         fullName: nameInput.value.trim(),
         username: usernameInput.value.trim(),
-        email:    emailInput.value.trim(),
-        phone:    phoneInput.value.trim(),
+        email: emailInput.value.trim(),
+        phone: phoneInput.value.trim(),
         password: passInput.value,
       });
-      showToast('Đăng ký thành công! Chào mừng đến với EcoCycle 🌿', 'success');
-      sessionStorage.setItem('ecocycle_new_user', nameInput.value.trim());
-      setTimeout(() => { window.location.hash = '#/profile'; }, 1000);
+      showToast("Đăng ký thành công! Chào mừng đến với EcoCycle 🌿", "success");
+      sessionStorage.setItem("ecocycle_new_user", nameInput.value.trim());
+      setTimeout(() => {
+        window.location.hash = "#/profile";
+      }, 1000);
     } catch (err) {
-      showToast(err.message || 'Đăng ký thất bại. Vui lòng thử lại.', 'error');
+      showToast(err.message || "Đăng ký thất bại. Vui lòng thử lại.", "error");
     } finally {
-      submitBtn.classList.remove('is-loading');
+      submitBtn.classList.remove("is-loading");
       submitBtn.disabled = false;
     }
   });

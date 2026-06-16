@@ -4,10 +4,10 @@
 
 .site-footer {
   background: #ffffff;
-  border-top: 1px solid #DDE5DB;
+  border-top: 1px solid #dde5db;
   padding: 64px 24px 32px;
-  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
-  color: #6E7B6C;
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  color: #6e7b6c;
 }
 
 .site-footer__inner {
@@ -40,7 +40,7 @@
 .site-footer__wordmark {
   font-size: 20px;
   font-weight: 700;
-  color: #006B2C;
+  color: #006b2c;
   letter-spacing: -0.3px;
   line-height: 1;
 }
@@ -54,7 +54,7 @@
 .site-footer__title {
   font-size: 16px;
   font-weight: 600;
-  color: #1A1A1A;
+  color: #1a1a1a;
   margin: 0 0 20px 0;
 }
 .site-footer__links {
@@ -67,12 +67,12 @@
 }
 .site-footer__link {
   font-size: 14px;
-  color: #6E7B6C;
+  color: #6e7b6c;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 .site-footer__link:hover {
-  color: #006B2C;
+  color: #006b2c;
 }
 
 /* ── Newsletter column ── */
@@ -90,23 +90,23 @@
   min-width: 0;
   height: 44px;
   padding: 0 16px;
-  border: 1.5px solid #DDE5DB;
+  border: 1.5px solid #dde5db;
   border-radius: 10px;
   font-family: inherit;
   font-size: 14px;
-  color: #1A1A1A;
+  color: #1a1a1a;
   transition: border-color 0.2s ease;
   outline: none;
 }
 .site-footer__input:focus {
-  border-color: #006B2C;
+  border-color: #006b2c;
 }
 .site-footer__submit {
   height: 44px;
   padding: 0 20px;
   border: none;
   border-radius: 10px;
-  background: #006B2C;
+  background: #006b2c;
   color: #ffffff;
   font-family: inherit;
   font-size: 14px;
@@ -116,7 +116,7 @@
   white-space: nowrap;
 }
 .site-footer__submit:hover {
-  background: #004D1F;
+  background: #004d1f;
 }
 
 /* ── Bottom Bar ── */
@@ -124,7 +124,7 @@
   max-width: 1200px;
   margin: 48px auto 0;
   padding-top: 24px;
-  border-top: 1px solid #F0F5EF;
+  border-top: 1px solid #f0f5ef;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -137,12 +137,12 @@
   gap: 16px;
 }
 .site-footer__social-link {
-  color: #6E7B6C;
+  color: #6e7b6c;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 .site-footer__social-link:hover {
-  color: #006B2C;
+  color: #006b2c;
 }
 
 /* ── Responsive ── */

@@ -1,9 +1,9 @@
-import '../styles/products.css';
-import { getAllProducts } from '../services/product.service.js';
+import "../styles/products.css";
+import { getAllProducts } from "../services/product.service.js";
 
 /**
  * Render the Product List page
- * @param {HTMLElement} container 
+ * @param {HTMLElement} container
  */
 export async function renderProductsPage(container) {
   container.innerHTML = `
@@ -18,13 +18,13 @@ export async function renderProductsPage(container) {
     </div>
   `;
 
-  const gridContainer = document.getElementById('products-grid');
+  const gridContainer = document.getElementById("products-grid");
 
   try {
     const products = await getAllProducts();
-    
+
     if (products && products.length > 0) {
-      gridContainer.innerHTML = products.map(renderProductCard).join('');
+      gridContainer.innerHTML = products.map(renderProductCard).join("");
     } else {
       gridContainer.innerHTML = `
         <div class="products-empty">
@@ -41,7 +41,7 @@ export async function renderProductsPage(container) {
       </div>
     `;
     // Remove grid class to allow error message to span full width nicely
-    gridContainer.className = ''; 
+    gridContainer.className = "";
   }
 }
 
@@ -49,11 +49,11 @@ export async function renderProductsPage(container) {
  * Format price to VND
  */
 function formatPrice(price) {
-  if (!price && price !== 0) return 'Liên hệ';
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0
+  if (!price && price !== 0) return "Liên hệ";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
   }).format(price);
 }
 
@@ -61,13 +61,19 @@ function formatPrice(price) {
  * Map condition enum to readable text
  */
 function getConditionText(condition) {
-  switch(condition) {
-    case 1: return 'Mới (Nguyên tag)';
-    case 2: return 'Như mới';
-    case 3: return 'Tốt';
-    case 4: return 'Khá';
-    case 5: return 'Đã sử dụng nhiều';
-    default: return 'Khác';
+  switch (condition) {
+    case 1:
+      return "Mới (Nguyên tag)";
+    case 2:
+      return "Như mới";
+    case 3:
+      return "Tốt";
+    case 4:
+      return "Khá";
+    case 5:
+      return "Đã sử dụng nhiều";
+    default:
+      return "Khác";
   }
 }
 
@@ -75,21 +81,22 @@ function getConditionText(condition) {
  * Helper to render a single product card
  */
 function renderProductCard(product) {
-  const imageUrl = (product.images && product.images.length > 0) 
-    ? product.images[0] 
-    : 'https://placehold.co/400x400/E4EBE4/6E7B6C?text=No+Image';
+  const imageUrl =
+    product.images && product.images.length > 0
+      ? product.images[0]
+      : "https://placehold.co/400x400/E4EBE4/6E7B6C?text=No+Image";
 
   // Mocked rating (e.g. 4.8 or 5.0) since it's missing in backend response
   const mockedRating = (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1);
-  const sellerInitial = (product.sellerName || 'S')[0].toUpperCase();
+  const sellerInitial = (product.sellerName || "S")[0].toUpperCase();
 
   return `
     <a href="#/product/${product.id}" class="product-card">
       <img src="${imageUrl}" alt="${product.title}" class="product-card__image" loading="lazy" />
-      ${product.condition ? `<div class="product-card__condition">${getConditionText(product.condition)}</div>` : ''}
+      ${product.condition ? `<div class="product-card__condition">${getConditionText(product.condition)}</div>` : ""}
       
       <div class="product-card__content">
-        <h3 class="product-card__title">${product.title || 'Sản phẩm không có tên'}</h3>
+        <h3 class="product-card__title">${product.title || "Sản phẩm không có tên"}</h3>
         <div class="product-card__price">${formatPrice(product.price)}</div>
         
         <div class="product-card__meta">
@@ -101,7 +108,7 @@ function renderProductCard(product) {
           </div>
           <div class="product-card__seller">
             <div class="product-card__seller-avatar">${sellerInitial}</div>
-            <span>${product.sellerName || 'Eco Seller'}</span>
+            <span>${product.sellerName || "Eco Seller"}</span>
           </div>
         </div>
       </div>
@@ -113,7 +120,10 @@ function renderProductCard(product) {
  * Helper to render loading skeletons
  */
 function renderSkeletons(count) {
-  return Array(count).fill(0).map(() => `
+  return Array(count)
+    .fill(0)
+    .map(
+      () => `
     <div class="skeleton-card">
       <div class="skeleton-image"></div>
       <div class="skeleton-content">
@@ -126,5 +136,7 @@ function renderSkeletons(count) {
         </div>
       </div>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }

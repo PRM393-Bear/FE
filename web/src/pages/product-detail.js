@@ -1,5 +1,5 @@
-import '../styles/product-detail.css';
-import { getProductById } from '../services/product.service.js';
+import "../styles/product-detail.css";
+import { getProductById } from "../services/product.service.js";
 
 export async function renderProductDetailPage(container, productId) {
   // Render loading skeleton
@@ -24,47 +24,65 @@ export async function renderProductDetailPage(container, productId) {
 
   try {
     const product = await getProductById(productId);
-    
+
     // Format variables
-    const priceFormatted = product.price != null ? product.price.toLocaleString('vi') + 'đ' : 'Liên hệ';
+    const priceFormatted =
+      product.price != null
+        ? product.price.toLocaleString("vi") + "đ"
+        : "Liên hệ";
     const conditionText = getConditionText(product.condition);
-    const sellerName = product.sellerName || 'Eco Seller';
+    const sellerName = product.sellerName || "Eco Seller";
     const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(sellerName)}&background=006B2C&color=fff`;
-    
-    const mainImageUrl = (product.images && product.images.length > 0) 
-      ? product.images[0] 
-      : 'https://placehold.co/800x800/E4EBE4/6E7B6C?text=No+Image';
 
-    const thumbnailsHtml = (product.images && product.images.length > 1) 
-      ? `
+    const mainImageUrl =
+      product.images && product.images.length > 0
+        ? product.images[0]
+        : "https://placehold.co/800x800/E4EBE4/6E7B6C?text=No+Image";
+
+    const thumbnailsHtml =
+      product.images && product.images.length > 1
+        ? `
         <div class="pd-thumbnails">
-          ${product.images.map((img, idx) => `
-            <img src="${img}" alt="Thumbnail ${idx}" class="pd-thumb ${idx === 0 ? 'is-active' : ''}" onclick="window.updateMainImage(this, '${img}')" />
-          `).join('')}
+          ${product.images
+            .map(
+              (img, idx) => `
+            <img src="${img}" alt="Thumbnail ${idx}" class="pd-thumb ${idx === 0 ? "is-active" : ""}" onclick="window.updateMainImage(this, '${img}')" />
+          `,
+            )
+            .join("")}
         </div>
-      ` : '';
+      `
+        : "";
 
-    const sizeAttr = product.size ? `<span class="pd-attr-tag">Size: ${product.size}</span>` : '';
-    const colorAttr = product.color ? `<span class="pd-attr-tag">Màu: ${product.color}</span>` : '';
-    const typeAttr = product.type ? `<span class="pd-attr-tag">Loại: ${product.type}</span>` : '';
-    const categoryAttr = product.category ? `<span class="pd-attr-tag">Danh mục: ${product.category}</span>` : '';
+    const sizeAttr = product.size
+      ? `<span class="pd-attr-tag">Size: ${product.size}</span>`
+      : "";
+    const colorAttr = product.color
+      ? `<span class="pd-attr-tag">Màu: ${product.color}</span>`
+      : "";
+    const typeAttr = product.type
+      ? `<span class="pd-attr-tag">Loại: ${product.type}</span>`
+      : "";
+    const categoryAttr = product.category
+      ? `<span class="pd-attr-tag">Danh mục: ${product.category}</span>`
+      : "";
 
     container.innerHTML = `
       <div class="pd-container">
         <div class="pd-breadcrumb">
-          <a href="#/">Trang chủ</a> / <a href="#/products">Sản phẩm</a> / <span style="color: #1A1A1A;">${product.title || 'Chi tiết sản phẩm'}</span>
+          <a href="#/">Trang chủ</a> / <a href="#/products">Sản phẩm</a> / <span style="color: #1A1A1A;">${product.title || "Chi tiết sản phẩm"}</span>
         </div>
         
         <div class="pd-layout">
           <!-- Left: Gallery -->
           <div class="pd-gallery">
-            <img src="${mainImageUrl}" alt="${product.title || 'Product Image'}" class="pd-image-main" id="pd-main-img" />
+            <img src="${mainImageUrl}" alt="${product.title || "Product Image"}" class="pd-image-main" id="pd-main-img" />
             ${thumbnailsHtml}
           </div>
 
           <!-- Right: Info -->
           <div class="pd-info">
-            <h1 class="pd-title">${product.title || 'Sản phẩm không có tên'}</h1>
+            <h1 class="pd-title">${product.title || "Sản phẩm không có tên"}</h1>
             <div class="pd-price">${priceFormatted}</div>
             
             <div class="pd-attributes">
@@ -75,7 +93,7 @@ export async function renderProductDetailPage(container, productId) {
               ${colorAttr}
             </div>
 
-            <p class="pd-description">${product.description || 'Chưa có mô tả chi tiết cho sản phẩm này.'}</p>
+            <p class="pd-description">${product.description || "Chưa có mô tả chi tiết cho sản phẩm này."}</p>
 
             <div class="pd-seller">
               <img src="${avatarUrl}" alt="${sellerName}" class="pd-seller-avatar" />
@@ -96,12 +114,13 @@ export async function renderProductDetailPage(container, productId) {
     `;
 
     // Expose function for thumbnail click
-    window.updateMainImage = function(element, newSrc) {
-      document.getElementById('pd-main-img').src = newSrc;
-      document.querySelectorAll('.pd-thumb').forEach(t => t.classList.remove('is-active'));
-      element.classList.add('is-active');
+    window.updateMainImage = function (element, newSrc) {
+      document.getElementById("pd-main-img").src = newSrc;
+      document
+        .querySelectorAll(".pd-thumb")
+        .forEach((t) => t.classList.remove("is-active"));
+      element.classList.add("is-active");
     };
-
   } catch (error) {
     container.innerHTML = `
       <div class="pd-container">
@@ -117,12 +136,18 @@ export async function renderProductDetailPage(container, productId) {
 }
 
 function getConditionText(condition) {
-  switch(condition) {
-    case 1: return 'Mới (Nguyên tag)';
-    case 2: return 'Như mới';
-    case 3: return 'Tốt';
-    case 4: return 'Khá';
-    case 5: return 'Đã sử dụng nhiều';
-    default: return 'Khác';
+  switch (condition) {
+    case 1:
+      return "Mới (Nguyên tag)";
+    case 2:
+      return "Như mới";
+    case 3:
+      return "Tốt";
+    case 4:
+      return "Khá";
+    case 5:
+      return "Đã sử dụng nhiều";
+    default:
+      return "Khác";
   }
 }

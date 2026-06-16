@@ -1,5 +1,5 @@
-import '../styles/admin.css';
-import { getAllProducts } from '../services/product.service.js';
+import "../styles/admin.css";
+import { getAllProducts } from "../services/product.service.js";
 
 export async function renderAdminPage(container) {
   // Mock Data for Dashboard Summary
@@ -7,7 +7,7 @@ export async function renderAdminPage(container) {
     users: 1254,
     transactions: 342,
     revenue: "45.2M",
-    reports: 12
+    reports: 12,
   };
 
   container.innerHTML = `
@@ -66,7 +66,7 @@ export async function renderAdminPage(container) {
               <div class="admin-stat-icon blue">👥</div>
               <div class="admin-stat-info">
                 <p class="admin-stat-label">Người dùng (Mock)</p>
-                <h3 class="admin-stat-value">${MOCK_STATS.users.toLocaleString('vi')}</h3>
+                <h3 class="admin-stat-value">${MOCK_STATS.users.toLocaleString("vi")}</h3>
               </div>
             </div>
 
@@ -120,15 +120,15 @@ export async function renderAdminPage(container) {
 }
 
 async function fetchProductsData() {
-  const tbody = document.getElementById('admin-table-body');
-  const totalCountEl = document.getElementById('stat-total-products');
-  
+  const tbody = document.getElementById("admin-table-body");
+  const totalCountEl = document.getElementById("stat-total-products");
+
   try {
     const products = await getAllProducts();
-    
+
     // Update total count
     if (totalCountEl) {
-      totalCountEl.textContent = products.length.toLocaleString('vi');
+      totalCountEl.textContent = products.length.toLocaleString("vi");
     }
 
     // Render latest 8 products
@@ -139,23 +139,27 @@ async function fetchProductsData() {
         return;
       }
 
-      tbody.innerHTML = latest.map(p => {
-        const img = p.images && p.images.length > 0 ? p.images[0] : 'https://placehold.co/100x100/E4EBE4/6E7B6C?text=N/A';
-        const price = p.price != null ? p.price.toLocaleString('vi') : '0';
-        const seller = p.sellerName || 'Unknown';
-        
-        // Mock status logically
-        const isPending = Math.random() > 0.8; 
-        const statusHtml = isPending 
-          ? `<span class="admin-status-badge pending">Chờ duyệt</span>`
-          : `<span class="admin-status-badge active">Đang bán</span>`;
+      tbody.innerHTML = latest
+        .map((p) => {
+          const img =
+            p.images && p.images.length > 0
+              ? p.images[0]
+              : "https://placehold.co/100x100/E4EBE4/6E7B6C?text=N/A";
+          const price = p.price != null ? p.price.toLocaleString("vi") : "0";
+          const seller = p.sellerName || "Unknown";
 
-        return `
+          // Mock status logically
+          const isPending = Math.random() > 0.8;
+          const statusHtml = isPending
+            ? `<span class="admin-status-badge pending">Chờ duyệt</span>`
+            : `<span class="admin-status-badge active">Đang bán</span>`;
+
+          return `
           <tr>
             <td>
               <div class="admin-product-cell">
                 <img src="${img}" alt="Product" class="admin-product-img" />
-                <span class="admin-product-name">${p.title || 'Sản phẩm không tên'}</span>
+                <span class="admin-product-name">${p.title || "Sản phẩm không tên"}</span>
               </div>
             </td>
             <td>${seller}</td>
@@ -166,9 +170,9 @@ async function fetchProductsData() {
             </td>
           </tr>
         `;
-      }).join('');
+        })
+        .join("");
     }
-
   } catch (error) {
     if (tbody) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red; padding: 32px;">Lỗi khi tải dữ liệu sản phẩm.</td></tr>`;

@@ -3,20 +3,20 @@
  * Reusable footer across all pages.
  */
 
-import './footer.css';
+import "./footer.css";
 
 /**
  * Inject the footer as the last child of <body>.
  * Call once per page render.
  */
 export function renderFooter() {
-  const existing = document.getElementById('site-footer');
+  const existing = document.getElementById("site-footer");
   if (existing) existing.remove();
 
-  const footer = document.createElement('footer');
-  footer.id = 'site-footer';
-  footer.className = 'site-footer';
-  footer.setAttribute('role', 'contentinfo');
+  const footer = document.createElement("footer");
+  footer.id = "site-footer";
+  footer.className = "site-footer";
+  footer.setAttribute("role", "contentinfo");
 
   footer.innerHTML = `
     <div class="site-footer__inner">

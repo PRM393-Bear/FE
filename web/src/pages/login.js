@@ -3,9 +3,9 @@
  * Responsive centered-card layout, synchronized with mobile design.
  */
 
-import '../styles/auth.css';
-import { loginApi, isAuthenticated } from '../services/auth.service.js';
-import { validateUsername, validatePassword } from '../utils/validators.js';
+import "../styles/auth.css";
+import { loginApi, isAuthenticated } from "../services/auth.service.js";
+import { validateUsername, validatePassword } from "../utils/validators.js";
 
 /* ── SVG Icons ── */
 const ICON_LEAF = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -41,34 +41,34 @@ const ICON_FACEBOOK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 2
 </svg>`;
 
 /* ── Toast helper ── */
-function showToast(message, type = 'error') {
-  let el = document.getElementById('ecocycle-toast');
+function showToast(message, type = "error") {
+  let el = document.getElementById("ecocycle-toast");
   if (!el) {
-    el = document.createElement('div');
-    el.id = 'ecocycle-toast';
-    el.className = 'toast';
+    el = document.createElement("div");
+    el.id = "ecocycle-toast";
+    el.className = "toast";
     document.body.appendChild(el);
   }
   el.textContent = message;
   el.className = `toast toast--${type}`;
-  requestAnimationFrame(() => el.classList.add('toast--visible'));
+  requestAnimationFrame(() => el.classList.add("toast--visible"));
   clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove('toast--visible'), 3000);
+  el._timer = setTimeout(() => el.classList.remove("toast--visible"), 3000);
 }
 
 /* ── Field validation helper ── */
 function setFieldError(inputEl, errorEl, message) {
   if (message) {
-    inputEl.classList.add('is-error');
-    inputEl.classList.remove('is-valid');
+    inputEl.classList.add("is-error");
+    inputEl.classList.remove("is-valid");
     errorEl.textContent = message;
-    errorEl.classList.add('visible');
+    errorEl.classList.add("visible");
     return false;
   } else {
-    inputEl.classList.remove('is-error');
-    inputEl.classList.add('is-valid');
-    errorEl.textContent = '';
-    errorEl.classList.remove('visible');
+    inputEl.classList.remove("is-error");
+    inputEl.classList.add("is-valid");
+    errorEl.textContent = "";
+    errorEl.classList.remove("visible");
     return true;
   }
 }
@@ -77,7 +77,7 @@ function setFieldError(inputEl, errorEl, message) {
 export function renderLoginPage(container) {
   // Redirect if already logged in
   if (isAuthenticated()) {
-    window.location.hash = '#/';
+    window.location.hash = "#/";
     return;
   }
 
@@ -175,56 +175,83 @@ export function renderLoginPage(container) {
   `;
 
   /* ── Bind logic ── */
-  const form          = document.getElementById('login-form');
-  const usernameInput = document.getElementById('login-username');
-  const usernameError = document.getElementById('login-username-error');
-  const passInput   = document.getElementById('login-password');
-  const passError   = document.getElementById('login-password-error');
-  const toggleBtn   = document.getElementById('toggle-password');
-  const submitBtn   = document.getElementById('login-submit');
+  const form = document.getElementById("login-form");
+  const usernameInput = document.getElementById("login-username");
+  const usernameError = document.getElementById("login-username-error");
+  const passInput = document.getElementById("login-password");
+  const passError = document.getElementById("login-password-error");
+  const toggleBtn = document.getElementById("toggle-password");
+  const submitBtn = document.getElementById("login-submit");
   let passwordVisible = false;
 
   // Toggle password visibility
-  toggleBtn.addEventListener('click', () => {
+  toggleBtn.addEventListener("click", () => {
     passwordVisible = !passwordVisible;
-    passInput.type = passwordVisible ? 'text' : 'password';
+    passInput.type = passwordVisible ? "text" : "password";
     toggleBtn.innerHTML = passwordVisible ? ICON_EYE : ICON_EYE_OFF;
   });
 
   // Real-time validation on blur
-  usernameInput.addEventListener('blur', () => setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value)));
-  passInput.addEventListener('blur',  () => setFieldError(passInput,  passError,  validatePassword(passInput.value)));
+  usernameInput.addEventListener("blur", () =>
+    setFieldError(
+      usernameInput,
+      usernameError,
+      validateUsername(usernameInput.value),
+    ),
+  );
+  passInput.addEventListener("blur", () =>
+    setFieldError(passInput, passError, validatePassword(passInput.value)),
+  );
 
   // Social buttons (placeholder)
-  document.getElementById('btn-google').addEventListener('click', () =>
-    showToast('Đăng nhập bằng Google sẽ sớm được hỗ trợ', 'error'));
-  document.getElementById('btn-facebook').addEventListener('click', () =>
-    showToast('Đăng nhập bằng Facebook sẽ sớm được hỗ trợ', 'error'));
+  document
+    .getElementById("btn-google")
+    .addEventListener("click", () =>
+      showToast("Đăng nhập bằng Google sẽ sớm được hỗ trợ", "error"),
+    );
+  document
+    .getElementById("btn-facebook")
+    .addEventListener("click", () =>
+      showToast("Đăng nhập bằng Facebook sẽ sớm được hỗ trợ", "error"),
+    );
 
   // Form submit
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const usernameOk = setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value));
-    const passOk     = setFieldError(passInput,  passError,  validatePassword(passInput.value));
+    const usernameOk = setFieldError(
+      usernameInput,
+      usernameError,
+      validateUsername(usernameInput.value),
+    );
+    const passOk = setFieldError(
+      passInput,
+      passError,
+      validatePassword(passInput.value),
+    );
     if (!usernameOk || !passOk) return;
 
     // Loading state
-    submitBtn.classList.add('is-loading');
+    submitBtn.classList.add("is-loading");
     submitBtn.disabled = true;
 
     try {
       await loginApi({
-        username:   usernameInput.value.trim(),
-        password:   passInput.value,
-        rememberMe: document.getElementById('login-remember').checked,
+        username: usernameInput.value.trim(),
+        password: passInput.value,
+        rememberMe: document.getElementById("login-remember").checked,
       });
-      showToast('Đăng nhập thành công! Chào mừng bạn 🌿', 'success');
-      setTimeout(() => { window.location.hash = '#/'; }, 800);
+      showToast("Đăng nhập thành công! Chào mừng bạn 🌿", "success");
+      setTimeout(() => {
+        window.location.hash = "#/";
+      }, 800);
     } catch (err) {
-      showToast(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.', 'error');
+      showToast(
+        err.message || "Đăng nhập thất bại. Vui lòng thử lại.",
+        "error",
+      );
     } finally {
-      submitBtn.classList.remove('is-loading');
+      submitBtn.classList.remove("is-loading");
       submitBtn.disabled = false;
     }
   });
