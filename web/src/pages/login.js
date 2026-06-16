@@ -90,7 +90,7 @@ export function renderLoginPage(container) {
           <p class="auth-brand-subtitle">"Mỗi món đồ đều có vòng đời mới"</p>
           
           <div class="auth-brand-illustration">
-            <img alt="Virtual Wardrobe Illustration" src="https://lh3.googleusercontent.com/aida/AP1WRLsRe9jKbuBbAc8KfhUX0SW-5HHIR1R-IiTOYv5sYPIu6v8RAKqLog3oPiyffqYNlvsDKODxl6pK5RE-YOPg2Slf5Gtxg37deNoem6WmXRdPOOTt3v3muD0OzfYTj2d8Yk8HwUGG7vcajWHxhVVXuujTTM_bAa7cY9H4s23J1b1fva2Q0k4ueuk1Z8ADqFHvfxSwBD3xtgG1vBYhle7sLcnPwG4HUvFrOZ4THpmXtXfohwO-Ondxp4GfHU49"/>
+            <img alt="Virtual Wardrobe Illustration" src="https://lh3.googleusercontent.com/aida/AP1WRLtwewqhuiutg-sAzMrjrZMTBUUnQcqojShMdlMu3R9E_Cgbz4D4SHn-r9fG6v1aHoGgG6QKzxmfFvbEqEJaL50wJBpZqNiR6ixNko2MNwYPJOaMg50aiTPlpW8LS82aA8DJ06rzHckrn4vioyFwFywp2wCC2EGNlZ6JrrvBlbVLE2Q0N8_dNeC9tqiSL5kepNSDuQOMHrADhxEnBgn298O_rgnLcdmFe42vYV_H66NjcRSoslyzPNuaUDc"/>
           </div>
           
           <div class="auth-brand-tagline">
@@ -217,13 +217,13 @@ export function renderLoginPage(container) {
   `;
 
   /* ── Bind logic ── */
-  const form          = document.getElementById('login-form');
+  const form = document.getElementById('login-form');
   const usernameInput = document.getElementById('login-username');
   const usernameError = document.getElementById('login-username-error');
-  const passInput   = document.getElementById('login-password');
-  const passError   = document.getElementById('login-password-error');
-  const toggleBtn   = document.getElementById('toggle-password');
-  const submitBtn   = document.getElementById('login-submit');
+  const passInput = document.getElementById('login-password');
+  const passError = document.getElementById('login-password-error');
+  const toggleBtn = document.getElementById('toggle-password');
+  const submitBtn = document.getElementById('login-submit');
   let passwordVisible = false;
 
   // Toggle password visibility
@@ -235,7 +235,7 @@ export function renderLoginPage(container) {
 
   // Real-time validation on blur
   usernameInput.addEventListener('blur', () => setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value)));
-  passInput.addEventListener('blur',  () => setFieldError(passInput,  passError,  validatePassword(passInput.value)));
+  passInput.addEventListener('blur', () => setFieldError(passInput, passError, validatePassword(passInput.value)));
 
   // Social buttons (placeholder)
   document.getElementById('btn-google').addEventListener('click', () =>
@@ -248,7 +248,7 @@ export function renderLoginPage(container) {
     e.preventDefault();
 
     const usernameOk = setFieldError(usernameInput, usernameError, validateUsername(usernameInput.value));
-    const passOk     = setFieldError(passInput,  passError,  validatePassword(passInput.value));
+    const passOk = setFieldError(passInput, passError, validatePassword(passInput.value));
     if (!usernameOk || !passOk) return;
 
     // Loading state
@@ -257,8 +257,8 @@ export function renderLoginPage(container) {
 
     try {
       await loginApi({
-        username:   usernameInput.value.trim(),
-        password:   passInput.value,
+        username: usernameInput.value.trim(),
+        password: passInput.value,
         rememberMe: document.getElementById('login-remember').checked,
       });
       showToast('Đăng nhập thành công! Chào mừng bạn 🌿', 'success');
