@@ -566,7 +566,7 @@ export async function getMyProfile() {
   }
 
   // Fetch real details from database
-  const userDetails = await apiFetch(`/api/user/${userId}`);
+  const userDetails = await apiFetch("/api/user/me");
 
   return {
     id: userId,
@@ -584,7 +584,7 @@ export async function getMyProfile() {
 
 export async function updateUserProfile(userId, { fullName, email, phone, username }) {
   const token = getToken();
-  const res = await fetch(`${BASE_URL}/api/user/${userId}`, {
+  const res = await fetch(`${BASE_URL}/api/user/me`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
