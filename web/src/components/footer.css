@@ -128,6 +128,8 @@
 }
 
 .site-footer__app-text {
+  display: flex;
+  flex-direction: column;
   text-align: left;
 }
 
@@ -135,15 +137,15 @@
   display: block;
   font-size: 10px;
   text-transform: uppercase;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .site-footer__app-title {
   display: block;
   font-size: 16px;
   font-weight: 700;
-  line-height: 1;
-  margin-top: 4px;
+  line-height: 1.2;
+  margin-top: 2px;
 }
 
 .site-footer__bottom {

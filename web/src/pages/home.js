@@ -4,8 +4,9 @@
  */
 
 import "../styles/home.css";
+import { getAllProducts } from "../services/product.service.js";
 
-export function renderHomePage(container) {
+export async function renderHomePage(container) {
   container.innerHTML = `
     <div class="home-layout">
       <!-- Hero Carousel -->
@@ -94,55 +95,20 @@ export function renderHomePage(container) {
           <a href="#/products" class="section-link">Xem tất cả <span class="material-symbols-outlined">arrow_forward</span></a>
         </header>
 
-        <div class="products-grid">
-          <!-- Product 1 -->
-          <a href="#" class="product-card">
-            <div class="product-image-wrapper">
-              <img class="product-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe8xfUkagdalAKymYHjv3nhb0pCIROVm5LUbiX9CoZgXHO2m-NfQvIjTyRT-bLEQCPSIpQX3hGh4lYm-rquEDcM69IoQIyCTrYJ4VIDZZhJxFTrOGN0De99BfHp9I_AkApNLPqfeSCv3WEKcBroPqNKWpiwurqTz_7QjQrlbbOJqArqTE1uByEm5JOncuDw1fhaM_8j4cCeK9GGpSIFqrLPfObrJo4VBV6FsEu1FEycZjbUWoClkuH629ZXYsmAQDcg2dH6NDs6LQw" />
-              <button class="product-fav-btn"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span></button>
-              <span class="product-condition-badge product-condition-badge--new">Mới 99%</span>
+        <div class="arrivals-slider-wrapper">
+          <button class="slider-arrow slider-arrow--prev" id="arrivals-prev-btn" aria-label="Previous products" disabled>
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          
+          <div class="arrivals-slider-container" id="arrivals-slider-container">
+            <div class="arrivals-slider-track" id="arrivals-slider-track">
+              <!-- Will be loaded dynamically -->
             </div>
-            <h4 class="product-title">Nike Air Max Red Edition</h4>
-            <p class="product-price">1.250.000đ</p>
-          </a>
+          </div>
 
-          <!-- Product 2 -->
-          <a href="#" class="product-card">
-            <div class="product-image-wrapper">
-              <img class="product-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR3BXVt96xQX9Pk8MH6VzjmxDXvyrqlJmgR1vPzUf3Wcstn4-6_5DlVVaMr_8n1Aqv39vWSySjuPycBx5LT43Httct6tLiAIJ-a4angsvLj4alSpAX2AlWmfx9Qe8MVgk5zM694PxJnNcuda91AAwYDW64YkvXrHP5cp55--VeDlFyu3G-r6kh81UC8Da7Be80tyLmHns0GM5Fo7UVtloUrDx6KdJiilSEK6FrxpUCC-aWC_SaQQd0ll-NV6RuXM07TTSyd5YOh35E" />
-              <span class="product-condition-badge product-condition-badge--used">Cũ 80%</span>
-            </div>
-            <h4 class="product-title">iPhone 13 Gold 128GB</h4>
-            <p class="product-price">12.500.000đ</p>
-          </a>
-
-          <!-- Product 3 -->
-          <a href="#" class="product-card">
-            <div class="product-image-wrapper">
-              <img class="product-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA3-Od37on3BNHmdmu_D2usTHn9wGLGnYhj2t3UFbg5BHhAcGr-J0iniXdasK85AJUOnwp0b2jMchfTsl2EVnvbFzk41gqdVW98PkCTxTsa1TX3KSOaIH_GSXAUrSq97RcAy-xRnLzJ9VkxhOKkk03Tg-wVhvFWQk6-0pQGmJoM60L3Fwsrw-GlkEWtgxIQO6EzHJk3Be6HS1T2P5WmXfnGc9Fc1FuZZbPJEKXO4k87fE7Ouli9EA0dH-yEkOZ2sFatcNGloLJwY1b" />
-            </div>
-            <h4 class="product-title">Apple Watch Series 6 White</h4>
-            <p class="product-price">4.800.000đ</p>
-          </a>
-
-          <!-- Product 4 -->
-          <a href="#" class="product-card">
-            <div class="product-image-wrapper">
-              <img class="product-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIUIOp_94fkq-X6X0IYUvQiqDMoc91VOxNzTveju2VaAjXXZ8U1sxr30tiW2FOVdhsMOJPo78iA35Ui2xJNyb_n3z4tjmJ7YekgNs6HzmFzQV8le5_SbR8Ya__OqjmOp4zfiNG9Dqyb37Mmda0-8sctDnajWjE91sY2hmu5t5IyJNOkG8Rcu2Tnx0NtWu9PVDgPprpFwmCJu5I1dKuCDkIB_oEvTFM4Z3zSMKOFhAOOamwow-ZDJcZVYQcHRTLRI4wYXtM7PfyoBYG" />
-              <span class="product-condition-badge product-condition-badge--new">Mới 95%</span>
-            </div>
-            <h4 class="product-title">Combo 3 cuốn sách nghệ thuật</h4>
-            <p class="product-price">450.000đ</p>
-          </a>
-
-          <!-- Product 5 -->
-          <a href="#" class="product-card">
-            <div class="product-image-wrapper">
-              <img class="product-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6B_8Ptdeht90cNz41cu6CMDU0cxcLdXov3goEb0-J9qyuCH7SOGVgjUHFbriT02dYkGqRZJBry3UEK3yxCh4Ns-zvX1_9lZVZ1nXrNaFNC2N_aEXnysNiFeaLfGNzgQPzl7Hfz9iv-FrrTuN-BJoE6xuGsM6RzCNk0Xz6l6bvFvhAppwahSBO0xjGLG0mv9KHCfAjqQCxprNZHAcPMMi_oACgiwMf8NURwEdWB8dtn8SUyq5N3RNfqToyQSREyCBNI2Xl1-NPqEQr" />
-            </div>
-            <h4 class="product-title">Sony WH-1000XM4 Like New</h4>
-            <p class="product-price">4.200.000đ</p>
-          </a>
+          <button class="slider-arrow slider-arrow--next" id="arrivals-next-btn" aria-label="Next products" disabled>
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
         </div>
       </section>
 
@@ -385,4 +351,164 @@ export function renderHomePage(container) {
     currentSlide = (currentSlide + 1) % totalSlides;
     moveCarousel(currentSlide);
   }, 5000);
+
+  // Helper for formatting prices
+  function formatPrice(price) {
+    if (!price && price !== 0) return "Liên hệ";
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(price);
+  }
+
+  // Helper for mapping condition value (1-5) to badge text and class
+  function getConditionBadge(condition) {
+    switch (condition) {
+      case 1:
+        return { text: "Mới 100%", class: "product-condition-badge--new" };
+      case 2:
+        return { text: "Mới 99%", class: "product-condition-badge--new" };
+      case 3:
+        return { text: "Mới 95%", class: "product-condition-badge--new" };
+      case 4:
+        return { text: "Cũ 80%", class: "product-condition-badge--used" };
+      case 5:
+        return { text: "Cũ 60%", class: "product-condition-badge--used" };
+      default:
+        return { text: "Mới 90%", class: "product-condition-badge--new" };
+    }
+  }
+
+  // Load and render new arrivals dynamically
+  const arrivalsTrack = document.getElementById("arrivals-slider-track");
+  const arrivalsContainer = document.getElementById("arrivals-slider-container");
+  const arrivalsPrevBtn = document.getElementById("arrivals-prev-btn");
+  const arrivalsNextBtn = document.getElementById("arrivals-next-btn");
+
+  function updateArrowState() {
+    if (!arrivalsContainer || !arrivalsPrevBtn || !arrivalsNextBtn) return;
+    const canScrollLeft = arrivalsContainer.scrollLeft > 2;
+    const canScrollRight = arrivalsContainer.scrollWidth - arrivalsContainer.clientWidth - arrivalsContainer.scrollLeft > 2;
+    arrivalsPrevBtn.disabled = !canScrollLeft;
+    arrivalsNextBtn.disabled = !canScrollRight;
+  }
+
+  if (arrivalsTrack) {
+    arrivalsTrack.innerHTML = `
+      <div class="slider-loading">
+        <div class="spinner"></div>
+        <p>Đang tải sản phẩm mới...</p>
+      </div>
+    `;
+
+    try {
+      const allProducts = await getAllProducts();
+
+      // Filter by today's date in local time
+      const today = new Date();
+      const todayProducts = allProducts.filter(p => {
+        if (!p.createdAt) return false;
+        const d = new Date(p.createdAt);
+        return d.getDate() === today.getDate() &&
+               d.getMonth() === today.getMonth() &&
+               d.getFullYear() === today.getFullYear();
+      });
+
+      // Sort from newest to oldest
+      todayProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      if (todayProducts.length > 0) {
+        arrivalsTrack.innerHTML = todayProducts.map(product => {
+          const imageUrl = product.images && product.images.length > 0
+            ? product.images[0]
+            : "https://placehold.co/400x533/E4EBE4/6E7B6C?text=No+Image";
+          
+          const price = product.price || 0;
+          const conditionVal = product.condition || 3;
+          const badge = getConditionBadge(conditionVal);
+
+          return `
+            <a href="#/product/${product.id}" class="product-card">
+              <div class="product-image-wrapper">
+                <img class="product-image" src="${imageUrl}" loading="lazy" />
+                <button class="product-fav-btn" onclick="event.preventDefault()"><span class="material-symbols-outlined">favorite</span></button>
+                <span class="product-condition-badge ${badge.class}">${badge.text}</span>
+              </div>
+              <h4 class="product-title">${product.title || "Sản phẩm không có tên"}</h4>
+              <p class="product-price">${formatPrice(price)}</p>
+            </a>
+          `;
+        }).join("");
+      } else {
+        arrivalsTrack.innerHTML = `
+          <div class="slider-empty">
+            <span class="material-symbols-outlined empty-icon">shopping_bag</span>
+            <p>Hôm nay chưa có sản phẩm nào được đăng.</p>
+            <a href="#/products" class="empty-btn">Khám phá sản phẩm cũ hơn</a>
+          </div>
+        `;
+      }
+
+      setTimeout(updateArrowState, 100);
+
+    } catch (error) {
+      console.error("Failed to load arrivals:", error);
+      arrivalsTrack.innerHTML = `
+        <div class="slider-error">
+          <p>Không thể tải sản phẩm hôm nay.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Hook scroll listeners and hover slide timers
+  if (arrivalsContainer && arrivalsPrevBtn && arrivalsNextBtn) {
+    arrivalsContainer.addEventListener("scroll", updateArrowState);
+    window.addEventListener("resize", updateArrowState);
+
+    const getScrollStep = () => {
+      const firstCard = arrivalsContainer.querySelector(".product-card");
+      if (firstCard) {
+        return firstCard.offsetWidth + 24; // card width + gap
+      }
+      return 300;
+    };
+
+    // Click arrows to scroll
+    arrivalsPrevBtn.addEventListener("click", () => {
+      arrivalsContainer.scrollBy({ left: -getScrollStep(), behavior: "smooth" });
+    });
+
+    arrivalsNextBtn.addEventListener("click", () => {
+      arrivalsContainer.scrollBy({ left: getScrollStep(), behavior: "smooth" });
+    });
+
+    // Hover (trỏ chuột) slow continuous scroll
+    let hoverScrollInterval = null;
+    const startHoverScroll = (direction) => {
+      if (hoverScrollInterval) clearInterval(hoverScrollInterval);
+      hoverScrollInterval = setInterval(() => {
+        if (!document.getElementById("arrivals-slider-container")) {
+          clearInterval(hoverScrollInterval);
+          hoverScrollInterval = null;
+          return;
+        }
+        arrivalsContainer.scrollLeft += direction * 8;
+      }, 16);
+    };
+
+    const stopHoverScroll = () => {
+      if (hoverScrollInterval) {
+        clearInterval(hoverScrollInterval);
+        hoverScrollInterval = null;
+      }
+    };
+
+    arrivalsPrevBtn.addEventListener("mouseenter", () => startHoverScroll(-1));
+    arrivalsPrevBtn.addEventListener("mouseleave", stopHoverScroll);
+
+    arrivalsNextBtn.addEventListener("mouseenter", () => startHoverScroll(1));
+    arrivalsNextBtn.addEventListener("mouseleave", stopHoverScroll);
+  }
 }

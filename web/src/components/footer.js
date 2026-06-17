@@ -79,4 +79,12 @@ export function renderFooter() {
   `;
 
   document.body.appendChild(footer);
+
+  // Brand click listener to scroll to top if already home
+  footer.querySelector(".site-footer__brand")?.addEventListener("click", (e) => {
+    if (window.location.hash === "#/" || window.location.hash === "") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  });
 }

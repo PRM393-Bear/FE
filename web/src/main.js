@@ -99,6 +99,9 @@ function navigate() {
   // strip query params from hash if any
   const route = hash.split("?")[0];
 
+  // Scroll to top on navigation
+  window.scrollTo(0, 0);
+
   // Dynamic Route for Product Detail
   if (route.startsWith("#/product/")) {
     const productId = route.replace("#/product/", "");
