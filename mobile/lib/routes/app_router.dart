@@ -1,13 +1,19 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
 import '../features/product/presentation/pages/product_list_page.dart';
 import '../features/product/presentation/pages/product_detail_page.dart';
 import '../features/product/data/product_model.dart';
+import '../features/listing/presentation/pages/upload_image_page.dart';
+import '../features/listing/presentation/pages/my_listings_page.dart';
+import '../features/main/presentation/pages/main_screen.dart';
+import '../features/profile/presentation/pages/profile_page.dart';
+import '../features/profile/presentation/pages/edit_profile_page.dart';
 import 'route_names.dart';
 
 final appRouter = GoRouter(
-  initialLocation: RouteNames.login, // ← giữ login làm màn hình đầu
+  initialLocation: RouteNames.login,
   routes: [
     GoRoute(
       path: RouteNames.login,
@@ -17,15 +23,47 @@ final appRouter = GoRouter(
       path: RouteNames.register,
       builder: (context, state) => const RegisterPage(),
     ),
-    GoRoute(
-      path: RouteNames.productList,
-      builder: (context, state) => const ProductListPage(),
+
+    ShellRoute(
+      builder: (context, state, child) => MainScreen(child: child),
+      routes: [
+        GoRoute(
+          path: RouteNames.productList,
+          builder: (context, state) => const ProductListPage(),
+        ),
+        GoRoute(
+          path: RouteNames.myListings,
+          builder: (context, state) => const MyListingsPage(),
+        ),
+        GoRoute(
+          path: RouteNames.profile,
+          builder: (context, state) => const ProfilePage(),
+        ),
+        GoRoute(
+          path: RouteNames.chat,
+          builder: (context, state) => const Placeholder(),
+        ),
+        GoRoute(
+          path: RouteNames.explore,
+          builder: (context, state) => const Placeholder(),
+        ),
+      ],
     ),
+
     GoRoute(
       path: RouteNames.productDetail,
-      builder: (context, state) => ProductDetailPage(
-        product: state.extra as ProductModel,
-      ),
+      builder: (context, state) {
+        final product = state.extra as ProductModel;
+        return ProductDetailPage(product: product);
+      },
+    ),
+    GoRoute(
+      path: RouteNames.createListing,
+      builder: (context, state) => const UploadImagePage(),
+    ),
+    GoRoute(
+      path: RouteNames.profile + '/edit',
+      builder: (context, state) => const EditProfilePage(),
     ),
   ],
 );
