@@ -139,6 +139,28 @@ export async function registerApi({
   return data;
 }
 
+/* ── Forgot Password ── */
+export async function sendForgotPasswordOtp(email) {
+  return apiFetch(
+    `/api/user/forgot-password/send-otp?email=${encodeURIComponent(email)}`,
+    { method: "POST" }
+  );
+}
+
+export async function verifyForgotPasswordOtp(email, otp) {
+  return apiFetch(
+    `/api/user/forgot-password/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`,
+    { method: "POST" }
+  );
+}
+
+export async function resetPasswordApi(resetToken, newPassword, confirmPassword) {
+  const params = new URLSearchParams({ resetToken, newPassword, confirmPassword });
+  return apiFetch(`/api/user/forgot-password/reset-password?${params}`, {
+    method: "POST",
+  });
+}
+
 /* ── Logout ── */
 export async function logoutApi() {
   try {

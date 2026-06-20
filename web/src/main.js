@@ -7,6 +7,7 @@ import "./styles/global.css";
 
 import { renderLoginPage } from "./pages/login.js";
 import { renderRegisterPage } from "./pages/register.js";
+import { renderForgotPasswordPage } from "./pages/forgot-password.js";
 import { renderProfilePage } from "./pages/profile.js";
 import { renderHomePage } from "./pages/home.js";
 import { renderProductsPage } from "./pages/products.js";
@@ -27,6 +28,11 @@ const routes = {
   "#/register": () => {
     renderHeader({ activePage: "register" });
     renderRegisterPage(app);
+    removeFooter();
+  },
+  "#/forgot-password": () => {
+    renderHeader({ activePage: "login" });
+    renderForgotPasswordPage(app);
     removeFooter();
   },
   "#/profile": () => {
