@@ -355,6 +355,7 @@ export function renderRegisterPage(container) {
         email: emailInput.value.trim(),
         phone: phoneInput.value.trim(),
         password: passInput.value,
+        roleName: "MEMBER",
       });
       showToast("Đăng ký thành công! Chào mừng đến với EcoCycle 🌿", "success");
       sessionStorage.setItem("ecocycle_new_user", nameInput.value.trim());

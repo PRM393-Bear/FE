@@ -7,6 +7,9 @@ import "./styles/global.css";
 
 import { renderLoginPage } from "./pages/login.js";
 import { renderRegisterPage } from "./pages/register.js";
+import { renderRegisterSelectionPage } from "./pages/register-selection.js";
+import { renderRegisterShopPage } from "./pages/register-shop.js";
+import { renderRegisterOrgPage } from "./pages/register-org.js";
 import { renderForgotPasswordPage } from "./pages/forgot-password.js";
 import { renderProfilePage } from "./pages/profile.js";
 import { renderHomePage } from "./pages/home.js";
@@ -27,7 +30,22 @@ const routes = {
   },
   "#/register": () => {
     renderHeader({ activePage: "register" });
+    renderRegisterSelectionPage(app);
+    removeFooter();
+  },
+  "#/register-member": () => {
+    renderHeader({ activePage: "register" });
     renderRegisterPage(app);
+    removeFooter();
+  },
+  "#/register-shop": () => {
+    renderHeader({ activePage: "register" });
+    renderRegisterShopPage(app);
+    removeFooter();
+  },
+  "#/register-organization": () => {
+    renderHeader({ activePage: "register" });
+    renderRegisterOrgPage(app);
     removeFooter();
   },
   "#/forgot-password": () => {

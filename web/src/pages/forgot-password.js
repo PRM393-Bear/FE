@@ -173,7 +173,7 @@ function renderStep1(state, container) {
       state.step = 2;
       showToast('Mã OTP đã được gửi đến email của bạn', 'success');
       renderStep2(state, container);
-    } catch {
+    } catch (error) {
       showToast('Không thể gửi OTP. Kiểm tra email và thử lại.', 'error');
     } finally {
       submitBtn.classList.remove('is-loading');
@@ -240,7 +240,7 @@ function renderStep2(state, container) {
     try {
       await sendForgotPasswordOtp(state.email);
       showToast('Mã OTP mới đã được gửi', 'success');
-    } catch {
+    } catch (error) {
       showToast('Không thể gửi lại OTP. Vui lòng thử lại.', 'error');
     } finally {
       resendBtn.disabled = false;
@@ -262,7 +262,7 @@ function renderStep2(state, container) {
       state.step = 3;
       showToast('Xác nhận OTP thành công', 'success');
       renderStep3(state, container);
-    } catch {
+    } catch (error) {
       showToast('Mã OTP không đúng hoặc đã hết hạn.', 'error');
     } finally {
       submitBtn.classList.remove('is-loading');
@@ -377,7 +377,7 @@ function renderStep3(state, container) {
       await resetPasswordApi(state.resetToken, newPassword, confirmPassword);
       showToast('Đặt lại mật khẩu thành công!', 'success');
       setTimeout(() => { window.location.hash = '#/login'; }, 1000);
-    } catch {
+    } catch (error) {
       showToast('Không thể đặt lại mật khẩu. Vui lòng thử lại.', 'error');
     } finally {
       submitBtn.classList.remove('is-loading');

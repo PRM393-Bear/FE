@@ -123,10 +123,11 @@ export async function registerApi({
   email,
   phone,
   password,
+  roleName,
 }) {
   const data = await apiFetch("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ username, fullName, email, phone, password }),
+    body: JSON.stringify({ username, fullName, email, phone, password, roleName }),
   });
 
   if (data?.token) saveToken(data.token);
