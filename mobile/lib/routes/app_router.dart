@@ -79,9 +79,5 @@ final appRouter = GoRouter(
       path: RouteNames.createListing,
       builder: (context, state) => const UploadImagePage(),
     ),
-    GoRoute(
-      path: RouteNames.profile + '/edit',
-      builder: (context, state) => const EditProfilePage(),
-    ),
   ],
 );
