@@ -1,18 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
-
-// Core & Routes
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../routes/route_names.dart';
-
-// Shared Widgets
 import '../../../../shared/widgets/app_button.dart';
-
-// Feature Product (Data & Widgets)
 import '../../data/product_model.dart';
-import '../../data/product_mock_data.dart';
-import '../../widgets/product_card.dart';
+import '../../../listing/data/listing_model.dart';
+import '../../../listing/presentation/pages/listing_form_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final ProductModel product;
@@ -25,6 +20,36 @@ class ProductDetailPage extends StatefulWidget {
 class _ProductDetailPageState extends State<ProductDetailPage> {
   bool _isFavorite = false;
   bool _isExpanded = false;
+  int _currentImageIndex = 0;
+  bool _isOwner = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOwnership();
+  }
+
+  Future<void> _checkOwnership() async {
+    try {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: 'auth_token');
+      if (token == null) return;
+
+      final parts = token.split('.');
+      String payload = parts[1];
+      while (payload.length % 4 != 0) payload += '=';
+      final decoded = utf8.decode(base64Url.decode(payload));
+      final Map<String, dynamic> claims = jsonDecode(decoded);
+      final currentUserId = claims['userId']?.toString();
+
+      if (currentUserId != null &&
+          currentUserId == widget.product.sellerId) {
+        setState(() => _isOwner = true);
+      }
+    } catch (e) {
+      debugPrint('🔴 Check ownership error: $e');
+    }
+  }
 
   String _formatPrice(double price) {
     return price.toStringAsFixed(0).replaceAllMapped(
@@ -33,18 +58,23 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
+  String _conditionText(int condition) {
+    switch (condition) {
+      case 5: return 'Như mới (95-99%)';
+      case 4: return 'Tốt (85-95%)';
+      case 3: return 'Khá tốt (70-85%)';
+      default: return 'Đã qua sử dụng';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-    final similar = ProductMockData.products
-        .where((p) => p.id != product.id && p.category == product.category)
-        .take(4)
-        .toList();
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // App bar + Image
+          // AppBar + Image
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
@@ -57,22 +87,69 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 icon: const Icon(Icons.share_outlined),
                 onPressed: () {},
               ),
-              IconButton(
-                icon: Icon(
-                  _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  color: _isFavorite ? Colors.red : null,
+              if (!_isOwner)
+                IconButton(
+                  icon: Icon(
+                    _isFavorite
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: _isFavorite ? Colors.red : null,
+                  ),
+                  onPressed: () =>
+                      setState(() => _isFavorite = !_isFavorite),
                 ),
-                onPressed: () => setState(() => _isFavorite = !_isFavorite),
-              ),
+              if (_isOwner)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Chỉnh sửa',
+                  onPressed: () async {
+                    final listing = ListingModel(
+                      title: product.title,
+                      category: product.category,
+                      brand: '',
+                      color: product.color,
+                      condition: _conditionText(product.condition),
+                      tags: product.aiTags,
+                      price: product.price,
+                      size: product.size,
+                      description: product.description,
+                      shipNationwide: true,
+                      meetInPerson: false,
+                      imagePaths: product.images,
+                    );
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ListingFormPage(
+                          imagePaths: product.images,
+                          existingListing: listing,
+                          existingProductId: product.id,
+                        ),
+                      ),
+                    );
+                  },
+                ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Image.network(
-                product.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.border,
-                  child: const Icon(Icons.image_outlined, size: 60),
+              background: product.images.isNotEmpty
+                  ? PageView.builder(
+                itemCount: product.images.length,
+                onPageChanged: (i) =>
+                    setState(() => _currentImageIndex = i),
+                itemBuilder: (_, i) => Image.network(
+                  product.images[i],
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: AppColors.border,
+                    child: const Icon(Icons.image_outlined,
+                        size: 60),
+                  ),
                 ),
+              )
+                  : Container(
+                color: AppColors.background,
+                child: const Icon(Icons.image_outlined,
+                    size: 60, color: AppColors.neutral),
               ),
             ),
           ),
@@ -83,69 +160,115 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Image dots
+                  if (product.images.length > 1) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        product.images.length,
+                            (i) => Container(
+                          margin:
+                          const EdgeInsets.symmetric(horizontal: 3),
+                          width: i == _currentImageIndex ? 16 : 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: i == _currentImageIndex
+                                ? AppColors.primary
+                                : AppColors.border,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Owner badge
+                  if (_isOwner)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.storefront_outlined,
+                              size: 14, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Sản phẩm của bạn',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   // Title
                   Text(product.title, style: AppTextStyles.headline2),
                   const SizedBox(height: 8),
 
                   // Price
                   Text(
-                    '${_formatPrice(product.price)} đ',
-                    style: AppTextStyles.headline1.copyWith(
-                      color: AppColors.primary,
-                    ),
+                    product.type == 'DONATE'
+                        ? 'Miễn phí'
+                        : '${_formatPrice(product.price)} đ',
+                    style: AppTextStyles.headline1
+                        .copyWith(color: AppColors.primary),
                   ),
                   const SizedBox(height: 12),
 
-                  // Rating + condition
-                  Row(
+                  // Chips
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      ...List.generate(5, (i) => Icon(
-                        i < product.rating.floor()
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        size: 16,
-                        color: Colors.amber,
-                      )),
-                      const SizedBox(width: 6),
-                      Text(product.condition,
-                          style: AppTextStyles.bodyMedium),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '✦ AI đánh giá',
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.primary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
+                      _infoChip(Icons.circle,
+                          'Tình trạng: ${product.conditionText}',
+                          AppColors.primary),
+                      if (product.size.isNotEmpty)
+                        _infoChip(Icons.straighten_outlined,
+                            'Size: ${product.size}', AppColors.neutral),
+                      if (product.color.isNotEmpty)
+                        _infoChip(Icons.palette_outlined,
+                            'Màu: ${product.color}', AppColors.neutral),
+                      _infoChip(Icons.category_outlined,
+                          product.category, AppColors.neutral),
                     ],
                   ),
-                  const SizedBox(height: 8),
 
-                  // Tags
-                  Wrap(
-                    spacing: 6,
-                    children: product.tags.map((tag) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Text(tag,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontSize: 12,
-                          )),
-                    )).toList(),
-                  ),
+                  // AI Tags
+                  if (product.aiTags.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: product.aiTags
+                          .map((tag) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppColors.border),
+                        ),
+                        child: Text(tag,
+                            style: AppTextStyles.bodyMedium
+                                .copyWith(fontSize: 12)),
+                      ))
+                          .toList(),
+                    ),
+                  ],
 
                   const Divider(height: 24),
 
@@ -154,9 +277,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundColor: AppColors.primary.withOpacity(0.2),
+                        backgroundColor:
+                        AppColors.primary.withOpacity(0.2),
                         child: Text(
-                          product.sellerName[0],
+                          product.sellerName.isNotEmpty
+                              ? product.sellerName[0].toUpperCase()
+                              : '?',
                           style: AppTextStyles.bodyLarge.copyWith(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
@@ -170,126 +296,55 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           children: [
                             Text(product.sellerName,
                                 style: AppTextStyles.bodyLarge.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                )),
-                            Row(
-                              children: [
-                                const Icon(Icons.star_rounded,
-                                    size: 12, color: Colors.amber),
-                                Text(
-                                  ' ${product.sellerRating} (${product.sellerReviews} đánh giá)',
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                                    fontWeight: FontWeight.w600)),
+                            Text(
+                              _isOwner ? 'Bạn' : 'Người bán',
+                              style: AppTextStyles.bodyMedium
+                                  .copyWith(fontSize: 12),
                             ),
                           ],
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {},
-                        child: Text('Xem shop →',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.primary,
-                            )),
-                      ),
-                    ],
-                  ),
-
-                  const Divider(height: 24),
-
-                  // Location & shipping
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 16, color: AppColors.neutral),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Khu vực',
+                      if (!_isOwner)
+                        TextButton(
+                          onPressed: () {},
+                          child: Text('Xem shop →',
                               style: AppTextStyles.bodyMedium.copyWith(
-                                fontSize: 12,
-                              )),
-                          Text(product.location,
-                              style: AppTextStyles.bodyLarge),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.local_shipping_outlined,
-                          size: 16, color: AppColors.neutral),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Vận chuyển',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                fontSize: 12,
-                              )),
-                          Text('Ship toàn quốc',
-                              style: AppTextStyles.bodyLarge),
-                        ],
-                      ),
+                                  color: AppColors.primary)),
+                        ),
                     ],
                   ),
 
                   const Divider(height: 24),
 
                   // Description
-                  Text('Mô tả sản phẩm', style: AppTextStyles.headline3),
+                  Text('Mô tả sản phẩm',
+                      style: AppTextStyles.headline3),
                   const SizedBox(height: 8),
                   Text(
-                    product.description,
+                    product.description.isNotEmpty
+                        ? product.description
+                        : 'Chưa có mô tả',
                     style: AppTextStyles.bodyLarge,
                     maxLines: _isExpanded ? null : 3,
-                    overflow: _isExpanded ? null : TextOverflow.ellipsis,
+                    overflow:
+                    _isExpanded ? null : TextOverflow.ellipsis,
                   ),
-                  TextButton(
-                    onPressed: () => setState(() => _isExpanded = !_isExpanded),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      _isExpanded ? 'Thu gọn' : 'Xem thêm',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary,
+                  if (product.description.length > 100)
+                    TextButton(
+                      onPressed: () =>
+                          setState(() => _isExpanded = !_isExpanded),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        _isExpanded ? 'Thu gọn' : 'Xem thêm',
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(color: AppColors.primary),
                       ),
                     ),
-                  ),
-
-                  const Divider(height: 24),
-
-                  // Similar products
-                  if (similar.isNotEmpty) ...[
-                    Text('Sản phẩm tương tự', style: AppTextStyles.headline3),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 280,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: similar.length,
-                        itemBuilder: (context, index) {
-                          return SizedBox(
-                            width: 160,
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: ProductCard(
-                                product: similar[index],
-                                onTap: () {},
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
 
                   const SizedBox(height: 100),
                 ],
@@ -299,34 +354,134 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ],
       ),
 
-      // Bottom bar
+      // Bottom bar — khác nhau tùy owner/buyer
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         decoration: BoxDecoration(
           color: AppColors.surface,
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                label: const Text('Chat với seller'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 48),
+        child: _isOwner
+            ? _buildOwnerActions(product)
+            : _buildBuyerActions(product),
+      ),
+    );
+  }
+
+  // Bottom bar cho chủ sản phẩm
+  Widget _buildOwnerActions(ProductModel product) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              final listing = ListingModel(
+                title: product.title,
+                category: product.category,
+                brand: '',
+                color: product.color,
+                condition: _conditionText(product.condition),
+                tags: product.aiTags,
+                price: product.price,
+                size: product.size,
+                description: product.description,
+                shipNationwide: true,
+                meetInPerson: false,
+                imagePaths: product.images,
+              );
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ListingFormPage(
+                    imagePaths: product.images,
+                    existingListing: listing,
+                    existingProductId: product.id,
+                  ),
                 ),
-              ),
+              );
+            },
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            label: const Text('Chỉnh sửa'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AppButton(
-                label: 'Mua ngay',
-                onPressed: () {},
-              ),
-            ),
-          ],
+          ),
         ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: AppButton(
+            label: 'Ẩn sản phẩm',
+            onPressed: () => showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Ẩn sản phẩm'),
+                content:
+                const Text('Sản phẩm sẽ không hiển thị với người mua.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Hủy'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      context.pop();
+                    },
+                    child: const Text('Ẩn',
+                        style: TextStyle(color: Colors.redAccent)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Bottom bar cho người mua
+  Widget _buildBuyerActions(ProductModel product) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+            label: const Text('Chat với seller'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: AppButton(
+            label: product.type == 'DONATE' ? 'Xin nhận' : 'Mua ngay',
+            onPressed: () {},
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: AppTextStyles.bodyMedium.copyWith(fontSize: 12)),
+        ],
       ),
     );
   }

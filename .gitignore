@@ -1,49 +1,25 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# System Files
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+Thumbs.db
+desktop.ini
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
+# IDEs and Editors
+.vscode/
 .idea/
-mobile/.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.iml
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-mobile/.dart_tool/
-.flutter-plugins-dependencies
-mobile/.flutter-plugins
-mobile/.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-mobile/build/
-/coverage/
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+flutter_export_environment.sh
 
-# Android specific
-mobile/android/build/
-mobile/android/.gradle/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# The subdirectories mobile/ and web/ will have their own specific .gitignore files 
+# which will handle flutter/npm specific ignores (like node_modules, build, etc).
+mobile/.git/

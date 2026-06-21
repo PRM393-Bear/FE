@@ -6,6 +6,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../core/utils/listing_store.dart';
 import 'upload_image_page.dart';
+import 'my_listings_page.dart';
 
 class ListingSuccessPage extends StatelessWidget {
   const ListingSuccessPage({super.key});
@@ -140,15 +141,9 @@ class ListingSuccessPage extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 6),
-
-                              // Title
-                              Text(
-                                lastListing.title,
-                                style: AppTextStyles.headline3,
-                              ),
+                              Text(lastListing.title,
+                                  style: AppTextStyles.headline3),
                               const SizedBox(height: 4),
-
-                              // Price
                               Text(
                                 '${_formatPrice(lastListing.price)}đ',
                                 style: AppTextStyles.headline2.copyWith(
@@ -156,8 +151,6 @@ class ListingSuccessPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-
-                              // Seller
                               Row(
                                 children: [
                                   CircleAvatar(
@@ -204,11 +197,14 @@ class ListingSuccessPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
                 child: Column(
                   children: [
+                    // Về trang chủ — dùng pushAndRemoveUntil
                     AppButton(
                       label: '→ Về trang chủ',
                       onPressed: () => context.go(RouteNames.productList),
                     ),
                     const SizedBox(height: 12),
+
+                    // Đăng bài mới
                     AppButton(
                       label: '⊕ Đăng bài mới',
                       type: AppButtonType.secondary,
@@ -221,8 +217,16 @@ class ListingSuccessPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
+
+                    // Xem bài đăng — đổi sang Navigator.pushAndRemoveUntil
                     OutlinedButton(
-                      onPressed: () => context.go(RouteNames.myListings),
+                      onPressed: () => Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MyListingsPage(),
+                        ),
+                            (route) => false,
+                      ),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 52),
                         side: const BorderSide(color: AppColors.border),

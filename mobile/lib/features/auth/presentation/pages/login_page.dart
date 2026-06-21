@@ -1,10 +1,13 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
-import 'package:go_router/go_router.dart';
-import '../../../../routes/route_names.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,34 +18,62 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  final _storage = const FlutterSecureStorage();
+
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // Mock login tạm thời — thay bằng API call khi BE xong
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    // Giả lập delay gọi API
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final res = await ApiClient.dio.post('/api/auth/login', data: {
+        'username': _usernameController.text.trim(),
+        'password': _passwordController.text,
+      });
 
-    setState(() => _isLoading = false);
+      final token = res.data['token'] as String;
+      await _storage.write(key: 'auth_token', value: token);
 
-    if (!mounted) return;
+      if (!mounted) return;
+      context.go(RouteNames.productList);
+    } on DioException catch (e) {
+      debugPrint('🔴 Login error: ${e.response?.data}');
 
-    // Tạm thời bất kỳ email/password hợp lệ đều cho vào
-    // Sau khi BE xong sẽ check response thật
-    context.go(RouteNames.productList);
+      // BE trả 500 khi sai mật khẩu → hiện thông báo thân thiện
+      final statusCode = e.response?.statusCode;
+      String msg;
+      if (statusCode == 500 || statusCode == 401 || statusCode == 403) {
+        msg = 'Sai tên đăng nhập hoặc mật khẩu';
+      } else {
+        msg = e.response?.data?['message'] ?? 'Đăng nhập thất bại';
+      }
+      _showSnack(msg);
+    } catch (e) {
+      debugPrint('🔴 Unknown error: $e');
+      _showSnack('Đã có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: AppColors.error,
+      duration: const Duration(seconds: 4),
+    ));
   }
 
   @override
@@ -86,13 +117,12 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 36),
 
                 AppTextField(
-                  label: 'Email',
-                  hint: 'Nhập email của bạn',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  label: 'Tên đăng nhập',
+                  hint: 'Nhập tên đăng nhập của bạn',
+                  controller: _usernameController,
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Vui lòng nhập email';
-                    if (!v.contains('@')) return 'Email không hợp lệ';
+                    if (v == null || v.isEmpty)
+                      return 'Vui lòng nhập tên đăng nhập';
                     return null;
                   },
                 ),
@@ -201,9 +231,10 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Chưa có tài khoản?', style: AppTextStyles.bodyMedium),
+                    Text('Chưa có tài khoản?',
+                        style: AppTextStyles.bodyMedium),
                     TextButton(
-                      onPressed: () => context.push(RouteNames.register),
+                      onPressed: () => context.push(RouteNames.selectRole),
                       child: Text(
                         'Đăng ký ngay',
                         style: AppTextStyles.bodyMedium.copyWith(

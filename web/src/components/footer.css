@@ -1,0 +1,159 @@
+/**
+ * EcoCycle – Site Footer Styles (Figma V2)
+ */
+
+.site-footer {
+  background-color: var(--surface-container-highest);
+  border-top: 1px solid var(--surface-variant);
+  padding: 64px 0 0;
+  font-family: var(--font-body);
+}
+
+.site-footer__inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+}
+
+@media (min-width: 768px) {
+  .site-footer__inner {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.site-footer__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  margin-bottom: 24px;
+}
+
+.site-footer__brand img {
+  width: 32px;
+  height: 32px;
+}
+
+.site-footer__desc {
+  font-size: 16px;
+  color: var(--on-surface-variant);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.site-footer__socials {
+  display: flex;
+  gap: 16px;
+}
+
+.site-footer__social-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-container-lowest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.site-footer__social-btn:hover {
+  background: var(--primary);
+  color: var(--surface-container-lowest);
+}
+
+.site-footer__title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--on-background);
+  margin: 0 0 24px 0;
+}
+
+.site-footer__links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.site-footer__links a {
+  font-size: 14px;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.site-footer__links a:hover {
+  color: var(--primary);
+}
+
+.site-footer__apps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.site-footer__app-btn {
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: var(--rounded-xl);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.site-footer__app-btn:hover {
+  opacity: 0.9;
+}
+
+.site-footer__app-btn .material-symbols-outlined {
+  font-size: 28px;
+}
+
+.site-footer__app-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.site-footer__app-subtitle {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.site-footer__app-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.site-footer__bottom {
+  max-width: 1280px;
+  margin: 64px auto 0;
+  padding: 32px 16px;
+  border-top: 1px solid rgba(189, 202, 186, 0.3); /* outline-variant/30 */
+  text-align: center;
+  font-size: 14px;
+  color: var(--on-surface-variant);
+}
