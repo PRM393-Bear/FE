@@ -1,11 +1,20 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  /// roleName: 'MEMBER' | 'SELLER' | 'ORGANIZATION'
+  /// Truyền vào từ SelectRolePage qua GoRouter extra
+  final String roleName;
+
+  const RegisterPage({super.key, this.roleName = 'MEMBER'});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -13,7 +22,8 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -22,15 +32,84 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = false;
+  bool _isLoading = false;
+
+  final _storage = const FlutterSecureStorage();
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _usernameController.dispose();
+    _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    if (!_agreedToTerms) {
+      _showSnack('Vui lòng đồng ý với điều khoản', isError: true);
+      return;
+    }
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Đăng ký tài khoản
+      await ApiClient.dio.post('/api/auth/register', data: {
+        'username': _usernameController.text.trim(),
+        'password': _passwordController.text,
+        'email': _emailController.text.trim(),
+        'fullName': _fullNameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'roleName': widget.roleName,
+      });
+
+      // 2. Tự động login lấy token
+      final loginRes = await ApiClient.dio.post('/api/auth/login', data: {
+        'username': _usernameController.text.trim(),
+        'password': _passwordController.text,
+      });
+
+      final token = loginRes.data['token'] as String;
+
+      // 3. Lưu token vào secure storage
+      await _storage.write(key: 'auth_token', value: token);
+
+      if (!mounted) return;
+
+      // 4. Điều hướng theo role
+      if (widget.roleName == 'SELLER') {
+        context.go(RouteNames.registerShop);
+      } else if (widget.roleName == 'ORGANIZATION') {
+        context.go(RouteNames.registerOrg);
+      } else {
+        context.go(RouteNames.productList);
+      }
+    } on DioException catch (e) {
+      debugPrint('🔴 Register error: ${e.response?.data}');
+      debugPrint('🔴 Status code: ${e.response?.statusCode}');
+      debugPrint('🔴 Error type: ${e.type}');
+      debugPrint('🔴 Error message: ${e.message}');
+      debugPrint('🔴 Error cause: ${e.error}');
+      final msg = e.response?.data?['message'] ?? 'Đăng ký thất bại';
+      _showSnack(msg, isError: true);
+    } catch (e) {
+      debugPrint('🔴 Unknown error: $e');
+      _showSnack('Đã có lỗi xảy ra, vui lòng thử lại', isError: true);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: isError ? AppColors.error : AppColors.primary,
+      duration: const Duration(seconds: 4),
+    ));
   }
 
   @override
@@ -53,7 +132,7 @@ class _RegisterPageState extends State<RegisterPage> {
               children: [
                 const SizedBox(height: 24),
 
-                // Avatar placeholder
+                // Avatar icon theo role
                 Container(
                   width: 64,
                   height: 64,
@@ -61,8 +140,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.person_rounded,
+                  child: Icon(
+                    widget.roleName == 'SELLER'
+                        ? Icons.storefront_rounded
+                        : widget.roleName == 'ORGANIZATION'
+                        ? Icons.volunteer_activism_rounded
+                        : Icons.person_rounded,
                     color: Colors.white,
                     size: 32,
                   ),
@@ -73,7 +156,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text('Tạo tài khoản mới', style: AppTextStyles.headline2),
                 const SizedBox(height: 6),
                 Text(
-                  'Mỗi món đồ đều có vòng đời mới',
+                  widget.roleName == 'SELLER'
+                      ? 'Đăng ký tài khoản Shop kinh doanh'
+                      : widget.roleName == 'ORGANIZATION'
+                      ? 'Đăng ký tài khoản Tổ chức từ thiện'
+                      : 'Mỗi món đồ đều có vòng đời mới',
                   style: AppTextStyles.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -81,9 +168,23 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 28),
 
                 AppTextField(
-                  label: 'Họ và tên',
+                  label: 'Tên đăng nhập *',
+                  hint: 'nguyenvana123',
+                  controller: _usernameController,
+                  validator: (v) {
+                    if (v == null || v.isEmpty)
+                      return 'Vui lòng nhập tên đăng nhập';
+                    if (v.length < 4) return 'Tối thiểu 4 ký tự';
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 14),
+
+                AppTextField(
+                  label: 'Họ và tên *',
                   hint: 'Nguyễn Văn A',
-                  controller: _nameController,
+                  controller: _fullNameController,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Vui lòng nhập họ tên';
                     return null;
@@ -93,7 +194,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 14),
 
                 AppTextField(
-                  label: 'Email',
+                  label: 'Email *',
                   hint: 'email@vi-du.com',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -107,12 +208,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 14),
 
                 AppTextField(
-                  label: 'Số điện thoại',
+                  label: 'Số điện thoại *',
                   hint: '09xx xxx xxx',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Vui lòng nhập số điện thoại';
+                    if (v == null || v.isEmpty)
+                      return 'Vui lòng nhập số điện thoại';
                     if (v.length < 10) return 'Số điện thoại không hợp lệ';
                     return null;
                   },
@@ -121,7 +223,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 14),
 
                 AppTextField(
-                  label: 'Mật khẩu',
+                  label: 'Mật khẩu *',
                   hint: '••••••••',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -145,7 +247,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 14),
 
                 AppTextField(
-                  label: 'Xác nhận mật khẩu',
+                  label: 'Xác nhận mật khẩu *',
                   hint: '••••••••',
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
@@ -156,13 +258,14 @@ class _RegisterPageState extends State<RegisterPage> {
                           : Icons.visibility_outlined,
                       color: AppColors.neutral,
                     ),
-                    onPressed: () => setState(
-                          () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                    ),
+                    onPressed: () => setState(() =>
+                    _obscureConfirmPassword = !_obscureConfirmPassword),
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Vui lòng xác nhận mật khẩu';
-                    if (v != _passwordController.text) return 'Mật khẩu không khớp';
+                    if (v == null || v.isEmpty)
+                      return 'Vui lòng xác nhận mật khẩu';
+                    if (v != _passwordController.text)
+                      return 'Mật khẩu không khớp';
                     return null;
                   },
                 ),
@@ -218,20 +321,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 AppButton(
                   label: 'Đăng ký ngay',
-                  onPressed: () {
-                    if (!_agreedToTerms) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Vui lòng đồng ý với điều khoản'),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
-                      return;
-                    }
-                    if (_formKey.currentState!.validate()) {
-                      // TODO: call register API
-                    }
-                  },
+                  isLoading: _isLoading,
+                  onPressed: _handleRegister,
                 ),
 
                 const SizedBox(height: 32),

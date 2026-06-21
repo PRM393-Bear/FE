@@ -33,19 +33,41 @@ class ProductCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(12),
                   ),
-                  child: Image.network(
+                  child: product.imageUrl.isNotEmpty
+                      ? Image.network(
                     product.imageUrl,
                     height: 150,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 150,
-                      color: AppColors.border,
-                      child: const Icon(Icons.image_outlined,
-                          color: AppColors.neutral),
+                    errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                  )
+                      : _imagePlaceholder(),
+                ),
+
+                // Badge type (DONATE / EXCHANGE)
+                if (product.type == 'DONATE' || product.type == 'EXCHANGE')
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: product.type == 'DONATE'
+                            ? AppColors.primary
+                            : AppColors.secondary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        product.type == 'DONATE' ? 'Tặng' : 'Đổi',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+
                 // Favorite button
                 Positioned(
                   top: 8,
@@ -83,41 +105,46 @@ class ProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+
+                  // Price hoặc "Miễn phí"
                   Text(
-                    '${_formatPrice(product.price)}đ',
+                    product.type == 'DONATE'
+                        ? 'Miễn phí'
+                        : '${_formatPrice(product.price)}đ',
                     style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.primary,
+                      color: product.type == 'DONATE'
+                          ? AppColors.primary
+                          : AppColors.primary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // Rating
+
+                  // Condition
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded,
-                          size: 12, color: Colors.amber),
-                      const SizedBox(width: 2),
-                      Text(product.rating.toString(),
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontSize: 11,
-                          )),
+                      const Icon(Icons.circle,
+                          size: 8, color: AppColors.primaryLight),
                       const SizedBox(width: 4),
-                      Text('· ${product.condition}',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontSize: 11,
-                          )),
+                      Text(
+                        product.conditionText,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Location
+
+                  // Seller
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined,
+                      const Icon(Icons.person_outline_rounded,
                           size: 11, color: AppColors.neutral),
                       const SizedBox(width: 2),
                       Expanded(
                         child: Text(
-                          product.location,
+                          product.sellerName,
                           style: AppTextStyles.bodyMedium.copyWith(
                             fontSize: 11,
                           ),
@@ -133,6 +160,16 @@ class ProductCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      height: 150,
+      width: double.infinity,
+      color: AppColors.background,
+      child: const Icon(Icons.image_outlined,
+          color: AppColors.neutral, size: 40),
     );
   }
 

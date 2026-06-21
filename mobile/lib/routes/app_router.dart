@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
+import '../features/auth/presentation/pages/select_role_page.dart';
+import '../features/auth/presentation/pages/shop_register_page.dart';
+import '../features/auth/presentation/pages/org_register_page.dart';
 import '../features/product/presentation/pages/product_list_page.dart';
 import '../features/product/presentation/pages/product_detail_page.dart';
 import '../features/product/data/product_model.dart';
@@ -20,8 +23,23 @@ final appRouter = GoRouter(
       builder: (context, state) => const LoginPage(),
     ),
     GoRoute(
+      path: RouteNames.selectRole,
+      builder: (context, state) => const SelectRolePage(),
+    ),
+    GoRoute(
       path: RouteNames.register,
-      builder: (context, state) => const RegisterPage(),
+      builder: (context, state) {
+        final role = state.extra as String? ?? 'MEMBER';
+        return RegisterPage(roleName: role);
+      },
+    ),
+    GoRoute(
+      path: RouteNames.registerShop,
+      builder: (context, state) => const ShopRegisterPage(),
+    ),
+    GoRoute(
+      path: RouteNames.registerOrg,
+      builder: (context, state) => const OrgRegisterPage(),
     ),
 
     ShellRoute(
