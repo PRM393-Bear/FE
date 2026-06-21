@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/utils/profile_store.dart';
 import '../../../../core/utils/listing_store.dart';
 
 class MyShopPage extends StatefulWidget {
-  const MyShopPage({super.key});
+  final String fullName;
+  final String username;
+
+  const MyShopPage({
+    super.key,
+    required this.fullName,
+    required this.username,
+  });
 
   @override
   State<MyShopPage> createState() => _MyShopPageState();
@@ -36,7 +42,6 @@ class _MyShopPageState extends State<MyShopPage>
 
   @override
   Widget build(BuildContext context) {
-    final profile = ProfileStore.instance.profile;
     final listings = ListingStore.instance.myListings;
 
     return Scaffold(
@@ -68,12 +73,7 @@ class _MyShopPageState extends State<MyShopPage>
               ],
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: profile.coverUrl.isNotEmpty
-                  ? Image.network(profile.coverUrl, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) {
-                    return Container(color: AppColors.primary);
-                  })
-                  : Container(color: AppColors.primary),
+              background: Container(color: AppColors.primary),
             ),
           ),
 
@@ -92,17 +92,7 @@ class _MyShopPageState extends State<MyShopPage>
                       border: Border.all(color: Colors.white, width: 3),
                     ),
                     child: ClipOval(
-                      child: profile.avatarUrl.isNotEmpty
-                          ? Image.network(profile.avatarUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) {
-                            return Container(
-                              color: AppColors.primary.withOpacity(0.2),
-                              child: const Icon(Icons.person,
-                                  size: 40, color: AppColors.primary),
-                            );
-                          })
-                          : Container(
+                      child: Container(
                         color: AppColors.primary.withOpacity(0.2),
                         child: const Icon(Icons.person,
                             size: 40, color: AppColors.primary),
@@ -111,7 +101,10 @@ class _MyShopPageState extends State<MyShopPage>
                   ),
                   const SizedBox(height: 12),
 
-                  Text(profile.name, style: AppTextStyles.headline2),
+                  Text(
+                    widget.fullName.isNotEmpty ? widget.fullName : widget.username,
+                    style: AppTextStyles.headline2,
+                  ),
                   const SizedBox(height: 6),
 
                   // Badge
@@ -144,7 +137,7 @@ class _MyShopPageState extends State<MyShopPage>
                     children: [
                       _buildStat('${listings.length}', 'đang bán'),
                       _buildStatDivider(),
-                      _buildStat('${profile.sold}', 'đã bán'),
+                      _buildStat('0', 'đã bán'),
                       _buildStatDivider(),
                       Column(
                         children: [
@@ -153,7 +146,7 @@ class _MyShopPageState extends State<MyShopPage>
                               const Icon(Icons.star_rounded,
                                   color: Colors.amber, size: 18),
                               const SizedBox(width: 2),
-                              Text('${profile.rating}',
+                              Text('0.0',
                                   style: AppTextStyles.headline3),
                             ],
                           ),
