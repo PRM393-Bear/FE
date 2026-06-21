@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // Core & Routes
-import 'package:bear_market_mobile/core/theme/app_colors.dart';
-import 'package:bear_market_mobile/core/theme/app_text_styles.dart';
-import 'package:bear_market_mobile/routes/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../routes/route_names.dart';
 
 // Shared Widgets
-import 'package:bear_market_mobile/shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_button.dart';
 
 // Feature Product (Data & Widgets)
-import 'package:bear_market_mobile/features/product/data/product_model.dart';
-import 'package:bear_market_mobile/features/product/data/product_mock_data.dart';
-import 'package:bear_market_mobile/features/product/widgets/product_card.dart';
+import '../../data/product_model.dart';
+import '../../data/product_mock_data.dart';
+import '../../widgets/product_card.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final ProductModel product;
@@ -251,6 +251,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                   TextButton(
                     onPressed: () => setState(() => _isExpanded = !_isExpanded),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     child: Text(
                       _isExpanded ? 'Thu gọn' : 'Xem thêm',
                       style: AppTextStyles.bodyMedium.copyWith(
