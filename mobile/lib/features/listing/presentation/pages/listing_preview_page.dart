@@ -1,15 +1,23 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../data/listing_model.dart';
 import '../widgets/step_indicator.dart';
 import 'listing_success_page.dart';
-import '../../../../core/utils/listing_store.dart';
 
-class ListingPreviewPage extends StatelessWidget {
+class ListingPreviewPage extends StatefulWidget {
   final ListingModel listing;
   const ListingPreviewPage({super.key, required this.listing});
+
+  @override
+  State<ListingPreviewPage> createState() => _ListingPreviewPageState();
+}
+
+class _ListingPreviewPageState extends State<ListingPreviewPage> {
+  bool _isLoading = false;
 
   String _formatPrice(double price) {
     return price.toStringAsFixed(0).replaceAllMapped(
@@ -18,8 +26,65 @@ class ListingPreviewPage extends StatelessWidget {
     );
   }
 
+  // Map condition string → số (BE dùng Short 1-5)
+  int _mapCondition(String condition) {
+    if (condition.contains('95-99')) return 5;
+    if (condition.contains('85-95')) return 4;
+    if (condition.contains('70-85')) return 3;
+    return 2;
+  }
+
+  Future<void> _handlePost() async {
+    setState(() => _isLoading = true);
+    try {
+      final listing = widget.listing;
+
+      await ApiClient.dio.post('/api/products', data: {
+        'title': listing.title,
+        'description': listing.description,
+        'category': listing.category,
+        'type': 'ITEM',
+        'condition': _mapCondition(listing.condition),
+        'price': listing.price.toInt(),
+        'size': listing.size,
+        'color': listing.color,
+        'images': listing.imagePaths,
+        'aiTags': listing.tags,
+        'lifecycleGeneration': 1,
+      });
+
+      if (!mounted) return;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const ListingSuccessPage()),
+            (route) => false,
+      );
+    } on DioException catch (e) {
+      debugPrint('🔴 Post product error: ${e.response?.data}');
+      final msg =
+          e.response?.data?['message'] ?? 'Đăng sản phẩm thất bại';
+      _showSnack(msg);
+    } catch (e) {
+      debugPrint('🔴 Unknown error: $e');
+      _showSnack('Đã có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: AppColors.error,
+      duration: const Duration(seconds: 4),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final listing = widget.listing;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -45,9 +110,7 @@ class ListingPreviewPage extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     'CHẾ ĐỘ XEM TRƯỚC',
-                    style: AppTextStyles.label.copyWith(
-                      color: Colors.white,
-                    ),
+                    style: AppTextStyles.label.copyWith(color: Colors.white),
                   ),
                 ],
               ),
@@ -133,9 +196,8 @@ class ListingPreviewPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${_formatPrice(listing.price)}đ',
-                    style: AppTextStyles.headline1.copyWith(
-                      color: AppColors.primary,
-                    ),
+                    style: AppTextStyles.headline1
+                        .copyWith(color: AppColors.primary),
                   ),
                   const Divider(height: 24),
 
@@ -150,19 +212,19 @@ class ListingPreviewPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Kích cỡ + Thương hiệu
+                  // Kích cỡ + Thương hiệu + Màu
                   Row(
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Kích cỡ', style: AppTextStyles.bodyMedium),
+                            Text('Kích cỡ',
+                                style: AppTextStyles.bodyMedium),
                             Text(
                               listing.size.isNotEmpty ? listing.size : '--',
                               style: AppTextStyles.bodyLarge.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                                  fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -171,13 +233,14 @@ class ListingPreviewPage extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Thương hiệu',
+                            Text('Màu sắc',
                                 style: AppTextStyles.bodyMedium),
                             Text(
-                              listing.brand.isNotEmpty ? listing.brand : '--',
+                              listing.color.isNotEmpty
+                                  ? listing.color
+                                  : '--',
                               style: AppTextStyles.bodyLarge.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                                  fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -241,18 +304,8 @@ class ListingPreviewPage extends StatelessWidget {
           children: [
             AppButton(
               label: '✓ Đăng bài ngay',
-              onPressed: () {
-                // Lưu bài đăng vào store
-                ListingStore.instance.addListing(listing);
-
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ListingSuccessPage(),
-                  ),
-                      (route) => false,
-                );
-              },
+              isLoading: _isLoading,
+              onPressed: _handlePost,
             ),
             const SizedBox(height: 8),
             Row(

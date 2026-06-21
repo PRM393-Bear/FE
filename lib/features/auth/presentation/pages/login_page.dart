@@ -3,7 +3,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
-import 'register_page.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../routes/route_names.dart';
 
@@ -19,12 +18,31 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  // Mock login tạm thời — thay bằng API call khi BE xong
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    // Giả lập delay gọi API
+    await Future.delayed(const Duration(seconds: 1));
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    // Tạm thời bất kỳ email/password hợp lệ đều cho vào
+    // Sau khi BE xong sẽ check response thật
+    context.go(RouteNames.productList);
   }
 
   @override
@@ -122,11 +140,8 @@ class _LoginPageState extends State<LoginPage> {
 
                 AppButton(
                   label: 'Đăng nhập',
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // TODO: call login API
-                    }
-                  },
+                  isLoading: _isLoading,
+                  onPressed: _handleLogin,
                 ),
 
                 const SizedBox(height: 24),
@@ -188,9 +203,7 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     Text('Chưa có tài khoản?', style: AppTextStyles.bodyMedium),
                     TextButton(
-                      onPressed: () {
-                        context.push(RouteNames.register);
-                      },
+                      onPressed: () => context.push(RouteNames.register),
                       child: Text(
                         'Đăng ký ngay',
                         style: AppTextStyles.bodyMedium.copyWith(

@@ -1,10 +1,13 @@
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
+import '../features/product/presentation/pages/product_list_page.dart';
+import '../features/product/presentation/pages/product_detail_page.dart';
+import '../features/product/data/product_model.dart';
 import 'route_names.dart';
 
 final appRouter = GoRouter(
-  initialLocation: RouteNames.login,
+  initialLocation: RouteNames.login, // ← giữ login làm màn hình đầu
   routes: [
     GoRoute(
       path: RouteNames.login,
@@ -14,6 +17,15 @@ final appRouter = GoRouter(
       path: RouteNames.register,
       builder: (context, state) => const RegisterPage(),
     ),
-    // Thêm các route khác sau khi làm xong màn hình
+    GoRoute(
+      path: RouteNames.productList,
+      builder: (context, state) => const ProductListPage(),
+    ),
+    GoRoute(
+      path: RouteNames.productDetail,
+      builder: (context, state) => ProductDetailPage(
+        product: state.extra as ProductModel,
+      ),
+    ),
   ],
 );
