@@ -299,7 +299,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildMenuItem(
                           icon: Icons.checkroom_outlined,
                           title: 'Tủ đồ',
-                          onTap: () => context.push(RouteNames.myListings),
+                          onTap: () => context.push(RouteNames.wardrobe),
                         ),
                         _buildDivider(),
                         _buildMenuItem(

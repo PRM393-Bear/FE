@@ -14,6 +14,7 @@ import '../features/main/presentation/pages/main_screen.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
 import '../features/profile/presentation/pages/edit_profile_page.dart';
 import 'route_names.dart';
+ import '../features/wardrobe/presentation/pages/wardrobe_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: RouteNames.login,
@@ -56,6 +57,10 @@ final appRouter = GoRouter(
         GoRoute(
           path: RouteNames.profile,
           builder: (context, state) => const ProfilePage(),
+        ),
+        GoRoute(
+          path: RouteNames.wardrobe,
+          builder: (context, state) => const WardrobePage(),
         ),
         GoRoute(
           path: RouteNames.chat,
