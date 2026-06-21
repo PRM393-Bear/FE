@@ -327,6 +327,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           title: 'Seller Dashboard',
                           onTap: () => context.push(RouteNames.sellerDashboard),
                         ),
+                        _buildDivider(),
+                        _buildMenuItem(
+                          icon: Icons.volunteer_activism_outlined,
+                          title: 'Organization Dashboard',
+                          onTap: () => context.push(RouteNames.orgDashboard),
+                        ),
                       ],
                     ),
                   ),
