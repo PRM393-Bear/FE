@@ -47,4 +47,9 @@ class AppTextStyles {
     color: Colors.white,
     letterSpacing: 0.2,
   );
+  static TextStyle get bodySmall => GoogleFonts.beVietnamPro(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
+  );
 }
