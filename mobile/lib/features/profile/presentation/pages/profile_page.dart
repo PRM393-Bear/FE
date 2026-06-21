@@ -321,6 +321,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           title: 'Đánh giá đã nhận',
                           onTap: () {},
                         ),
+                        _buildDivider(),
+                        _buildMenuItem(
+                          icon: Icons.storefront_outlined,
+                          title: 'Seller Dashboard',
+                          onTap: () => context.push(RouteNames.sellerDashboard),
+                        ),
                       ],
                     ),
                   ),
