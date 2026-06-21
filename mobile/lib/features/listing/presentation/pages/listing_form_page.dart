@@ -1,10 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/listing_constants.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
-import '../../../../core/utils/listing_store.dart';
 import '../../data/listing_model.dart';
 import '../widgets/step_indicator.dart';
 import 'listing_preview_page.dart';
@@ -13,12 +14,14 @@ class ListingFormPage extends StatefulWidget {
   final List<String> imagePaths;
   final ListingModel? existingListing;
   final int? existingIndex;
+  final String? existingProductId; // ← ID sản phẩm khi edit
 
   const ListingFormPage({
     super.key,
     required this.imagePaths,
     this.existingListing,
     this.existingIndex,
+    this.existingProductId,
   });
 
   @override
@@ -41,6 +44,7 @@ class _ListingFormPageState extends State<ListingFormPage> {
   late bool _shipNationwide;
   late bool _meetInPerson;
   late List<String> _tags;
+  bool _isLoading = false;
 
   bool get _isEditMode => widget.existingListing != null;
 
@@ -49,10 +53,10 @@ class _ListingFormPageState extends State<ListingFormPage> {
     super.initState();
     final l = widget.existingListing;
     if (l != null) {
-      // Edit mode — điền sẵn data cũ
       _titleController = TextEditingController(text: l.title);
       _brandController = TextEditingController(text: l.brand);
-      _priceController = TextEditingController(text: l.price.toStringAsFixed(0));
+      _priceController =
+          TextEditingController(text: l.price.toStringAsFixed(0));
       _descController = TextEditingController(text: l.description);
       _shippingFeeController = TextEditingController(
         text: l.shippingFee?.toStringAsFixed(0) ?? '',
@@ -65,7 +69,6 @@ class _ListingFormPageState extends State<ListingFormPage> {
       _meetInPerson = l.meetInPerson;
       _tags = List.from(l.tags);
     } else {
-      // Create mode — form trống
       _titleController = TextEditingController();
       _brandController = TextEditingController();
       _priceController = TextEditingController();
@@ -92,6 +95,14 @@ class _ListingFormPageState extends State<ListingFormPage> {
     super.dispose();
   }
 
+  // Map condition string → số
+  int _mapCondition(String condition) {
+    if (condition.contains('95-99')) return 5;
+    if (condition.contains('85-95')) return 4;
+    if (condition.contains('70-85')) return 3;
+    return 2;
+  }
+
   void _addTag(String tag) {
     final cleaned = tag.trim();
     if (cleaned.isNotEmpty && !_tags.contains('#$cleaned')) {
@@ -102,16 +113,86 @@ class _ListingFormPageState extends State<ListingFormPage> {
     }
   }
 
-  void _removeTag(String tag) {
-    setState(() => _tags.remove(tag));
+  void _removeTag(String tag) => setState(() => _tags.remove(tag));
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final listing = ListingModel(
+      title: _titleController.text,
+      category: _selectedCategory,
+      brand: _brandController.text,
+      color: _selectedColor,
+      condition: _selectedCondition,
+      tags: _tags,
+      price: double.tryParse(_priceController.text) ?? 0,
+      size: _selectedSize,
+      description: _descController.text,
+      shipNationwide: _shipNationwide,
+      meetInPerson: _meetInPerson,
+      shippingFee: double.tryParse(_shippingFeeController.text),
+      imagePaths: widget.imagePaths,
+    );
+
+    if (_isEditMode && widget.existingProductId != null) {
+      // ── Edit mode: gọi API PUT /api/products/{id} ──
+      setState(() => _isLoading = true);
+      try {
+        await ApiClient.dio.put(
+          '/api/products/${widget.existingProductId}',
+          data: {
+            'title': listing.title,
+            'description': listing.description,
+            'category': listing.category,
+            'type': 'ITEM',
+            'condition': _mapCondition(listing.condition),
+            'price': listing.price.toInt(),
+            'size': listing.size,
+            'color': listing.color,
+            'images': listing.imagePaths,
+            'aiTags': listing.tags,
+            'lifecycleGeneration': 1,
+          },
+        );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Cập nhật sản phẩm thành công!'),
+          backgroundColor: AppColors.primary,
+        ));
+        Navigator.pop(context);
+      } on DioException catch (e) {
+        debugPrint('🔴 Update product error: ${e.response?.data}');
+        final msg =
+            e.response?.data?['message'] ?? 'Cập nhật thất bại';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Lỗi: $msg'),
+          backgroundColor: AppColors.error,
+        ));
+      } catch (e) {
+        debugPrint('🔴 Unknown error: $e');
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Đã có lỗi xảy ra'),
+          backgroundColor: AppColors.error,
+        ));
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    } else {
+      // ── Create mode: qua preview ──
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ListingPreviewPage(listing: listing),
+        ),
+      );
+    }
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(title, style: AppTextStyles.headline3),
-    );
-  }
+  Widget _buildSectionTitle(String title) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Text(title, style: AppTextStyles.headline3),
+  );
 
   Widget _buildChipSelector({
     required List<String> items,
@@ -126,64 +207,30 @@ class _ListingFormPageState extends State<ListingFormPage> {
         return GestureDetector(
           onTap: () => onSelect(item),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary : AppColors.surface,
+              color:
+              isSelected ? AppColors.primary : AppColors.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.border,
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.border,
               ),
             ),
             child: Text(
               item,
               style: AppTextStyles.label.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected
+                    ? Colors.white
+                    : AppColors.textSecondary,
               ),
             ),
           ),
         );
       }).toList(),
     );
-  }
-
-  void _handleSubmit() {
-    if (_formKey.currentState!.validate()) {
-      final listing = ListingModel(
-        title: _titleController.text,
-        category: _selectedCategory,
-        brand: _brandController.text,
-        color: _selectedColor,
-        condition: _selectedCondition,
-        tags: _tags,
-        price: double.tryParse(_priceController.text) ?? 0,
-        size: _selectedSize,
-        description: _descController.text,
-        shipNationwide: _shipNationwide,
-        meetInPerson: _meetInPerson,
-        shippingFee: double.tryParse(_shippingFeeController.text),
-        imagePaths: widget.imagePaths,
-      );
-
-      if (_isEditMode) {
-        // Edit mode — lưu thẳng không cần preview
-        ListingStore.instance.myListings[widget.existingIndex!] = listing;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cập nhật thành công!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      } else {
-        // Create mode — qua preview
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ListingPreviewPage(listing: listing),
-          ),
-        );
-      }
-    }
   }
 
   @override
@@ -198,11 +245,10 @@ class _ListingFormPageState extends State<ListingFormPage> {
           _isEditMode ? 'Chỉnh sửa bài đăng' : 'Đăng bán',
           style: AppTextStyles.headline3,
         ),
-        // Nút lưu nhanh ở AppBar khi edit
         actions: _isEditMode
             ? [
           TextButton(
-            onPressed: _handleSubmit,
+            onPressed: _isLoading ? null : _handleSubmit,
             child: Text(
               'Lưu',
               style: AppTextStyles.bodyLarge.copyWith(
@@ -221,7 +267,6 @@ class _ListingFormPageState extends State<ListingFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Chỉ hiện step indicator khi create mode
               if (!_isEditMode) ...[
                 const StepIndicator(currentStep: 2, totalSteps: 4),
                 const SizedBox(height: 24),
@@ -235,30 +280,27 @@ class _ListingFormPageState extends State<ListingFormPage> {
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: widget.imagePaths.length,
-                    itemBuilder: (context, index) {
-                      return Container(
-                        width: 80,
-                        height: 80,
-                        margin: const EdgeInsets.only(right: 8),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            widget.imagePaths[index],
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: AppColors.border,
-                              child: const Icon(Icons.image_outlined),
-                            ),
+                    itemBuilder: (context, index) => Container(
+                      width: 80,
+                      height: 80,
+                      margin: const EdgeInsets.only(right: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          widget.imagePaths[index],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AppColors.border,
+                            child: const Icon(Icons.image_outlined),
                           ),
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
               ],
 
-              // Tên sản phẩm
               AppTextField(
                 label: 'Tên sản phẩm',
                 hint: 'VD: Áo khoác denim Levi\'s cổ điển',
@@ -269,7 +311,6 @@ class _ListingFormPageState extends State<ListingFormPage> {
               ),
               const SizedBox(height: 20),
 
-              // Danh mục
               _buildSectionTitle('Danh mục'),
               _buildChipSelector(
                 items: ListingConstants.categories,
@@ -278,7 +319,6 @@ class _ListingFormPageState extends State<ListingFormPage> {
               ),
               const SizedBox(height: 20),
 
-              // Thương hiệu
               AppTextField(
                 label: 'Thương hiệu',
                 hint: 'VD: Levi\'s, Zara, Uniqlo...',
@@ -286,7 +326,6 @@ class _ListingFormPageState extends State<ListingFormPage> {
               ),
               const SizedBox(height: 20),
 
-              // Màu sắc
               _buildSectionTitle('Màu sắc'),
               _buildChipSelector(
                 items: ListingConstants.colors,
@@ -295,7 +334,6 @@ class _ListingFormPageState extends State<ListingFormPage> {
               ),
               const SizedBox(height: 20),
 
-              // Tình trạng
               _buildSectionTitle('Tình trạng'),
               _buildChipSelector(
                 items: ListingConstants.conditions,
@@ -304,7 +342,6 @@ class _ListingFormPageState extends State<ListingFormPage> {
               ),
               const SizedBox(height: 20),
 
-              // Tags
               _buildSectionTitle('Tags'),
               Wrap(
                 spacing: 8,
@@ -317,15 +354,15 @@ class _ListingFormPageState extends State<ListingFormPage> {
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: AppColors.primary.withOpacity(0.3)),
+                          color:
+                          AppColors.primary.withOpacity(0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(tag,
                             style: AppTextStyles.label.copyWith(
-                              color: AppColors.primary,
-                            )),
+                                color: AppColors.primary)),
                         const SizedBox(width: 4),
                         GestureDetector(
                           onTap: () => _removeTag(tag),
@@ -343,13 +380,13 @@ class _ListingFormPageState extends State<ListingFormPage> {
                       style: AppTextStyles.label,
                       decoration: InputDecoration(
                         hintText: '+ Thêm tag',
-                        hintStyle: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.primary,
-                        ),
+                        hintStyle: AppTextStyles.bodyMedium
+                            .copyWith(color: AppColors.primary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                           borderSide: BorderSide(
-                              color: AppColors.primary.withOpacity(0.3)),
+                              color:
+                              AppColors.primary.withOpacity(0.3)),
                         ),
                         contentPadding:
                         const EdgeInsets.symmetric(horizontal: 12),
@@ -361,19 +398,16 @@ class _ListingFormPageState extends State<ListingFormPage> {
               ),
               const SizedBox(height: 20),
 
-              // Giá bán
               AppTextField(
                 label: 'Giá bán (đ)',
                 hint: '0',
                 controller: _priceController,
                 keyboardType: TextInputType.number,
-                validator: (v) => v == null || v.isEmpty
-                    ? 'Vui lòng nhập giá'
-                    : null,
+                validator: (v) =>
+                v == null || v.isEmpty ? 'Vui lòng nhập giá' : null,
               ),
               const SizedBox(height: 20),
 
-              // Kích cỡ
               _buildSectionTitle('Kích cỡ'),
               _buildChipSelector(
                 items: ListingConstants.sizes,
@@ -382,7 +416,6 @@ class _ListingFormPageState extends State<ListingFormPage> {
               ),
               const SizedBox(height: 20),
 
-              // Mô tả thêm
               Text('Mô tả thêm', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextFormField(
@@ -390,15 +423,14 @@ class _ListingFormPageState extends State<ListingFormPage> {
                 maxLines: 4,
                 style: AppTextStyles.bodyLarge,
                 decoration: InputDecoration(
-                  hintText: 'VD: Áo còn mới, không có vết ố hay rách...',
-                  hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textHint,
-                  ),
+                  hintText:
+                  'VD: Áo còn mới, không có vết ố hay rách...',
+                  hintStyle: AppTextStyles.bodyMedium
+                      .copyWith(color: AppColors.textHint),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Phương thức giao hàng
               _buildSectionTitle('Phương thức giao hàng'),
               Container(
                 decoration: BoxDecoration(
@@ -417,9 +449,11 @@ class _ListingFormPageState extends State<ListingFormPage> {
                           style: AppTextStyles.bodyLarge),
                       subtitle: Text(
                         'Giao hàng qua các đối tác vận chuyển',
-                        style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(fontSize: 12),
                       ),
-                      secondary: const Icon(Icons.local_shipping_outlined,
+                      secondary: const Icon(
+                          Icons.local_shipping_outlined,
                           color: AppColors.primary),
                     ),
                     const Divider(height: 1),
@@ -432,7 +466,8 @@ class _ListingFormPageState extends State<ListingFormPage> {
                           style: AppTextStyles.bodyLarge),
                       subtitle: Text(
                         'Người mua có thể đến lấy tại địa chỉ của bạn',
-                        style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(fontSize: 12),
                       ),
                       secondary: const Icon(Icons.location_on_outlined,
                           color: AppColors.primary),
@@ -454,7 +489,10 @@ class _ListingFormPageState extends State<ListingFormPage> {
               const SizedBox(height: 28),
 
               AppButton(
-                label: _isEditMode ? 'Lưu thay đổi' : 'Xem trước bài đăng →',
+                label: _isEditMode
+                    ? 'Lưu thay đổi'
+                    : 'Xem trước bài đăng →',
+                isLoading: _isLoading,
                 onPressed: _handleSubmit,
               ),
 

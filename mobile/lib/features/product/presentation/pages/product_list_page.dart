@@ -40,6 +40,7 @@ class _ProductListPageState extends State<ProductListPage> {
       final res = await ApiClient.dio.get('/api/products');
       final list = (res.data as List<dynamic>)
           .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .where((p) => p.status == 'AVAILABLE')
           .toList();
       setState(() {
         _products = list;

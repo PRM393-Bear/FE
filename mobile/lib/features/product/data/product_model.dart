@@ -3,7 +3,7 @@ class ProductModel {
   final String title;
   final String description;
   final String category;
-  final String type;        // SELL | DONATE | EXCHANGE
+  final String type;        // ITEM | BUNDLE
   final int condition;      // 1-5
   final double price;
   final String size;
@@ -57,7 +57,7 @@ class ProductModel {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       category: json['category'] ?? '',
-      type: json['type'] ?? 'SELL',
+      type: json['type'] ?? 'ITEM',
       condition: (json['condition'] as num?)?.toInt() ?? 3,
       price: (json['price'] as num?)?.toDouble() ?? 0,
       size: json['size'] ?? '',
