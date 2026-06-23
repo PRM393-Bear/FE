@@ -4,7 +4,7 @@
  */
 
 import "../styles/auth.css";
-import { registerApi } from "../services/auth.service.js";
+import { registerApi, sendRegisterOtp, verifyRegisterOtp } from "../services/auth.service.js";
 import {
   validateFullName,
   validateUsername,
@@ -12,6 +12,7 @@ import {
   validatePhone,
   validatePassword,
   validateConfirmPassword,
+  validateOtp,
 } from "../utils/validators.js";
 
 import { showToast, setFieldError } from "../utils/ui.js";
@@ -67,12 +68,13 @@ export function renderRegisterPage(container) {
           </div>
 
           <div class="auth-card" style="padding: var(--stack-xl) var(--stack-lg); box-shadow: none; background: transparent;">
-            <header class="auth-card-header" style="margin-bottom: var(--stack-xl);">
+            <header class="auth-card-header" style="margin-bottom: var(--stack-xl);" id="register-header">
               <h2 class="auth-card-title" style="font-size: 32px;">Tạo tài khoản mới</h2>
               <p class="auth-card-subtitle">Bắt đầu hành trình bền vững của bạn cùng Lifecycle ngay hôm nay.</p>
             </header>
 
-            <form id="registration-form" novalidate>
+            <div id="register-section">
+              <form id="registration-form" novalidate>
               
               <div class="auth-form-grid">
                 <!-- Full Name -->
@@ -189,6 +191,29 @@ export function renderRegisterPage(container) {
                 <span>Facebook</span>
               </button>
             </div>
+            </div> <!-- End register-section -->
+            
+            <!-- OTP Verification Section (Hidden by default) -->
+            <div id="otp-section" style="display: none; text-align: center;">
+              <h2 class="auth-card-title" style="font-size: 28px; margin-bottom: 8px;">Xác thực Email</h2>
+              <p class="auth-card-subtitle" style="margin-bottom: 24px;">Vui lòng nhập mã gồm 6 chữ số đã được gửi đến email <strong id="otp-email-display" style="color: var(--on-surface);"></strong></p>
+              
+              <form id="otp-form" novalidate>
+                <div class="auth-form-group">
+                  <div class="input-wrapper" style="justify-content: center;">
+                    <input id="reg-otp" name="otp" type="text" class="auth-form-input" style="text-align: center; letter-spacing: 8px; font-size: 24px; font-weight: 700; padding: 12px;" placeholder="000000" maxlength="6" autocomplete="one-time-code" />
+                  </div>
+                  <span class="auth-form-error" id="reg-otp-error"></span>
+                </div>
+                <button type="submit" id="otp-submit" class="btn-primary" style="margin-top: 16px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                  <span class="btn-text">Xác thực</span>
+                  ${ICON_ARROW_FWD}
+                </button>
+              </form>
+              <div style="margin-top: 24px; color: var(--on-surface-variant); font-size: 14px;">
+                Chưa nhận được mã? <button type="button" id="btn-resend-otp" class="auth-signup-link" style="color: var(--secondary); font-weight: 700; background: none; border: none; padding: 0; cursor: pointer;">Gửi lại</button>
+              </div>
+            </div>
             
           </div>
         </div>
@@ -214,6 +239,19 @@ export function renderRegisterPage(container) {
   const termsCheck = document.getElementById("reg-terms");
   const termsError = document.getElementById("reg-terms-error");
   const submitBtn = document.getElementById("register-submit");
+
+  /* ── OTP Elements ── */
+  const registerHeader = document.getElementById("register-header");
+  const registerSection = document.getElementById("register-section");
+  const otpSection = document.getElementById("otp-section");
+  const otpForm = document.getElementById("otp-form");
+  const otpInput = document.getElementById("reg-otp");
+  const otpError = document.getElementById("reg-otp-error");
+  const otpEmailDisplay = document.getElementById("otp-email-display");
+  const otpSubmitBtn = document.getElementById("otp-submit");
+  const resendOtpBtn = document.getElementById("btn-resend-otp");
+
+  let registeredEmail = "";
 
   /* ── Password toggles ── */
   let passVisible = false, confirmVisible = false;
@@ -278,16 +316,62 @@ export function renderRegisterPage(container) {
         password: passInput.value,
         roleName: "MEMBER",
       });
-      showToast("Đăng ký thành công! Chào mừng đến với EcoCycle 🌿", "success");
-      sessionStorage.setItem("ecocycle_new_user", nameInput.value.trim());
-      setTimeout(() => {
-        window.location.hash = "#/profile";
-      }, 1000);
+      showToast("Đăng ký thành công! Vui lòng xác thực email.", "success");
+      
+      // Show OTP verification section
+      registeredEmail = emailInput.value.trim();
+      otpEmailDisplay.textContent = registeredEmail;
+      registerHeader.style.display = "none";
+      registerSection.style.display = "none";
+      otpSection.style.display = "block";
     } catch (err) {
       showToast(err.message || "Đăng ký thất bại. Vui lòng thử lại.", "error");
     } finally {
       submitBtn.classList.remove("is-loading");
       submitBtn.disabled = false;
+    }
+  });
+
+  /* ── OTP form logic ── */
+  otpInput.addEventListener('input', () => {
+    otpInput.value = otpInput.value.replace(/\D/g, '').slice(0, 6);
+  });
+
+  otpInput.addEventListener("blur", () => setFieldError(otpInput, otpError, validateOtp(otpInput.value)));
+
+  resendOtpBtn.addEventListener("click", async () => {
+    resendOtpBtn.disabled = true;
+    try {
+      await sendRegisterOtp(registeredEmail);
+      showToast("Mã OTP mới đã được gửi", "success");
+    } catch (err) {
+      showToast("Không thể gửi lại OTP. Vui lòng thử lại.", "error");
+    } finally {
+      resendOtpBtn.disabled = false;
+    }
+  });
+
+  otpForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const otpOk = setFieldError(otpInput, otpError, validateOtp(otpInput.value));
+    if (!otpOk) return;
+
+    otpSubmitBtn.classList.add("is-loading");
+    otpSubmitBtn.disabled = true;
+
+    try {
+      await verifyRegisterOtp(registeredEmail, otpInput.value);
+      showToast("Xác thực thành công! Đang chuyển hướng...", "success");
+      sessionStorage.setItem("ecocycle_new_user", usernameInput.value.trim());
+      setTimeout(() => {
+        window.location.hash = "#/login";
+      }, 1500);
+    } catch (err) {
+      showToast(err.message || "Mã OTP không hợp lệ hoặc đã hết hạn", "error");
+    } finally {
+      otpSubmitBtn.classList.remove("is-loading");
+      otpSubmitBtn.disabled = false;
     }
   });
 }

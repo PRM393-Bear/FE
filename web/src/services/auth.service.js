@@ -115,14 +115,21 @@ export async function registerApi({
 /* ── Forgot Password ── */
 export async function sendForgotPasswordOtp(email) {
   return apiFetch(
-    `/api/user/forgot-password/send-otp?email=${encodeURIComponent(email)}`,
+    `/api/user/forgot-password/send-otp?email=${encodeURIComponent(email)}&otpPurpose=FORGOT_PASSWORD`,
+    { method: "POST" }
+  );
+}
+
+export async function sendRegisterOtp(email) {
+  return apiFetch(
+    `/api/user/forgot-password/send-otp?email=${encodeURIComponent(email)}&otpPurpose=REGISTER`,
     { method: "POST" }
   );
 }
 
 export async function verifyForgotPasswordOtp(email, otp) {
   return apiFetch(
-    `/api/user/forgot-password/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`,
+    `/api/user/forgot-password/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}&otpPurpose=FORGOT_PASSWORD`,
     { method: "POST" }
   );
 }
