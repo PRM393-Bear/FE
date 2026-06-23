@@ -17,17 +17,11 @@ import {
   validateConfirmPassword,
 } from '../utils/validators.js';
 
-/* ── SVG Icons ── */
+import { showToast, setFieldError } from "../utils/ui.js";
+import { ICON_MAIL, ICON_LOCK, ICON_EYE, ICON_EYE_OFF } from "../components/icons.js";
+
 const ICON_RECYCLE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
   <path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"/><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"/><path d="m14 16-3 3 3 3"/><path d="M8.293 13.596 7.196 9.5 3.1 10.598"/><path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843"/><path d="m13.378 9.633 4.096 1.098 1.097-4.096"/>
-</svg>`;
-
-const ICON_MAIL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="social-icon">
-  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-</svg>`;
-
-const ICON_LOCK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="social-icon">
-  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
 </svg>`;
 
 const ICON_KEY = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="social-icon">
@@ -37,47 +31,6 @@ const ICON_KEY = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fi
 const ICON_ARROW_BACK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
   <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
 </svg>`;
-
-const ICON_EYE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="social-icon">
-  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-</svg>`;
-
-const ICON_EYE_OFF = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="social-icon">
-  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-  <line x1="1" y1="1" x2="23" y2="23"/>
-</svg>`;
-
-/* ── Toast helper ── */
-function showToast(message, type = 'error') {
-  let el = document.getElementById('ecocycle-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'ecocycle-toast';
-    el.className = 'toast';
-    document.body.appendChild(el);
-  }
-  el.textContent = message;
-  el.className = `toast toast--${type}`;
-  requestAnimationFrame(() => el.classList.add('toast--visible'));
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove('toast--visible'), 3000);
-}
-
-/* ── Field validation helper ── */
-function setFieldError(inputEl, errorEl, message) {
-  if (message) {
-    inputEl.classList.add('is-error');
-    inputEl.classList.remove('is-valid');
-    errorEl.textContent = message;
-    errorEl.classList.add('visible');
-    return false;
-  }
-  inputEl.classList.remove('is-error');
-  inputEl.classList.add('is-valid');
-  errorEl.textContent = '';
-  errorEl.classList.remove('visible');
-  return true;
-}
 
 function maskEmail(email) {
   const [local, domain] = email.split('@');

@@ -47,7 +47,9 @@
 
 @media (min-width: 768px) {
   .rs-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 800px;
+    margin: 0 auto;
   }
 }
 

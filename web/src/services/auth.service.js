@@ -3,7 +3,8 @@
  * Synchronized with mobile API endpoints
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+import { apiFetch, BASE_URL } from "../utils/api.js";
+
 const TOKEN_KEY = "ecocycle_token";
 const USER_KEY = "ecocycle_user";
 
@@ -62,42 +63,7 @@ export function getUser() {
   }
 }
 
-/* ── Internal fetch helper ── */
-async function apiFetch(path, options = {}) {
-  const token = getToken();
-  const headers = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
-  };
-
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  // Parse body regardless of status
-  let body = null;
-  const ct = res.headers.get("content-type") ?? "";
-  if (ct.includes("application/json")) {
-    body = await res.json();
-  } else {
-    body = await res.text();
-  }
-
-  if (!res.ok) {
-    const message =
-      (typeof body === "object" && body?.message) ||
-      (typeof body === "string" && body) ||
-      `HTTP ${res.status}`;
-    const err = new Error(message);
-    err.status = res.status;
-    err.body = body;
-    throw err;
-  }
-
-  return body;
-}
+/* ── Internal fetch helper extracted to api.js ── */
 
 /* ── Login ── */
 export async function loginApi({ username, password, rememberMe = false }) {
@@ -106,12 +72,15 @@ export async function loginApi({ username, password, rememberMe = false }) {
     body: JSON.stringify({ username, password }),
   });
 
-  if (data?.token) saveToken(data.token);
-  if (data?.username)
+  const token = data?.accessToken || data?.token;
+  if (token) saveToken(token);
+  
+  if (data?.username) {
     saveUser({
       username: data.username,
       role: data.role?.roleName || "member",
     });
+  }
 
   return data;
 }
@@ -130,12 +99,15 @@ export async function registerApi({
     body: JSON.stringify({ username, fullName, email, phone, password, roleName }),
   });
 
-  if (data?.token) saveToken(data.token);
-  if (data?.username)
+  const token = data?.accessToken || data?.token;
+  if (token) saveToken(token);
+  
+  if (data?.username) {
     saveUser({
       username: data.username,
       role: data.role?.roleName || "member",
     });
+  }
 
   return data;
 }
@@ -151,6 +123,13 @@ export async function sendForgotPasswordOtp(email) {
 export async function verifyForgotPasswordOtp(email, otp) {
   return apiFetch(
     `/api/user/forgot-password/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`,
+    { method: "POST" }
+  );
+}
+
+export async function verifyRegisterOtp(email, otp) {
+  return apiFetch(
+    `/api/user/forgot-password/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}&otpPurpose=REGISTER`,
     { method: "POST" }
   );
 }
@@ -172,4 +151,37 @@ export async function logoutApi() {
   } finally {
     removeToken();
   }
+}
+
+/* ── Image Upload ── */
+export async function uploadImageApi(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const token = getToken();
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const res = await fetch(`${BASE_URL}/api/upload/image`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || "Không thể tải lên ảnh");
+  }
+
+  const data = await res.json();
+  return data.url; // Cloudinary URL
+}
+
+/* ── Organization Detail ── */
+export async function createOrganizationDetailApi(detail) {
+  return apiFetch("/api/organization-details", {
+    method: "POST",
+    body: JSON.stringify(detail),
+  });
 }

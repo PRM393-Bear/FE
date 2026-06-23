@@ -1,5 +1,5 @@
 import "../styles/register-selection.css";
-
+ 
 export function renderRegisterSelectionPage(container) {
   container.innerHTML = `
     <main class="rs-main">
@@ -43,40 +43,6 @@ export function renderRegisterSelectionPage(container) {
               </li>
             </ul>
             <div class="rs-radio rs-radio-indiv">
-              <div class="rs-radio-inner"></div>
-            </div>
-          </div>
-          
-          <!-- Business Account Card -->
-          <div class="rs-card" id="card-business">
-            <div class="rs-card-header">
-              <div class="rs-icon-box rs-icon-business">
-                <span class="material-symbols-outlined" style="font-size: 32px;">store</span>
-              </div>
-              <span class="rs-badge rs-badge-business">Cần xác minh giấy tờ</span>
-            </div>
-            <h3 class="rs-card-title">
-              🏪 Shop kinh doanh
-            </h3>
-            <p class="rs-card-desc">Bán không giới hạn, tạo Bundle, xem báo cáo doanh thu chuyên nghiệp.</p>
-            <div class="rs-illustration">
-              <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAI0b15oIGadeh1dtGWENfBf7uLaE82a9EuOvILhpJtJkuFMSuK1w6hp0eyTsYK8-OowkQcrjN7G4JjRUlOOp4Po6gWTiBkiI8GCxNmGS84YE2e54XeLg2aXSwo14u-wG_N1E4-il2t2_crd6lrKf7Bn8ixh8-1gd2J_xPq40C7dNKShcygoZBBNVxs4SUSgcohgHo2m2QtI9IgxJQ82zDM8vIpPOLMhv9gW5V8vjCEvlcWlGaXAz52xZwI8aW8c71IgEGked6KN1Fj"/>
-            </div>
-            <ul class="rs-features">
-              <li class="rs-feature-item">
-                <span class="material-symbols-outlined rs-feature-icon rs-feature-icon-biz">check_circle</span>
-                <span class="rs-feature-text">Đăng bán sản phẩm không giới hạn</span>
-              </li>
-              <li class="rs-feature-item">
-                <span class="material-symbols-outlined rs-feature-icon rs-feature-icon-biz">check_circle</span>
-                <span class="rs-feature-text">Công cụ phân tích doanh thu &amp; tồn kho</span>
-              </li>
-              <li class="rs-feature-item">
-                <span class="material-symbols-outlined rs-feature-icon rs-feature-icon-biz">check_circle</span>
-                <span class="rs-feature-text">Hỗ trợ chạy quảng cáo &amp; Flash Sale</span>
-              </li>
-            </ul>
-            <div class="rs-radio rs-radio-biz">
               <div class="rs-radio-inner"></div>
             </div>
           </div>
@@ -135,13 +101,11 @@ export function renderRegisterSelectionPage(container) {
   function selectAccount(type) {
     selectedType = type;
     const cardIndiv = document.getElementById('card-individual');
-    const cardBiz = document.getElementById('card-business');
     const cardOrg = document.getElementById('card-organization');
     const btnContinue = document.getElementById('btn-continue');
 
     // Reset States
     cardIndiv.classList.remove('active-individual');
-    cardBiz.classList.remove('active-business');
     cardOrg.classList.remove('active-organization');
 
     // Set Active State
@@ -154,7 +118,6 @@ export function renderRegisterSelectionPage(container) {
 
   // Bind clicks
   document.getElementById('card-individual').addEventListener('click', () => selectAccount('individual'));
-  document.getElementById('card-business').addEventListener('click', () => selectAccount('business'));
   document.getElementById('card-organization').addEventListener('click', () => selectAccount('organization'));
 
   document.getElementById('btn-continue').addEventListener('click', function() {
@@ -163,8 +126,6 @@ export function renderRegisterSelectionPage(container) {
       setTimeout(() => {
         if (selectedType === 'individual') {
           window.location.hash = '#/register-member';
-        } else if (selectedType === 'business') {
-          window.location.hash = '#/register-shop';
         } else if (selectedType === 'organization') {
           window.location.hash = '#/register-organization';
         }

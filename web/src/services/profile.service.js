@@ -5,19 +5,7 @@
 
 import { getToken, getUser, getUserIdFromToken, saveUser } from "./auth.service.js";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
-
-async function apiFetch(path) {
-  const token = getToken();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+import { apiFetch, BASE_URL } from "../utils/api.js";
 
 /* ════════════════════════════════════════════
    MOCK DATA – all 4 actor profiles

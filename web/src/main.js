@@ -8,7 +8,6 @@ import "./styles/global.css";
 import { renderLoginPage } from "./pages/login.js";
 import { renderRegisterPage } from "./pages/register.js";
 import { renderRegisterSelectionPage } from "./pages/register-selection.js";
-import { renderRegisterShopPage } from "./pages/register-shop.js";
 import { renderRegisterOrgPage } from "./pages/register-org.js";
 import { renderForgotPasswordPage } from "./pages/forgot-password.js";
 import { renderProfilePage } from "./pages/profile.js";
@@ -16,6 +15,7 @@ import { renderHomePage } from "./pages/home.js";
 import { renderProductsPage } from "./pages/products.js";
 import { renderProductDetailPage } from "./pages/product-detail.js";
 import { renderAdminPage } from "./pages/admin.js";
+import { renderPendingApprovalPage } from "./pages/pending-approval.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
 import { logoutApi, isAuthenticated } from "./services/auth.service.js";
@@ -36,11 +36,6 @@ const routes = {
   "#/register-member": () => {
     renderHeader({ activePage: "register" });
     renderRegisterPage(app);
-    removeFooter();
-  },
-  "#/register-shop": () => {
-    renderHeader({ activePage: "register" });
-    renderRegisterShopPage(app);
     removeFooter();
   },
   "#/register-organization": () => {
@@ -67,6 +62,11 @@ const routes = {
     removeHeader();
     renderAdminPage(app);
     removeFooter();
+  },
+  "#/pending-approval": () => {
+    renderHeader({ activePage: "" });
+    renderPendingApprovalPage(app);
+    renderFooter();
   },
   "#/logout": handleLogout,
   "#/": handleHome,
@@ -138,6 +138,7 @@ function navigate() {
   }
 
   const handler = routes[route] ?? routes["#/"];
+  console.log("NAVIGATE - Hash:", hash, "Route:", route, "Handler matches routes['#/register-organization']?", handler === routes["#/register-organization"]);
   handler();
 }
 

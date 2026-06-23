@@ -4,6 +4,7 @@
  */
 import "../styles/profile.css";
 import { getMyProfile, MOCK_PROFILES, updateUserProfile } from "../services/profile.service.js";
+import { showToast } from "../utils/ui.js";
 import { isAuthenticated, getUser, getUserIdFromToken } from "../services/auth.service.js";
 import { getAllProducts } from "../services/product.service.js";
 
@@ -136,24 +137,7 @@ function renderSidebarItem(id, icon, label, isActive = false) {
   `;
 }
 
-function showToast(message, type = "success") {
-  const existing = document.getElementById("profile-toast");
-  if (existing) existing.remove();
-
-  const toast = document.createElement("div");
-  toast.id = "profile-toast";
-  toast.className = `profile-toast ${type}`;
-  toast.innerHTML = `
-    <span class="material-symbols-outlined">${type === 'success' ? 'check_circle' : 'error'}</span>
-    <span>${message}</span>
-  `;
-  document.body.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add("fade-out");
-    setTimeout(() => toast.remove(), 500);
-  }, 3000);
-}
+/* ── showToast imported from ui.js ── */
 
 /* ══════════════════════════════════════
    TAB RENDERING FUNCTIONS
