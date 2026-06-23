@@ -6,7 +6,8 @@
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #f8fafc; /* Slate 50 */
+  background-color: #f8fafc;
+  /* Slate 50 */
 }
 
 /* Sidebar */
@@ -55,7 +56,8 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: var(--rounded);
-  color: #475569; /* Slate 600 */
+  color: #475569;
+  /* Slate 600 */
   text-decoration: none;
   font-weight: 500;
   transition: all 0.2s ease;
@@ -148,14 +150,17 @@
   background: #dcfce7;
   color: #16a34a;
 }
+
 .admin-stat-icon.blue {
   background: #dbeafe;
   color: #2563eb;
 }
+
 .admin-stat-icon.amber {
   background: #fef3c7;
   color: #d97706;
 }
+
 .admin-stat-icon.purple {
   background: #f3e8ff;
   color: #9333ea;

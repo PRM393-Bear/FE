@@ -106,12 +106,26 @@ export async function loginApi({ username, password, rememberMe = false }) {
     body: JSON.stringify({ username, password }),
   });
 
-  if (data?.token) saveToken(data.token);
-  if (data?.username)
-    saveUser({
-      username: data.username,
-      role: data.role?.roleName || "member",
-    });
+  if (data?.accessToken) {
+    saveToken(data.accessToken);
+
+    try {
+      const allUsers = await apiFetch("/api/user/all");
+      const currentUser = allUsers.find((u) => u.userName === username);
+      const roleName = currentUser?.role?.roleName || "member";
+
+      saveUser({
+        username: username,
+        role: roleName.toLowerCase().replace("role_", ""),
+      });
+    } catch (err) {
+      console.warn("Could not fetch user role, defaulting to member", err);
+      saveUser({
+        username: username,
+        role: "member",
+      });
+    }
+  }
 
   return data;
 }
@@ -130,12 +144,9 @@ export async function registerApi({
     body: JSON.stringify({ username, fullName, email, phone, password, roleName }),
   });
 
-  if (data?.token) saveToken(data.token);
-  if (data?.username)
-    saveUser({
-      username: data.username,
-      role: data.role?.roleName || "member",
-    });
+  if (data?.accessToken) {
+    saveToken(data.accessToken);
+  }
 
   return data;
 }
