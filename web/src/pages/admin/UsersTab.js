@@ -37,8 +37,8 @@ export function renderUsersTab() {
               <select class="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-label-md min-w-[140px] focus:ring-primary">
                 <option>Tất cả</option>
                 <option>Admin</option>
-                <option>Seller</option>
-                <option>User</option>
+                <option>Tổ chức</option>
+                <option>Cá nhân</option>
               </select>
             </div>
             <div class="flex flex-col gap-1">
@@ -108,8 +108,8 @@ export function renderUsersTab() {
 function getRoleBadge(roleName) {
   const role = roleName?.toUpperCase() || 'USER';
   if (role === 'ADMIN') return '<span class="px-3 py-1 bg-primary text-on-primary text-label-sm rounded-full">Admin</span>';
-  if (role === 'SELLER') return '<span class="px-3 py-1 bg-secondary-fixed text-on-secondary-fixed text-label-sm rounded-full">Seller</span>';
-  return '<span class="px-3 py-1 bg-surface-variant text-on-surface-variant text-label-sm rounded-full">User</span>';
+  if (role === 'ORGANIZATION' || role === 'ROLE_ORGANIZATION') return '<span class="px-3 py-1 bg-secondary-fixed text-on-secondary-fixed text-label-sm rounded-full">Tổ chức</span>';
+  return '<span class="px-3 py-1 bg-surface-variant text-on-surface-variant text-label-sm rounded-full">Cá nhân</span>';
 }
 
 function renderUserRow(user) {

@@ -63,11 +63,11 @@ export function renderOverviewTab() {
             <div class="stat-card bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 cursor-pointer">
               <div class="flex justify-between items-start mb-stack-md">
                 <div class="w-12 h-12 rounded-lg bg-tertiary-container/10 flex items-center justify-center text-tertiary">
-                  <span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+                  <span class="material-symbols-outlined" data-icon="domain">domain</span>
                 </div>
-                <span class="text-tertiary text-label-sm font-bold bg-tertiary-fixed px-2 py-1 rounded-full">Cao</span>
+                <span class="text-tertiary text-label-sm font-bold bg-tertiary-fixed px-2 py-1 rounded-full">Đã duyệt</span>
               </div>
-              <p class="text-label-md text-on-surface-variant">Tổng số Shop/Seller</p>
+              <p class="text-label-md text-on-surface-variant">Tổ chức đăng ký</p>
               <h3 class="text-headline-md font-headline-md text-on-surface" id="stat-total-shops">--</h3>
             </div>
             <div class="stat-card bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 cursor-pointer">
@@ -176,7 +176,7 @@ export function renderOverviewTab() {
                   <tbody class="divide-y divide-outline-variant/30">
                     <tr>
                       <td class="px-stack-lg py-4">
-                        <p class="font-label-md text-on-surface">Phê duyệt Seller mới</p>
+                        <p class="font-label-md text-on-surface">Phê duyệt tổ chức mới</p>
                         <p class="text-xs text-outline">EcoFashion Group</p>
                       </td>
                       <td class="px-stack-lg py-4 text-sm">Hệ thống</td>
@@ -249,7 +249,7 @@ export function renderOverviewTab() {
                 <div class="flex gap-stack-md">
                   <div class="w-1 h-12 bg-outline-variant rounded-full"></div>
                   <div class="flex-1">
-                    <p class="text-label-md text-on-surface font-bold">Seller mới đăng ký: GreenLife</p>
+                    <p class="text-label-md text-on-surface font-bold">Tổ chức mới đăng ký: GreenLife</p>
                     <p class="text-xs text-on-surface-variant">1 giờ trước • Chờ xác minh hồ sơ</p>
                   </div>
                 </div>
@@ -293,10 +293,10 @@ async function fetchStatsData(container) {
       usersCountEl.textContent = users.length.toLocaleString("vi");
     }
 
-    // 2. Total Shops / Sellers
+    // 2. Total Organizations
     const shopsCountEl = container.querySelector('#stat-total-shops');
     if (shopsCountEl) {
-      const shopCount = users.filter(u => u.role?.roleName === 'ROLE_ORGANIZATION' || u.role?.roleName === 'ROLE_SELLER').length;
+      const shopCount = users.filter(u => u.role?.roleName === 'ROLE_ORGANIZATION').length;
       shopsCountEl.textContent = shopCount.toLocaleString("vi");
     }
 

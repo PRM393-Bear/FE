@@ -16,7 +16,6 @@ function roleLabel(role) {
   return (
     {
       member: "Thành viên",
-      seller: "Cửa hàng",
       org: "Tổ chức từ thiện",
       admin: "Quản trị viên",
     }[role] ?? role

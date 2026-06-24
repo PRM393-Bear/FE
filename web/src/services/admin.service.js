@@ -57,3 +57,29 @@ export async function getAllDonationRequests() {
     return [];
   }
 }
+
+export async function getPendingOrganizations() {
+  try {
+    const allOrgs = await apiFetch("/api/organization-details");
+    if (Array.isArray(allOrgs)) {
+      return allOrgs.filter(org => org.status === "PENDING" || org.status === "pending" || org.status === null || org.status === undefined);
+    }
+    return [];
+  } catch (error) {
+    console.error("Failed to fetch pending organizations:", error);
+    return [];
+  }
+}
+
+export async function approveOrganization(id) {
+  return await apiFetch(`/api/organization-details/${id}/approve`, {
+    method: "PATCH",
+  });
+}
+
+export async function rejectOrganization(id) {
+  return await apiFetch(`/api/organization-details/${id}/reject`, {
+    method: "PATCH",
+  });
+}
+
