@@ -63,3 +63,8 @@
   backdrop-filter: blur(8px);
   border: 1px solid rgba(189, 202, 186, 0.3);
 }
+
+/* Transition Soft */
+.transition-soft {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
