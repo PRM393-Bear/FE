@@ -5,6 +5,7 @@
 
 .material-symbols-outlined { 
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; 
+  vertical-align: middle;
 }
 
 .stat-card { 
@@ -24,4 +25,41 @@
 
 .scrollbar-hide::-webkit-scrollbar { 
   display: none; 
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #bdcaba;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6e7b6c;
+}
+
+/* Drawer Shadow */
+.drawer-shadow {
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Tab Indicator */
+.active-tab-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #006b2c;
+}
+
+/* Glass Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(189, 202, 186, 0.3);
 }
