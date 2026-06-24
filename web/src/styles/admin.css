@@ -19,6 +19,7 @@
 
 .glass-panel { 
   background: rgba(255, 255, 255, 0.8); 
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px); 
   border: 1px solid rgba(189, 202, 186, 0.3); 
 }
@@ -60,6 +61,7 @@
 /* Glass Card */
 .glass-card {
   background: rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(189, 202, 186, 0.3);
 }
