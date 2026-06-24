@@ -120,7 +120,7 @@ export function renderRegisterSelectionPage(container) {
   document.getElementById('card-individual').addEventListener('click', () => selectAccount('individual'));
   document.getElementById('card-organization').addEventListener('click', () => selectAccount('organization'));
 
-  document.getElementById('btn-continue').addEventListener('click', function() {
+  document.getElementById('btn-continue').addEventListener('click', function () {
     if (!this.disabled) {
       this.innerHTML = `<span class="inline-block material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> Đang xử lý...`;
       setTimeout(() => {

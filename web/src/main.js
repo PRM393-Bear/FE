@@ -14,8 +14,7 @@ import { renderProfilePage } from "./pages/profile.js";
 import { renderHomePage } from "./pages/home.js";
 import { renderProductsPage } from "./pages/products.js";
 import { renderProductDetailPage } from "./pages/product-detail.js";
-import { renderAdminPage } from "./pages/admin.js";
-import { renderPendingApprovalPage } from "./pages/pending-approval.js";
+import { renderAdminPage } from "./pages/admin/index.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
 import { logoutApi, isAuthenticated } from "./services/auth.service.js";
@@ -59,6 +58,10 @@ const routes = {
     renderFooter();
   },
   "#/admin": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
     removeHeader();
     renderAdminPage(app);
     removeFooter();

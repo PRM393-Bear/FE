@@ -4,7 +4,7 @@
  */
 
 import '../styles/auth.css';
-import { loginApi, isAuthenticated } from '../services/auth.service.js';
+import { loginApi, isAuthenticated, getUser } from '../services/auth.service.js';
 import { validateUsername, validatePassword } from '../utils/validators.js';
 
 import { showToast, setFieldError } from "../utils/ui.js";
@@ -203,7 +203,12 @@ export function renderLoginPage(container) {
         rememberMe: document.getElementById('login-remember').checked,
       });
       showToast('Đăng nhập thành công! Chào mừng bạn 🌿', 'success');
-      setTimeout(() => { window.location.hash = '#/'; }, 800);
+      const user = getUser();
+      if (user && user.role === 'admin') {
+        setTimeout(() => { window.location.hash = '#/admin'; }, 800);
+      } else {
+        setTimeout(() => { window.location.hash = '#/'; }, 800);
+      }
     } catch (err) {
       showToast(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.', 'error');
     } finally {
