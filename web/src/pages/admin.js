@@ -74,7 +74,7 @@ export async function renderAdminPage(container) {
                 <p class="font-label-md text-on-surface">Admin Master</p>
                 <p class="text-[10px] text-outline uppercase font-bold tracking-tight">System Owner</p>
               </div>
-              <img alt="Administrator Profile" class="w-10 h-10 rounded-full border-2 border-primary-fixed" src="https://placehold.co/100x100/E4EBE4/6E7B6C?text=Admin"/>
+              <img alt="Administrator Profile" class="w-10 h-10 rounded-full border-2 border-primary-fixed" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0xu-mkKPh2dYj4iA0DCjMmKbkLzUM4MCyVR50aYt3ZmoOlkTp4rj84A_HdtZZLNfnJPzjzToAb4KAwgU8MO-rjTasLTDBfiuuQOq-qprKsFJPJHmocjo1eDq_ehXyVapmngH86CsAz8CRyarMCy_03XJZqrFGPB7zhYBHl4DqnHinvi_r9RxfRypptvOBt6fLFN2Dgr8Z0nxonJZgd1mzCYIvO5530cIdhiK4XMFWp2dEAgMs6HPvK-nwvQDhzOm5wydz66LYrK8e"/>
             </div>
           </div>
         </header>
@@ -89,7 +89,7 @@ export async function renderAdminPage(container) {
 
           <!-- Stats Row -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
-            <div class="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+            <div class="stat-card bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 cursor-pointer">
               <div class="flex justify-between items-start mb-stack-md">
                 <div class="w-12 h-12 rounded-lg bg-primary-container/10 flex items-center justify-center text-primary">
                   <span class="material-symbols-outlined" data-icon="group">group</span>
@@ -99,7 +99,7 @@ export async function renderAdminPage(container) {
               <p class="text-label-md text-on-surface-variant">Tổng User</p>
               <h3 class="text-headline-md font-headline-md text-on-surface">5,240</h3>
             </div>
-            <div class="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+            <div class="stat-card bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 cursor-pointer">
               <div class="flex justify-between items-start mb-stack-md">
                 <div class="w-12 h-12 rounded-lg bg-secondary-container/10 flex items-center justify-center text-secondary">
                   <span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
@@ -109,7 +109,7 @@ export async function renderAdminPage(container) {
               <p class="text-label-md text-on-surface-variant">Sản phẩm đang bán</p>
               <h3 class="text-headline-md font-headline-md text-on-surface" id="stat-total-products">--</h3>
             </div>
-            <div class="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+            <div class="stat-card bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 cursor-pointer">
               <div class="flex justify-between items-start mb-stack-md">
                 <div class="w-12 h-12 rounded-lg bg-tertiary-container/10 flex items-center justify-center text-tertiary">
                   <span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
@@ -119,7 +119,7 @@ export async function renderAdminPage(container) {
               <p class="text-label-md text-on-surface-variant">Giao dịch hôm nay</p>
               <h3 class="text-headline-md font-headline-md text-on-surface">85</h3>
             </div>
-            <div class="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+            <div class="stat-card bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 cursor-pointer">
               <div class="flex justify-between items-start mb-stack-md">
                 <div class="w-12 h-12 rounded-lg bg-error-container/20 flex items-center justify-center text-error">
                   <span class="material-symbols-outlined" data-icon="volunteer_activism">volunteer_activism</span>
@@ -150,14 +150,14 @@ export async function renderAdminPage(container) {
                   <div class="w-full border-t border-outline"></div>
                 </div>
                 <!-- Mockup Line Chart -->
-                <svg class="absolute inset-0 h-full w-full" preserveaspectratio="none" viewbox="0 0 1000 200">
+                <svg class="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 1000 200">
                   <path d="M0,180 Q50,150 100,160 T200,100 T300,120 T400,60 T500,80 T600,40 T700,90 T800,50 T900,70 T1000,30" fill="none" stroke="#16A34A" stroke-linecap="round" stroke-width="4"></path>
                   <path d="M0,180 Q50,150 100,160 T200,100 T300,120 T400,60 T500,80 T600,40 T700,90 T800,50 T900,70 T1000,30 L1000,200 L0,200 Z" fill="url(#grad1)" opacity="0.1"></path>
                   <defs>
-                    <lineargradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
+                    <linearGradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
                       <stop offset="0%" style="stop-color:#16A34A;stop-opacity:1"></stop>
                       <stop offset="100%" style="stop-color:#16A34A;stop-opacity:0"></stop>
-                    </lineargradient>
+                    </linearGradient>
                   </defs>
                 </svg>
                 <div class="z-10 w-full flex justify-between px-2 text-[10px] text-outline font-bold mt-2">
@@ -170,7 +170,7 @@ export async function renderAdminPage(container) {
               <h4 class="font-headline-md text-on-surface mb-stack-lg">Danh mục sản phẩm</h4>
               <div class="flex-1 flex flex-col items-center justify-center">
                 <div class="relative w-48 h-48">
-                  <svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+                  <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                     <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#dde5d9" stroke-width="3"></circle>
                     <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#006b2c" stroke-dasharray="40 60" stroke-dashoffset="0" stroke-width="3"></circle>
                     <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#fea619" stroke-dasharray="25 75" stroke-dashoffset="-40" stroke-width="3"></circle>
@@ -216,15 +216,52 @@ export async function renderAdminPage(container) {
                 <table class="w-full text-left">
                   <thead class="bg-surface-container-low text-on-surface-variant font-label-md text-xs uppercase tracking-wider">
                     <tr>
-                      <th class="px-stack-lg py-4">Sản phẩm</th>
-                      <th class="px-stack-lg py-4">Người bán</th>
-                      <th class="px-stack-lg py-4">Giá (VND)</th>
+                      <th class="px-stack-lg py-4">Nội dung</th>
+                      <th class="px-stack-lg py-4">Loại</th>
                       <th class="px-stack-lg py-4">Trạng thái</th>
                       <th class="px-stack-lg py-4 text-right">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-outline-variant/30" id="admin-table-body">
-                    <tr><td colspan="5" class="px-stack-lg py-8 text-center text-outline">Đang tải dữ liệu...</td></tr>
+                  <tbody class="divide-y divide-outline-variant/30">
+                    <tr>
+                      <td class="px-stack-lg py-4">
+                        <p class="font-label-md text-on-surface">Phê duyệt Seller mới</p>
+                        <p class="text-xs text-outline">EcoFashion Group</p>
+                      </td>
+                      <td class="px-stack-lg py-4 text-sm">Hệ thống</td>
+                      <td class="px-stack-lg py-4">
+                        <span class="text-[10px] font-bold bg-secondary-fixed px-2 py-1 rounded-full text-secondary-fixed-dim">Chờ duyệt</span>
+                      </td>
+                      <td class="px-stack-lg py-4 text-right">
+                        <button class="action-btn bg-primary text-on-primary px-4 py-2 rounded-xl text-label-sm font-bold hover:opacity-90 active:scale-95 transition-all">Xử lý ngay</button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="px-stack-lg py-4">
+                        <p class="font-label-md text-on-surface">Yêu cầu quyên góp quá hạn</p>
+                        <p class="text-xs text-outline">Mã: DON-8821</p>
+                      </td>
+                      <td class="px-stack-lg py-4 text-sm">Quyên góp</td>
+                      <td class="px-stack-lg py-4">
+                        <span class="text-[10px] font-bold bg-error-container px-2 py-1 rounded-full text-error">Quá hạn</span>
+                      </td>
+                      <td class="px-stack-lg py-4 text-right">
+                        <button class="action-btn bg-primary text-on-primary px-4 py-2 rounded-xl text-label-sm font-bold hover:opacity-90 active:scale-95 transition-all">Xử lý ngay</button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="px-stack-lg py-4">
+                        <p class="font-label-md text-on-surface">Báo cáo vi phạm sản phẩm</p>
+                        <p class="text-xs text-outline">User: luan_nguyen99</p>
+                      </td>
+                      <td class="px-stack-lg py-4 text-sm">Bảo mật</td>
+                      <td class="px-stack-lg py-4">
+                        <span class="text-[10px] font-bold bg-surface-variant px-2 py-1 rounded-full text-on-surface-variant">Mới</span>
+                      </td>
+                      <td class="px-stack-lg py-4 text-right">
+                        <button class="action-btn bg-primary text-on-primary px-4 py-2 rounded-xl text-label-sm font-bold hover:opacity-90 active:scale-95 transition-all">Xử lý ngay</button>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -278,66 +315,39 @@ export async function renderAdminPage(container) {
     </div>
   `;
 
-  // Fetch real data for products
-  fetchProductsData();
+  // Attach event listeners after rendering
+  attachEventListeners(container);
+
+  // Fetch real data for stats
+  fetchStatsData();
 }
 
-async function fetchProductsData() {
-  const tbody = document.getElementById("admin-table-body");
+function attachEventListeners(container) {
+  const actionBtns = container.querySelectorAll('.action-btn');
+  actionBtns.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      if (this.innerText === 'Xử lý ngay') {
+        const row = this.closest('tr');
+        row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(20px)';
+        setTimeout(() => row.remove(), 300);
+      }
+    });
+  });
+}
+
+async function fetchStatsData() {
   const totalCountEl = document.getElementById("stat-total-products");
 
   try {
     const products = await getAllProducts();
-
     // Update total count
     if (totalCountEl) {
       totalCountEl.textContent = products.length.toLocaleString("vi");
     }
-
-    // Render latest 8 products
-    if (tbody) {
-      const latest = products.slice(0, 8);
-      if (latest.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="px-stack-lg py-8 text-center text-outline">Chưa có sản phẩm nào.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = latest
-        .map((p) => {
-          const img =
-            p.images && p.images.length > 0
-              ? p.images[0]
-              : "https://placehold.co/100x100/E4EBE4/6E7B6C?text=N/A";
-          const price = p.price != null ? p.price.toLocaleString("vi") : "0";
-          const seller = p.sellerName || "Unknown";
-
-          const isPending = Math.random() > 0.8;
-          const statusHtml = isPending
-            ? `<span class="text-[10px] font-bold bg-secondary-fixed px-2 py-1 rounded-full text-secondary-fixed-dim">Chờ duyệt</span>`
-            : `<span class="text-[10px] font-bold bg-primary-fixed-dim px-2 py-1 rounded-full text-primary-fixed">Đang bán</span>`;
-
-          return `
-          <tr class="hover:bg-surface-container-lowest/50 transition-colors">
-            <td class="px-stack-lg py-4">
-              <div class="flex items-center gap-3">
-                <img src="\${img}" alt="Product" class="w-12 h-12 rounded-lg object-cover border border-outline-variant" />
-                <span class="font-label-md text-on-surface line-clamp-2 max-w-xs">\${p.title || "Sản phẩm không tên"}</span>
-              </div>
-            </td> 
-            <td class="px-stack-lg py-4 text-sm text-on-surface-variant">\${seller}</td>
-            <td class="px-stack-lg py-4 text-sm font-bold text-on-surface">\${price}đ</td>
-            <td class="px-stack-lg py-4">\${statusHtml}</td>
-            <td class="px-stack-lg py-4 text-right">
-              <button class="bg-primary text-on-primary px-4 py-2 rounded-xl text-label-sm font-bold hover:opacity-90 active:scale-95 transition-all" onclick="window.location.hash='#/product/\${p.id}'">Xem</button>
-            </td>
-          </tr>
-          `;
-        })
-        .join("");
-    }
   } catch (error) {
-    if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="5" class="px-stack-lg py-8 text-center text-error">Lỗi khi tải dữ liệu sản phẩm.</td></tr>`;
-    }
+    console.error("Lỗi khi tải dữ liệu sản phẩm:", error);
   }
 }
+
