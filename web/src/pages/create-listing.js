@@ -4,7 +4,12 @@
  */
 
 import "../styles/create-listing.css";
-import { createProduct, uploadProductImage } from "../services/product.service.js";
+import {
+  createProduct,
+  markDraftProductId,
+  unmarkDraftProductId,
+  uploadProductImage,
+} from "../services/product.service.js";
 import { isAuthenticated } from "../services/auth.service.js";
 import { compressImage } from "../utils/image.js";
 
@@ -382,7 +387,16 @@ export function renderCreateListingPage(container) {
       };
 
       showLoading(status === "AVAILABLE" ? "Đang đăng bán sản phẩm..." : "Đang lưu bản nháp...");
-      await createProduct(payload);
+      const createdProduct = await createProduct(payload);
+      const createdProductId = createdProduct?.id ?? createdProduct?.productId ?? createdProduct?.data?.id;
+
+      if (createdProductId) {
+        if (status === "DRAFT") {
+          markDraftProductId(createdProductId);
+        } else {
+          unmarkDraftProductId(createdProductId);
+        }
+      }
 
       isDirty = false;
       isSubmitting = true;

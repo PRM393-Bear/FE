@@ -6,6 +6,70 @@
 import { getToken } from "./auth.service.js";
 
 const API_BASE = "/api/products";
+const DRAFT_PRODUCT_IDS_STORAGE_KEY = "ecocycle_draft_product_ids";
+
+function normalizeProductStatus(status) {
+  return String(status ?? "").trim().toUpperCase();
+}
+
+export function getDraftProductIds() {
+  try {
+    const raw = localStorage.getItem(DRAFT_PRODUCT_IDS_STORAGE_KEY);
+    if (!raw) {
+      return new Set();
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return new Set();
+    }
+
+    return new Set(parsed.filter((id) => typeof id === "string" && id.length > 0));
+  } catch (error) {
+    console.warn("Failed to read draft product ids:", error);
+    return new Set();
+  }
+}
+
+function writeDraftProductIds(ids) {
+  localStorage.setItem(
+    DRAFT_PRODUCT_IDS_STORAGE_KEY,
+    JSON.stringify([...ids])
+  );
+}
+
+export function markDraftProductId(productId) {
+  if (!productId) {
+    return;
+  }
+
+  const ids = getDraftProductIds();
+  ids.add(String(productId));
+  writeDraftProductIds(ids);
+}
+
+export function unmarkDraftProductId(productId) {
+  if (!productId) {
+    return;
+  }
+
+  const ids = getDraftProductIds();
+  ids.delete(String(productId));
+  writeDraftProductIds(ids);
+}
+
+export function isDraftProduct(product) {
+  if (!product) {
+    return false;
+  }
+
+  const status = normalizeProductStatus(product.status);
+  if (status === "DRAFT") {
+    return true;
+  }
+
+  return getDraftProductIds().has(String(product.id));
+}
 
 /**
  * Fetch all products from the backend.

@@ -6,7 +6,7 @@ import "../styles/profile.css";
 import { getMyProfile, MOCK_PROFILES, updateUserProfile } from "../services/profile.service.js";
 import { showToast } from "../utils/ui.js";
 import { isAuthenticated, getUser, getUserIdFromToken } from "../services/auth.service.js";
-import { getAllProducts } from "../services/product.service.js";
+import { getAllProducts, isDraftProduct } from "../services/product.service.js";
 import { getConditionPercentage } from "../utils/conditionMapping.js";
 
 /* ══════════════════════════════════════
@@ -21,6 +21,10 @@ function roleLabel(role) {
       admin: "Quản trị viên",
     }[role] ?? role
   );
+}
+
+function normalizeProductStatus(status) {
+  return String(status ?? "").trim().toUpperCase();
 }
 
 // Init default localStorage data if not present
@@ -530,8 +534,9 @@ function renderClosetTab(posts) {
                     ? post.images[0] 
                     : "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=100";
                   
-                  const statusLabel = post.status === "AVAILABLE" ? "Còn hàng" : (post.status === "SOLD" ? "Đã bán" : post.status);
-                  const statusClass = post.status === "AVAILABLE" ? "success" : "warning";
+                  const status = normalizeProductStatus(post.status);
+                  const statusLabel = status === "AVAILABLE" ? "Còn hàng" : (status === "SOLD" ? "Đã bán" : (status || "Chưa rõ"));
+                  const statusClass = status === "AVAILABLE" ? "success" : "warning";
                   
                   return `
                     <div class="order-item">
@@ -621,8 +626,8 @@ export async function renderProfilePage(container) {
       closetProducts = allProducts.filter(
         (p) => p.sellerId === profile.id || p.sellerName === profile.username
       );
-      activeProducts = closetProducts.filter(p => p.status !== "DRAFT");
-      draftProducts = closetProducts.filter(p => p.status === "DRAFT");
+      activeProducts = closetProducts.filter((p) => !isDraftProduct(p));
+      draftProducts = closetProducts.filter((p) => isDraftProduct(p));
     } catch (err) {
       console.error("Failed to fetch products for user closet:", err);
     }
