@@ -15,6 +15,7 @@ import { renderHomePage } from "./pages/home.js";
 import { renderProductsPage } from "./pages/products.js";
 import { renderProductDetailPage } from "./pages/product-detail.js";
 import { renderAdminPage } from "./pages/admin/index.js";
+import { renderCreateListingPage } from "./pages/create-listing.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
 import { logoutApi, isAuthenticated } from "./services/auth.service.js";
@@ -55,6 +56,15 @@ const routes = {
   "#/products": () => {
     renderHeader({ activePage: "products" });
     renderProductsPage(app);
+    renderFooter();
+  },
+  "#/create-listing": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
+    renderHeader({ activePage: "" });
+    renderCreateListingPage(app);
     renderFooter();
   },
   "#/admin": () => {

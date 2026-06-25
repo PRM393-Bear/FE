@@ -460,7 +460,7 @@ function renderClosetTab(posts) {
     <div class="dashboard-panel" id="panel-closet">
       <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
         <h2 class="panel-title">Tủ đồ / Sản phẩm đã đăng</h2>
-        <button class="btn-primary" onclick="window.location.hash='#/products'">+ Đăng sản phẩm mới</button>
+        <button class="btn-primary" onclick="window.location.hash='#/create-listing'">+ Đăng sản phẩm mới</button>
       </div>
       
       <div class="orders-list bg-white border border-t-0 border-outline-variant rounded-b-xl">
@@ -682,7 +682,7 @@ export async function renderProfilePage(container) {
           </nav>
           
           <div class="profile-sidebar-action">
-            <button class="btn-list-new" onclick="window.location.hash='#/products'">
+            <button class="btn-list-new" onclick="window.location.hash='#/create-listing'">
               <span class="material-symbols-outlined">add_circle</span>
               <span>List New Item</span>
             </button>

@@ -217,7 +217,7 @@ export async function renderHomePage(container) {
           <span class="material-symbols-outlined">favorite</span>
           <span>Yêu thích</span>
         </a>
-        <a href="#" class="mobile-nav-fab">
+        <a href="#/create-listing" class="mobile-nav-fab">
           <div class="mobile-nav-fab-btn">
             <span class="material-symbols-outlined">add</span>
           </div>
