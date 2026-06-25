@@ -3,7 +3,20 @@
  * Displays different tabs based on the user's role and allows profile updates.
  */
 import "../styles/profile.css";
-import { getMyProfile, MOCK_PROFILES, updateUserProfile } from "../services/profile.service.js";
+import {
+  getMyProfile,
+  MOCK_PROFILES,
+  updateUserProfile,
+  createDonationRequestApi,
+  acceptDonationRequest,
+  rejectDonationRequest,
+  shippingDonationRequest,
+  shippedDonationRequest,
+  receivedDonationRequest,
+  cancelDonationRequest,
+  getAllOrganizationsApi,
+  getAllDonationEventsApi
+} from "../services/profile.service.js";
 import { showToast } from "../utils/ui.js";
 import { isAuthenticated, getUser, getUserIdFromToken } from "../services/auth.service.js";
 import { getAllProducts, isDraftProduct } from "../services/product.service.js";
@@ -408,15 +421,17 @@ function renderReviewsTab(reviews) {
   `;
 }
 
-function renderDonationsTab(donations) {
+function renderDonationsTab(donations, role) {
+  const title = role === 'org' ? "Yêu cầu nhận quyên góp" : "Yêu cầu tặng đồ";
+  
   if (donations.length === 0) {
     return `
       <div class="dashboard-panel" id="panel-donation-requests">
         <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
-          <h2 class="panel-title">Yêu cầu tặng đồ</h2>
+          <h2 class="panel-title">${title}</h2>
         </div>
         <div class="panel-empty-body bg-white rounded-b-xl border border-t-0 border-outline-variant">
-          ${emptyStateHtml("volunteer_activism", "Hiện chưa có yêu cầu tặng đồ nào.")}
+          ${emptyStateHtml("volunteer_activism", "Hiện chưa có yêu cầu nào.")}
         </div>
       </div>
     `;
@@ -425,34 +440,112 @@ function renderDonationsTab(donations) {
   return `
     <div class="dashboard-panel" id="panel-donation-requests">
       <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
-        <h2 class="panel-title">Yêu cầu tặng đồ</h2>
+        <h2 class="panel-title">${title}</h2>
       </div>
       <div class="donations-list bg-white border border-t-0 border-outline-variant rounded-b-xl">
         ${donations
           .map(
-            (d) => `
-          <div class="donation-item">
-            <div class="donation-org-avatar">
-              <img src="${d.orgAvatar || 'https://i.pravatar.cc/40?img=60'}" alt="" />
-            </div>
-            <div class="donation-details">
-              <div class="donation-row">
-                <h4 class="donation-org-name">${d.org}</h4>
-                <span class="status-badge success">${d.status}</span>
-              </div>
-              <div class="donation-meta-grid">
-                <div class="meta-item">
-                  <span class="meta-label">Ngày quyên góp</span>
-                  <span class="meta-value">${d.date}</span>
+            (d) => {
+              let statusLabel = d.status || "PENDING";
+              let statusClass = "warning";
+              let badgeStyle = "";
+              if (d.status === "ACCEPTED") { statusClass = "success"; statusLabel = "Đã chấp nhận"; }
+              else if (d.status === "REJECTED") { badgeStyle = 'style="background: rgba(211, 47, 47, 0.1); color: #d32f2f;"'; statusLabel = "Đã từ chối"; }
+              else if (d.status === "SHIPPING") { statusClass = "warning"; statusLabel = "Đang vận chuyển"; }
+              else if (d.status === "SHIPPED") { statusClass = "warning"; statusLabel = "Đã gửi hàng"; }
+              else if (d.status === "RECEIVED" || d.status === "COMPLETED") { statusClass = "success"; statusLabel = d.status === "RECEIVED" ? "Đã nhận hàng" : "Hoàn thành"; }
+              else if (d.status === "CANCELLED") { badgeStyle = 'style="background: rgba(211, 47, 47, 0.1); color: #d32f2f;"'; statusLabel = "Đã hủy"; }
+
+              let actionButtons = "";
+              if (role === 'org') {
+                if (d.status === "PENDING") {
+                  actionButtons = `
+                    <div class="flex items-center space-x-2 mt-3">
+                      <button class="btn-primary btn-accept-donation px-3 py-1.5 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all" data-id="${d.id}">
+                        Chấp nhận
+                      </button>
+                      <button class="btn-danger-text btn-reject-donation px-3 py-1.5 rounded-lg text-label-sm font-bold border border-outline text-error hover:bg-error/10 transition-all" data-id="${d.id}">
+                        Từ chối
+                      </button>
+                    </div>
+                  `;
+                } else if (d.status === "SHIPPED") {
+                  actionButtons = `
+                    <div class="flex items-center space-x-2 mt-3">
+                      <button class="btn-primary btn-received-donation px-3 py-1.5 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all" data-id="${d.id}">
+                        Xác nhận đã nhận hàng
+                      </button>
+                    </div>
+                  `;
+                }
+              } else {
+                // Member actions
+                if (d.status === "ACCEPTED") {
+                  actionButtons = `
+                    <div class="flex flex-col mt-3 space-y-2">
+                      <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Nhập mã vận đơn (Tracking Code)" class="shipping-tracking-input border border-outline-variant rounded-lg px-3 py-1.5 text-body-sm max-w-xs" />
+                        <button class="btn-primary btn-ship-donation px-3 py-1.5 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all" data-id="${d.id}">
+                          Gửi hàng
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                }
+                if (d.status === "PENDING" || d.status === "ACCEPTED") {
+                  actionButtons += `
+                    <div class="mt-2">
+                      <button class="btn-danger-text btn-cancel-donation px-3 py-1 text-label-sm font-medium border border-outline text-error hover:bg-error/10 rounded-lg" data-id="${d.id}">
+                        Hủy yêu cầu
+                      </button>
+                    </div>
+                  `;
+                }
+              }
+
+              return `
+                <div class="donation-item p-4 border-b border-outline-variant last:border-0">
+                  <div class="flex items-start space-x-4">
+                    <div class="donation-org-avatar w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex-shrink-0">
+                      <img src="${d.orgAvatar || 'https://i.pravatar.cc/40?img=60'}" alt="" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="donation-details flex-grow">
+                      <div class="donation-row flex justify-between items-start">
+                        <div>
+                          <h4 class="donation-org-name font-bold text-on-surface">${role === 'org' ? `Người gửi: ${d.username || "Thành viên"}` : `Tổ chức: ${d.org}`}</h4>
+                          ${d.rejectedReason ? `<p class="text-error text-body-sm mt-1">Lý do từ chối: ${d.rejectedReason}</p>` : ''}
+                          ${d.cancelReason ? `<p class="text-error text-body-sm mt-1">Lý do hủy: ${d.cancelReason}</p>` : ''}
+                        </div>
+                        <span class="status-badge px-2 py-0.5 text-label-sm font-bold rounded-full ${statusClass}" ${badgeStyle}>${statusLabel}</span>
+                      </div>
+                      <div class="donation-meta-grid grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        <div class="meta-item">
+                          <span class="meta-label text-label-sm text-on-surface-variant opacity-70">Ngày yêu cầu: </span>
+                          <span class="meta-value text-body-sm font-medium">${d.date}</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-label text-label-sm text-on-surface-variant opacity-70">Vật phẩm: </span>
+                          <span class="meta-value text-body-sm font-semibold text-primary">${d.items}</span>
+                        </div>
+                        ${d.description ? `
+                          <div class="meta-item md:col-span-2">
+                            <span class="meta-label text-label-sm text-on-surface-variant opacity-70">Mô tả: </span>
+                            <span class="meta-value text-body-sm text-on-surface">${d.description}</span>
+                          </div>
+                        ` : ''}
+                        ${d.trackingCode ? `
+                          <div class="meta-item md:col-span-2">
+                            <span class="meta-label text-label-sm text-on-surface-variant opacity-70">Mã vận đơn: </span>
+                            <span class="meta-value text-body-sm font-mono font-bold text-secondary">${d.trackingCode}</span>
+                          </div>
+                        ` : ''}
+                      </div>
+                      ${actionButtons}
+                    </div>
+                  </div>
                 </div>
-                <div class="meta-item">
-                  <span class="meta-label">Vật phẩm quyên góp</span>
-                  <span class="meta-value font-semibold text-on-surface">${d.items}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        `
+              `;
+            }
           )
           .join("")}
       </div>
@@ -516,7 +609,7 @@ function renderDraftsTab(posts) {
   `;
 }
 
-function renderClosetTab(posts) {
+function renderClosetTab(posts, role) {
   return `
     <div class="dashboard-panel is-active" id="panel-closet">
       <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
@@ -563,7 +656,12 @@ function renderClosetTab(posts) {
                           </div>
                         </div>
                       </div>
-                      <div class="order-actions">
+                      <div class="order-actions flex items-center space-x-2">
+                        ${status === "AVAILABLE" && role === "member" ? `
+                          <button class="btn-primary btn-donate-item px-3 py-1 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all" data-title="${post.title}">
+                            Quyên góp
+                          </button>
+                        ` : ''}
                         <button class="btn-outline-variant" onclick="alert('Tính năng đang phát triển')">Sửa</button>
                         <button class="btn-danger-text" onclick="alert('Tính năng đang phát triển')">Xóa</button>
                       </div>
@@ -575,6 +673,110 @@ function renderClosetTab(posts) {
       </div>
     </div>
   `;
+}
+
+/* ── Donation Form Modal Helper ── */
+async function showDonationModal(itemTitle, onSuccess) {
+  // Fetch orgs and events
+  let orgs = [];
+  let events = [];
+  try {
+    orgs = await getAllOrganizationsApi();
+    events = await getAllDonationEventsApi();
+  } catch (e) {
+    console.error("Failed to load details for modal:", e);
+    showToast("Không thể tải danh sách tổ chức/sự kiện. Vui lòng thử lại sau.", "error");
+    return;
+  }
+
+  // Create modal container
+  const modal = document.createElement("div");
+  modal.className = "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 font-body-md";
+  modal.id = "donation-modal";
+  
+  const orgOptions = orgs.map(org => `<option value="${org.orgName}">${org.orgName} - ${org.address || ''}</option>`).join("");
+  const eventOptions = `<option value="">Không tham gia sự kiện</option>` + events.map(ev => `<option value="${ev.title}">${ev.title}</option>`).join("");
+
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl text-left" style="font-family: 'Be Vietnam Pro', sans-serif;">
+      <div class="flex justify-between items-center border-b border-outline-variant pb-3 mb-4">
+        <h3 class="text-headline-sm font-bold text-on-surface text-lg">Yêu cầu quyên góp</h3>
+        <button class="text-on-surface-variant hover:text-on-surface close-modal-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      
+      <p class="text-body-md text-on-surface-variant mb-4">
+        Bạn đang gửi yêu cầu quyên góp vật phẩm: <strong class="text-primary" style="color: #006b2c;">${itemTitle}</strong>
+      </p>
+
+      <form id="donation-submit-form" class="space-y-4">
+        <div class="flex flex-col mb-3">
+          <label class="block text-label-md font-bold mb-1.5 text-sm text-on-surface">Chọn tổ chức nhận quyên góp *</label>
+          <select id="donation-org" class="w-full border border-outline-variant rounded-xl p-3 focus:ring-2 focus:ring-primary focus:outline-none text-body-sm" required>
+            ${orgOptions ? orgOptions : '<option value="">Không có tổ chức khả dụng</option>'}
+          </select>
+        </div>
+        
+        <div class="flex flex-col mb-3">
+          <label class="block text-label-md font-bold mb-1.5 text-sm text-on-surface">Sự kiện quyên góp (Tùy chọn)</label>
+          <select id="donation-event" class="w-full border border-outline-variant rounded-xl p-3 focus:ring-2 focus:ring-primary focus:outline-none text-body-sm">
+            ${eventOptions}
+          </select>
+        </div>
+        
+        <div class="flex flex-col mb-3">
+          <label class="block text-label-md font-bold mb-1.5 text-sm text-on-surface">Mô tả chi tiết / Lời nhắn *</label>
+          <textarea id="donation-desc" placeholder="Nhập tình trạng vật phẩm, lời nhắn gửi đến tổ chức..." rows="3" class="w-full border border-outline-variant rounded-xl p-3 focus:ring-2 focus:ring-primary focus:outline-none text-body-sm" required></textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-3 border-t border-outline-variant mt-4">
+          <button type="button" class="btn-outline-variant close-modal-btn px-4 py-2 rounded-xl text-label-md font-bold border border-outline hover:bg-surface-variant transition-all text-sm">Hủy</button>
+          <button type="submit" class="btn-primary px-4 py-2 rounded-xl text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;">Gửi yêu cầu</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Bind close events
+  const close = () => {
+    modal.remove();
+  };
+  modal.querySelectorAll(".close-modal-btn").forEach(btn => btn.addEventListener("click", close));
+
+  // Form submit
+  modal.querySelector("#donation-submit-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const org = modal.querySelector("#donation-org").value;
+    const event = modal.querySelector("#donation-event").value;
+    const desc = modal.querySelector("#donation-desc").value;
+    
+    if (!org) {
+      showToast("Vui lòng chọn tổ chức nhận quyên góp!", "error");
+      return;
+    }
+
+    const payload = {
+      itemName: itemTitle,
+      organizationName: org,
+      donationEventName: event || null,
+      description: desc,
+      imageUrl: "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=400",
+      trackingCode: null
+    };
+
+    try {
+      await createDonationRequestApi(payload);
+      close();
+      if (onSuccess) onSuccess(org, desc);
+    } catch (err) {
+      console.error(err);
+      showToast("Gửi yêu cầu thất bại: " + err.message, "error");
+    }
+  });
 }
 
 /* ══════════════════════════════════════
@@ -636,7 +838,95 @@ export async function renderProfilePage(container) {
     initLocalStorageData();
     orders = JSON.parse(localStorage.getItem("ecocycle_orders") || "[]");
     reviews = JSON.parse(localStorage.getItem("ecocycle_reviews") || "[]");
-    donations = JSON.parse(localStorage.getItem("ecocycle_donations") || "[]");
+    
+    // Manage dynamic donation request lists
+    const rawRole = profile.role || "member";
+    let trackedDonations = [];
+    try {
+      const stored = localStorage.getItem("ecocycle_tracked_donations");
+      if (stored) {
+        trackedDonations = JSON.parse(stored);
+      } else {
+        trackedDonations = [
+          {
+            id: "d1",
+            org: "Tổ chức Kết nối Cộng đồng",
+            items: "2 áo khoác + 1 túi xách",
+            date: "15/05/2024",
+            status: "RECEIVED",
+            orgAvatar: "https://i.pravatar.cc/40?img=60",
+            description: "Quyên góp quần áo ấm cho trẻ em"
+          },
+          {
+            id: "d2",
+            org: "Mái ấm Hoa Hướng Dương",
+            items: "3 bộ quần áo trẻ em",
+            date: "02/04/2024",
+            status: "RECEIVED",
+            orgAvatar: "https://i.pravatar.cc/40?img=61",
+            description: "Ủng hộ các bé mồ côi"
+          }
+        ];
+        localStorage.setItem("ecocycle_tracked_donations", JSON.stringify(trackedDonations));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    // If Organization, load pending requests from real Backend API
+    if (rawRole === 'org') {
+      let backendPending = [];
+      try {
+        const token = localStorage.getItem("ecocycle_token");
+        if (token) {
+          const res = await fetch("/api/donation-requests/lists", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            backendPending = await res.json();
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch backend pending donations:", err);
+      }
+      
+      // Merge backend pending requests into trackedDonations if they are not already there
+      if (Array.isArray(backendPending)) {
+        backendPending.forEach(bp => {
+          const exists = trackedDonations.some(td => td.id === bp.id);
+          if (!exists) {
+            trackedDonations.unshift({
+              id: bp.id,
+              org: bp.organizationName,
+              items: bp.itemName || "Vật phẩm quyên góp",
+              date: new Date(bp.createdAt).toLocaleDateString("vi-VN"),
+              status: "PENDING",
+              orgAvatar: "https://i.pravatar.cc/40?img=60",
+              description: bp.description,
+              username: bp.username,
+              trackingCode: bp.trackingCode
+            });
+          }
+        });
+        localStorage.setItem("ecocycle_tracked_donations", JSON.stringify(trackedDonations));
+      }
+    }
+
+    // Filter displayed donations based on role
+    if (rawRole === 'org') {
+      donations = trackedDonations.filter(d => 
+        d.org === profile.name || 
+        d.org === profile.username ||
+        d.org?.toLowerCase() === profile.name?.toLowerCase() ||
+        d.org?.toLowerCase() === profile.username?.toLowerCase()
+      );
+      // Fallback if empty to show test data
+      if (donations.length === 0) {
+        donations = trackedDonations;
+      }
+    } else {
+      donations = trackedDonations.filter(d => d.username === undefined || d.username === profile.username);
+    }
 
     avgRating = reviews.length > 0
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
@@ -667,15 +957,24 @@ export async function renderProfilePage(container) {
   const role = profile.role ?? "member";
 
   // Sidebar Menu list
-  const sidebarNavItems = [
-    { id: "panel-closet", icon: "inventory_2", label: "Sản phẩm đăng bán", active: true },
-    { id: "panel-drafts", icon: "edit_note", label: "Bản nháp" },
-    { id: "panel-orders", icon: "shopping_bag", label: "Sản phẩm đã mua" },
-    { id: "panel-donation-requests", icon: "feature_search", label: "Yêu cầu tặng đồ" },
-    { id: "panel-saved", icon: "bookmark", label: "Đã lưu" },
-    { id: "panel-reviews", icon: "grade", label: "Đánh giá" },
-    { id: "panel-settings", icon: "settings", label: "Cài đặt" }
-  ];
+  let sidebarNavItems;
+  if (role === 'org') {
+    sidebarNavItems = [
+      { id: "panel-donation-requests", icon: "feature_search", label: "Yêu cầu nhận quyên góp", active: true },
+      { id: "panel-reviews", icon: "grade", label: "Đánh giá" },
+      { id: "panel-settings", icon: "settings", label: "Cài đặt" }
+    ];
+  } else {
+    sidebarNavItems = [
+      { id: "panel-closet", icon: "inventory_2", label: "Sản phẩm đăng bán", active: true },
+      { id: "panel-drafts", icon: "edit_note", label: "Bản nháp" },
+      { id: "panel-orders", icon: "shopping_bag", label: "Sản phẩm đã mua" },
+      { id: "panel-donation-requests", icon: "feature_search", label: "Yêu cầu tặng đồ" },
+      { id: "panel-saved", icon: "bookmark", label: "Đã lưu" },
+      { id: "panel-reviews", icon: "grade", label: "Đánh giá" },
+      { id: "panel-settings", icon: "settings", label: "Cài đặt" }
+    ];
+  }
 
   const sidebarNavHtml = sidebarNavItems
     .map(item => renderSidebarItem(item.id, item.icon, item.label, item.active))
@@ -762,19 +1061,21 @@ export async function renderProfilePage(container) {
         
         <!-- Right Content Panels -->
         <main class="dashboard-content">
-          ${renderOrdersTab(orders)}
-          ${renderClosetTab(activeProducts)}
-          ${renderDraftsTab(draftProducts)}
-          ${renderDonationsTab(donations)}
+          ${role === 'org' ? '' : renderOrdersTab(orders)}
+          ${role === 'org' ? '' : renderClosetTab(activeProducts, role)}
+          ${role === 'org' ? '' : renderDraftsTab(draftProducts)}
+          ${renderDonationsTab(donations, role)}
           
-          <div class="dashboard-panel" id="panel-saved">
-            <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
-              <h2 class="panel-title">Đã lưu</h2>
+          ${role === 'org' ? '' : `
+            <div class="dashboard-panel" id="panel-saved">
+              <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
+                <h2 class="panel-title">Đã lưu</h2>
+              </div>
+              <div class="panel-empty-body bg-white rounded-b-xl border border-t-0 border-outline-variant">
+                ${emptyStateHtml("bookmark", "Bạn chưa lưu sản phẩm hoặc sự kiện nào.")}
+              </div>
             </div>
-            <div class="panel-empty-body bg-white rounded-b-xl border border-t-0 border-outline-variant">
-              ${emptyStateHtml("bookmark", "Bạn chưa lưu sản phẩm hoặc sự kiện nào.")}
-            </div>
-          </div>
+          `}
           
           ${renderReviewsTab(reviews)}
           
@@ -806,6 +1107,10 @@ export async function renderProfilePage(container) {
     });
   }
 
+  // Set initial active tab based on role
+  const initialActiveTab = role === 'org' ? 'panel-donation-requests' : 'panel-closet';
+  switchTab(initialActiveTab);
+
   navItems.forEach((item) => {
     item.addEventListener("click", () => {
       const targetId = item.getAttribute("data-target");
@@ -825,7 +1130,7 @@ export async function renderProfilePage(container) {
   const cancelBtn = container.querySelector("#btn-cancel-settings");
   if (cancelBtn) {
     cancelBtn.addEventListener("click", () => {
-      switchTab("panel-closet");
+      switchTab(role === 'org' ? 'panel-donation-requests' : 'panel-closet');
     });
   }
 
@@ -836,6 +1141,163 @@ export async function renderProfilePage(container) {
       window.location.hash = "#/logout";
     });
   }
+
+  /* ── DONATION FLOW INTERACTION HANDLERS ── */
+
+  // 1. Member Donate Item Button Clicked (Opens modal)
+  container.querySelectorAll(".btn-donate-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const itemTitle = btn.getAttribute("data-title");
+      showDonationModal(itemTitle, (orgName, descText) => {
+        // Add to tracked donations in localStorage
+        const stored = localStorage.getItem("ecocycle_tracked_donations");
+        const list = stored ? JSON.parse(stored) : [];
+        const newId = "temp-" + Date.now();
+        list.unshift({
+          id: newId,
+          org: orgName,
+          items: itemTitle,
+          date: new Date().toLocaleDateString("vi-VN"),
+          status: "PENDING",
+          orgAvatar: "https://i.pravatar.cc/40?img=60",
+          description: descText,
+          username: profile.username
+        });
+        localStorage.setItem("ecocycle_tracked_donations", JSON.stringify(list));
+        showToast("Đã gửi yêu cầu quyên góp thành công!", "success");
+        renderProfilePage(container);
+      });
+    });
+  });
+
+  // 2. Org Accept Donation Request
+  container.querySelectorAll(".btn-accept-donation").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      try {
+        btn.disabled = true;
+        await acceptDonationRequest(id);
+        const list = JSON.parse(localStorage.getItem("ecocycle_tracked_donations") || "[]");
+        const item = list.find(d => d.id === id);
+        if (item) item.status = "ACCEPTED";
+        localStorage.setItem("ecocycle_tracked_donations", JSON.stringify(list));
+        showToast("Đã chấp nhận yêu cầu quyên góp!", "success");
+        renderProfilePage(container);
+      } catch (err) {
+        showToast("Lỗi phê duyệt: " + err.message, "error");
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // 3. Org Reject Donation Request
+  container.querySelectorAll(".btn-reject-donation").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      const reason = prompt("Nhập lý do từ chối yêu cầu quyên góp:");
+      if (reason === null) return;
+      if (!reason.trim()) {
+        showToast("Vui lòng nhập lý do từ chối!", "error");
+        return;
+      }
+      try {
+        btn.disabled = true;
+        await rejectDonationRequest(id, reason.trim());
+        const list = JSON.parse(localStorage.getItem("ecocycle_tracked_donations") || "[]");
+        const item = list.find(d => d.id === id);
+        if (item) {
+          item.status = "REJECTED";
+          item.rejectedReason = reason.trim();
+        }
+        localStorage.setItem("ecocycle_tracked_donations", JSON.stringify(list));
+        showToast("Đã từ chối yêu cầu quyên góp!", "success");
+        renderProfilePage(container);
+      } catch (err) {
+        showToast("Lỗi từ chối: " + err.message, "error");
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // 4. Member Ship Request (Ship: shipping -> shipped)
+  container.querySelectorAll(".btn-ship-donation").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      const parent = btn.closest(".donation-details");
+      const input = parent?.querySelector(".shipping-tracking-input");
+      const trackingCode = input?.value?.trim();
+      if (!trackingCode) {
+        showToast("Vui lòng nhập mã vận đơn (Tracking Code) trước khi gửi hàng!", "error");
+        return;
+      }
+      try {
+        btn.disabled = true;
+        await shippingDonationRequest(id);
+        await shippedDonationRequest(id);
+        const list = JSON.parse(localStorage.getItem("ecocycle_tracked_donations") || "[]");
+        const item = list.find(d => d.id === id);
+        if (item) {
+          item.status = "SHIPPED";
+          item.trackingCode = trackingCode;
+        }
+        localStorage.setItem("ecocycle_tracked_donations", JSON.stringify(list));
+        showToast("Đã gửi hàng thành công!", "success");
+        renderProfilePage(container);
+      } catch (err) {
+        showToast("Lỗi cập nhật gửi hàng: " + err.message, "error");
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // 5. Org Confirm Received Shipment
+  container.querySelectorAll(".btn-received-donation").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      try {
+        btn.disabled = true;
+        await receivedDonationRequest(id);
+        const list = JSON.parse(localStorage.getItem("ecocycle_tracked_donations") || "[]");
+        const item = list.find(d => d.id === id);
+        if (item) item.status = "RECEIVED";
+        localStorage.setItem("ecocycle_tracked_donations", JSON.stringify(list));
+        showToast("Đã xác nhận nhận được hàng!", "success");
+        renderProfilePage(container);
+      } catch (err) {
+        showToast("Lỗi xác nhận nhận hàng: " + err.message, "error");
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // 6. Member Cancel Request
+  container.querySelectorAll(".btn-cancel-donation").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-id");
+      const reason = prompt("Nhập lý do hủy yêu cầu quyên góp này:");
+      if (reason === null) return;
+      if (!reason.trim()) {
+        showToast("Vui lòng nhập lý do hủy!", "error");
+        return;
+      }
+      try {
+        btn.disabled = true;
+        await cancelDonationRequest(id, reason.trim());
+        const list = JSON.parse(localStorage.getItem("ecocycle_tracked_donations") || "[]");
+        const item = list.find(d => d.id === id);
+        if (item) {
+          item.status = "CANCELLED";
+          item.cancelReason = reason.trim();
+        }
+        localStorage.setItem("ecocycle_tracked_donations", JSON.stringify(list));
+        showToast("Đã hủy yêu cầu quyên góp!", "success");
+        renderProfilePage(container);
+      } catch (err) {
+        showToast("Lỗi hủy yêu cầu: " + err.message, "error");
+        btn.disabled = false;
+      }
+    });
+  });
 
   // Handle settings form submit
   const form = container.querySelector(".settings-form");

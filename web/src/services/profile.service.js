@@ -498,3 +498,71 @@ export async function getProfileDonations(id) {
     return profile.donations ?? [];
   }
 }
+
+/* ── DONATION FLOW API METHODS ── */
+
+export async function createDonationRequestApi(payload) {
+  return await apiFetch("/api/donation-requests", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function acceptDonationRequest(id) {
+  return await apiFetch(`/api/donation-requests/${id}/accept`, {
+    method: "PATCH",
+  });
+}
+
+export async function rejectDonationRequest(id, reason) {
+  return await apiFetch(`/api/donation-requests/${id}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function shippingDonationRequest(id) {
+  return await apiFetch(`/api/donation-requests/${id}/shipping`, {
+    method: "PATCH",
+  });
+}
+
+export async function shippedDonationRequest(id) {
+  return await apiFetch(`/api/donation-requests/${id}/shipped`, {
+    method: "PATCH",
+  });
+}
+
+export async function receivedDonationRequest(id) {
+  return await apiFetch(`/api/donation-requests/${id}/received`, {
+    method: "PATCH",
+  });
+}
+
+export async function completedDonationRequest(id) {
+  return await apiFetch(`/api/donation-requests/${id}/completed`, {
+    method: "PATCH",
+  });
+}
+
+export async function cancelDonationRequest(id, reason) {
+  return await apiFetch(`/api/donation-requests/${id}/cancel`, {
+    method: "PATCH",
+    body: reason, // Send text raw as expected by backend controller
+  });
+}
+
+export async function assignOrganizationApi(donationId, organizationId) {
+  return await apiFetch(`/api/donation-requests/${donationId}/assign-organization/${organizationId}`, {
+    method: "PATCH",
+  });
+}
+
+export async function getAllOrganizationsApi() {
+  return await apiFetch("/api/organization-details");
+}
+
+export async function getAllDonationEventsApi() {
+  return await apiFetch("/api/donation-events");
+}
+
