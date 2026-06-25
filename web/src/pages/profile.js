@@ -4,8 +4,10 @@
  */
 import "../styles/profile.css";
 import { getMyProfile, MOCK_PROFILES, updateUserProfile } from "../services/profile.service.js";
+import { showToast } from "../utils/ui.js";
 import { isAuthenticated, getUser, getUserIdFromToken } from "../services/auth.service.js";
-import { getAllProducts } from "../services/product.service.js";
+import { getAllProducts, isDraftProduct } from "../services/product.service.js";
+import { getConditionPercentage } from "../utils/conditionMapping.js";
 
 /* ══════════════════════════════════════
    HELPERS & UI GENERATORS
@@ -15,11 +17,14 @@ function roleLabel(role) {
   return (
     {
       member: "Thành viên",
-      seller: "Cửa hàng",
       org: "Tổ chức từ thiện",
       admin: "Quản trị viên",
     }[role] ?? role
   );
+}
+
+function normalizeProductStatus(status) {
+  return String(status ?? "").trim().toUpperCase();
 }
 
 // Init default localStorage data if not present
@@ -136,24 +141,7 @@ function renderSidebarItem(id, icon, label, isActive = false) {
   `;
 }
 
-function showToast(message, type = "success") {
-  const existing = document.getElementById("profile-toast");
-  if (existing) existing.remove();
-
-  const toast = document.createElement("div");
-  toast.id = "profile-toast";
-  toast.className = `profile-toast ${type}`;
-  toast.innerHTML = `
-    <span class="material-symbols-outlined">${type === 'success' ? 'check_circle' : 'error'}</span>
-    <span>${message}</span>
-  `;
-  document.body.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add("fade-out");
-    setTimeout(() => toast.remove(), 500);
-  }, 3000);
-}
+/* ── showToast imported from ui.js ── */
 
 /* ══════════════════════════════════════
    TAB RENDERING FUNCTIONS
@@ -301,9 +289,9 @@ function renderSettingsTab(p) {
 
 function renderOrdersTab(orders) {
   return `
-    <div class="dashboard-panel is-active" id="panel-orders">
+    <div class="dashboard-panel" id="panel-orders">
       <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
-        <h2 class="panel-title">Recent Orders</h2>
+        <h2 class="panel-title">Sản phẩm đã mua</h2>
         <div class="panel-filters">
           <button class="btn-filter is-active">Tất cả</button>
           <button class="btn-filter" onclick="alert('Tính năng lọc đang phát triển')">Đang xử lý</button>
@@ -472,12 +460,68 @@ function renderDonationsTab(donations) {
   `;
 }
 
+function renderDraftsTab(posts) {
+  return `
+    <div class="dashboard-panel" id="panel-drafts">
+      <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
+        <h2 class="panel-title">Bản nháp</h2>
+      </div>
+      
+      <div class="orders-list bg-white border border-t-0 border-outline-variant rounded-b-xl">
+        ${
+          posts.length === 0
+            ? `<div style="padding: 48px 0;">${emptyStateHtml("edit_note", "Không có bản nháp nào.")}</div>`
+            : posts
+                .map((post) => {
+                  const imgUrl = (post.images && post.images.length > 0) 
+                    ? post.images[0] 
+                    : "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=100";
+                  
+                  return `
+                    <div class="order-item">
+                      <div class="order-img-container">
+                        <img src="${imgUrl}" alt="${post.title}" />
+                      </div>
+                      <div class="order-details">
+                        <div class="order-row">
+                          <h3 class="order-item-title">${post.title}</h3>
+                          <span class="status-badge warning">Bản nháp</span>
+                        </div>
+                        <div class="order-meta-grid">
+                          <div class="meta-item">
+                            <span class="meta-label">Phân loại</span>
+                            <span class="meta-value">${post.category || "Chưa phân loại"}</span>
+                          </div>
+                          <div class="meta-item">
+                            <span class="meta-label">Độ mới</span>
+                            <span class="meta-value">${post.condition ? post.condition * 10 : 90}%</span>
+                          </div>
+                          <div class="meta-item">
+                            <span class="meta-label">Giá bán dự kiến</span>
+                            <span class="meta-value font-semibold text-on-surface">${(post.price || 0).toLocaleString("vi")}₫</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="order-actions">
+                        <button class="btn-outline-variant" onclick="alert('Tính năng sửa bản nháp đang phát triển')">Sửa</button>
+                        <button class="btn-danger-text" onclick="alert('Tính năng đang phát triển')">Xóa</button>
+                      </div>
+                    </div>
+                  `;
+                })
+                .join("")
+        }
+      </div>
+    </div>
+  `;
+}
+
 function renderClosetTab(posts) {
   return `
-    <div class="dashboard-panel" id="panel-closet">
+    <div class="dashboard-panel is-active" id="panel-closet">
       <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
-        <h2 class="panel-title">Tủ đồ / Sản phẩm đã đăng</h2>
-        <button class="btn-primary" onclick="window.location.hash='#/products'">+ Đăng sản phẩm mới</button>
+        <h2 class="panel-title">Sản phẩm đăng bán</h2>
+        <button class="btn-primary" onclick="window.location.hash='#/create-listing'">+ Đăng sản phẩm mới</button>
       </div>
       
       <div class="orders-list bg-white border border-t-0 border-outline-variant rounded-b-xl">
@@ -490,8 +534,9 @@ function renderClosetTab(posts) {
                     ? post.images[0] 
                     : "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=100";
                   
-                  const statusLabel = post.status === "AVAILABLE" ? "Còn hàng" : (post.status === "SOLD" ? "Đã bán" : post.status);
-                  const statusClass = post.status === "AVAILABLE" ? "success" : "warning";
+                  const status = normalizeProductStatus(post.status);
+                  const statusLabel = status === "AVAILABLE" ? "Còn hàng" : (status === "SOLD" ? "Đã bán" : (status || "Chưa rõ"));
+                  const statusClass = status === "AVAILABLE" ? "success" : "warning";
                   
                   return `
                     <div class="order-item">
@@ -510,7 +555,7 @@ function renderClosetTab(posts) {
                           </div>
                           <div class="meta-item">
                             <span class="meta-label">Độ mới</span>
-                            <span class="meta-value">${post.condition ? post.condition * 10 : 90}%</span>
+                            <span class="meta-value">${getConditionPercentage(post.condition)}%</span>
                           </div>
                           <div class="meta-item">
                             <span class="meta-label">Giá bán</span>
@@ -565,6 +610,8 @@ export async function renderProfilePage(container) {
 
   let profile;
   let closetProducts = [];
+  let activeProducts = [];
+  let draftProducts = [];
   let orders = [];
   let reviews = [];
   let donations = [];
@@ -579,6 +626,8 @@ export async function renderProfilePage(container) {
       closetProducts = allProducts.filter(
         (p) => p.sellerId === profile.id || p.sellerName === profile.username
       );
+      activeProducts = closetProducts.filter((p) => !isDraftProduct(p));
+      draftProducts = closetProducts.filter((p) => isDraftProduct(p));
     } catch (err) {
       console.error("Failed to fetch products for user closet:", err);
     }
@@ -619,8 +668,9 @@ export async function renderProfilePage(container) {
 
   // Sidebar Menu list
   const sidebarNavItems = [
-    { id: "panel-orders", icon: "shopping_bag", label: "Đơn hàng", active: true },
-    { id: "panel-closet", icon: "inventory_2", label: "Tủ đồ" },
+    { id: "panel-closet", icon: "inventory_2", label: "Sản phẩm đăng bán", active: true },
+    { id: "panel-drafts", icon: "edit_note", label: "Bản nháp" },
+    { id: "panel-orders", icon: "shopping_bag", label: "Sản phẩm đã mua" },
     { id: "panel-donation-requests", icon: "feature_search", label: "Yêu cầu tặng đồ" },
     { id: "panel-saved", icon: "bookmark", label: "Đã lưu" },
     { id: "panel-reviews", icon: "grade", label: "Đánh giá" },
@@ -663,8 +713,12 @@ export async function renderProfilePage(container) {
           <!-- Stats Row -->
           <div class="profile-stats-row">
             <div class="profile-stat-item">
-              <span class="profile-stat-value">${closetProducts.length}</span>
-              <span class="profile-stat-label">Đã đăng</span>
+              <span class="profile-stat-value">${activeProducts.length}</span>
+              <span class="profile-stat-label">Đang bán</span>
+            </div>
+            <div class="profile-stat-item">
+              <span class="profile-stat-value">${draftProducts.length}</span>
+              <span class="profile-stat-label">Bản nháp</span>
             </div>
             <div class="profile-stat-item">
               <span class="profile-stat-value">${orders.length}</span>
@@ -699,7 +753,7 @@ export async function renderProfilePage(container) {
           </nav>
           
           <div class="profile-sidebar-action">
-            <button class="btn-list-new" onclick="window.location.hash='#/products'">
+            <button class="btn-list-new" onclick="window.location.hash='#/create-listing'">
               <span class="material-symbols-outlined">add_circle</span>
               <span>List New Item</span>
             </button>
@@ -709,7 +763,8 @@ export async function renderProfilePage(container) {
         <!-- Right Content Panels -->
         <main class="dashboard-content">
           ${renderOrdersTab(orders)}
-          ${renderClosetTab(closetProducts)}
+          ${renderClosetTab(activeProducts)}
+          ${renderDraftsTab(draftProducts)}
           ${renderDonationsTab(donations)}
           
           <div class="dashboard-panel" id="panel-saved">
@@ -766,11 +821,11 @@ export async function renderProfilePage(container) {
     });
   }
 
-  // Cancel settings redirects back to orders tab
+  // Cancel settings redirects back to closet tab
   const cancelBtn = container.querySelector("#btn-cancel-settings");
   if (cancelBtn) {
     cancelBtn.addEventListener("click", () => {
-      switchTab("panel-orders");
+      switchTab("panel-closet");
     });
   }
 

@@ -48,6 +48,14 @@ export function validateFullName(value) {
   return null;
 }
 
+/** Validates a 6-digit OTP code */
+export function validateOtp(value) {
+  if (!value || !value.trim()) return "Vui lòng nhập mã OTP";
+  const digitsOnly = value.replace(/\D/g, "");
+  if (digitsOnly.length !== 6) return "Mã OTP phải có 6 chữ số";
+  return null;
+}
+
 /** Validates a username (required) */
 export function validateUsername(value) {
   if (!value || !value.trim()) return "Vui lòng nhập tên đăng nhập";

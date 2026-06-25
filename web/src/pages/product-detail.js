@@ -1,5 +1,6 @@
 import "../styles/product-detail.css";
 import { getProductById, getAllProducts } from "../services/product.service.js";
+import { getConditionLabel, getConditionPercentage } from "../utils/conditionMapping.js";
 
 /**
  * Render the Product Detail Page
@@ -42,14 +43,10 @@ export async function renderProductDetailPage(container, productId) {
     };
 
     const getConditionText = (cond) => {
-      switch (cond) {
-        case 1: return "Mới (Nguyên tag)";
-        case 2: return "Như mới";
-        case 3: return "Tốt";
-        case 4: return "Khá";
-        case 5: return "Đã sử dụng nhiều";
-        default: return "Tốt";
-      }
+      // Use shared condition mapping
+      const percentage = getConditionPercentage(cond);
+      const label = getConditionLabel(cond);
+      return `${label} (${percentage}%)`;
     };
 
     const getLifecycleText = (gen) => {

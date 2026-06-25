@@ -206,91 +206,6 @@ export async function renderHomePage(container) {
         </div>
       </section>
 
-      <!-- Featured Sellers -->
-      <section class="home-container">
-        <header class="section-header">
-          <div>
-            <h3 class="section-title">Seller nổi bật</h3>
-            <p class="section-desc">Những người bán uy tín được cộng đồng tin tưởng</p>
-          </div>
-        </header>
-
-        <div class="sellers-row">
-          <!-- Seller 1 -->
-          <div class="seller-card">
-            <div class="seller-avatar-wrapper">
-              <img class="seller-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCwCIKqrd6WRMbIjb3LrGDoGf6v7Mnxv_btlO7FjYGzb5xOGaTOioPaKzBjpgNDPuicOyWyxbT8Z3BW0mb5QKzBcpzOnwYV6NNDtnzrY2XgAgjCzBylvEXF_toNEK8nXe07UfGSbaNGHrFqbZ6ArItMHLpDMaiBFIdrbL3M-qHqXrtCMIB7uakXInlxFCN3BKUjseO5oUhIrBGOQrKh4EbPrGWcAjHrZK_XZPPbeAyKxiIXs4KUPktVrgPt1Y13qT43dX-nST6WKIr" />
-              <span class="seller-verified"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">verified</span></span>
-            </div>
-            <h5 class="seller-name">Tuấn Anh Store</h5>
-            <div class="seller-rating">
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star_half</span>
-              <span class="seller-rating-score">(4.8)</span>
-            </div>
-            <p class="seller-stats">42 sản phẩm đang bán</p>
-            <button class="seller-btn">Xem shop</button>
-          </div>
-
-          <!-- Seller 2 -->
-          <div class="seller-card">
-            <div class="seller-avatar-wrapper">
-              <img class="seller-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUhLsqDt-BYAHI8bTaPKYpnuajfvHfQ5OTlkvcXdJndMPKjD8h_hTagqt3gk9wwtT8WV-JRF5f9QCjZQQ513cocwRRNNI8twC4AgpBklpbmQTN8FJWaA_nKPbezlS4dtct68Figvfs0yacDUi4s-p62ZYSzHTMcObLfi8Nlo63oOjKBwNVRW2_8mpyDINzSiB6O3_4pXqomlPaFURjEJOtzFCArb-S91TCC2ITTwm6tH1vupo1jSXfdSJzq0eaPifRLJgVMzJ3Y29l" />
-              <span class="seller-verified"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">verified</span></span>
-            </div>
-            <h5 class="seller-name">Vintage Vibes</h5>
-            <div class="seller-rating">
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="seller-rating-score">(5.0)</span>
-            </div>
-            <p class="seller-stats">15 sản phẩm đang bán</p>
-            <button class="seller-btn">Xem shop</button>
-          </div>
-
-          <!-- Seller 3 -->
-          <div class="seller-card">
-            <div class="seller-avatar-wrapper">
-              <img class="seller-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDc7h5NgV1rmO69JGhokaOSDWgDc53hKPSiORpRxaCRLcUNqI17p8J-v101DCPB4UUBTdiaAhDcICwVlI0WnE_QOKQFJOlndA5ldTdTKfZHMjLR9E7JQ8oI5FFmMSXnvK0_Xj7u8QqOJSrgCRdbCiSsTRK090VTbVnjNsG6v9CrKMwjd7jXLp0hMZEjeZdCkBjne1QD7TFAM7IbXu4WZN7WSfe34tNpqsXD9JDpSRonIIR1PQQ_eXgLRiFsPPQyIAptoX26npbTK9Ng" />
-            </div>
-            <h5 class="seller-name">Tech Passione</h5>
-            <div class="seller-rating">
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined">star_outline</span>
-              <span class="seller-rating-score">(4.2)</span>
-            </div>
-            <p class="seller-stats">86 sản phẩm đang bán</p>
-            <button class="seller-btn">Xem shop</button>
-          </div>
-
-          <!-- Seller 4 -->
-          <div class="seller-card">
-            <div class="seller-avatar-wrapper">
-              <img class="seller-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAb0Ldl37qRJL5hvtBlqMwbhD12O-2Ol2FgdeZ9fBqgZAooOI7JoqS_KIiiTJzRM70UBgqZ-8Aob1zreM3A6uTmILxISHgFawlBWHSe6ca7FpodpI70SUR6hFhhlhrLnbEh9pqcmxHAfRqaa_GOLJ03yjw__4wZ3hxbw3_3Nzpn-8wmNGbGROlZemuZsb6wBLj7Ym8uKzxAC6LeDu_uWWWjmc4XwvKy0CjvyrPDpHgOM7sbS_s30jG-qvKmh4SJ5ERtIuaKLGrlZ2FW" />
-            </div>
-            <h5 class="seller-name">Mẹ Bầu Bé Ngoan</h5>
-            <div class="seller-rating">
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
-              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star_half</span>
-              <span class="seller-rating-score">(4.7)</span>
-            </div>
-            <p class="seller-stats">120 sản phẩm đang bán</p>
-            <button class="seller-btn">Xem shop</button>
-          </div>
-        </div>
-      </section>
 
       <!-- Bottom Nav Bar (Mobile) -->
       <nav class="mobile-nav">
@@ -302,7 +217,7 @@ export async function renderHomePage(container) {
           <span class="material-symbols-outlined">favorite</span>
           <span>Yêu thích</span>
         </a>
-        <a href="#" class="mobile-nav-fab">
+        <a href="#/create-listing" class="mobile-nav-fab">
           <div class="mobile-nav-fab-btn">
             <span class="material-symbols-outlined">add</span>
           </div>

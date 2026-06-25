@@ -7,11 +7,15 @@ import "./styles/global.css";
 
 import { renderLoginPage } from "./pages/login.js";
 import { renderRegisterPage } from "./pages/register.js";
+import { renderRegisterSelectionPage } from "./pages/register-selection.js";
+import { renderRegisterOrgPage } from "./pages/register-org.js";
+import { renderForgotPasswordPage } from "./pages/forgot-password.js";
 import { renderProfilePage } from "./pages/profile.js";
 import { renderHomePage } from "./pages/home.js";
 import { renderProductsPage } from "./pages/products.js";
 import { renderProductDetailPage } from "./pages/product-detail.js";
-import { renderAdminPage } from "./pages/admin.js";
+import { renderAdminPage } from "./pages/admin/index.js";
+import { renderCreateListingPage } from "./pages/create-listing.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
 import { logoutApi, isAuthenticated } from "./services/auth.service.js";
@@ -26,7 +30,22 @@ const routes = {
   },
   "#/register": () => {
     renderHeader({ activePage: "register" });
+    renderRegisterSelectionPage(app);
+    removeFooter();
+  },
+  "#/register-member": () => {
+    renderHeader({ activePage: "register" });
     renderRegisterPage(app);
+    removeFooter();
+  },
+  "#/register-organization": () => {
+    renderHeader({ activePage: "register" });
+    renderRegisterOrgPage(app);
+    removeFooter();
+  },
+  "#/forgot-password": () => {
+    renderHeader({ activePage: "login" });
+    renderForgotPasswordPage(app);
     removeFooter();
   },
   "#/profile": () => {
@@ -39,10 +58,28 @@ const routes = {
     renderProductsPage(app);
     renderFooter();
   },
+  "#/create-listing": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
+    renderHeader({ activePage: "" });
+    renderCreateListingPage(app);
+    renderFooter();
+  },
   "#/admin": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
     removeHeader();
     renderAdminPage(app);
     removeFooter();
+  },
+  "#/pending-approval": () => {
+    renderHeader({ activePage: "" });
+    renderPendingApprovalPage(app);
+    renderFooter();
   },
   "#/logout": handleLogout,
   "#/": handleHome,
@@ -114,6 +151,7 @@ function navigate() {
   }
 
   const handler = routes[route] ?? routes["#/"];
+  console.log("NAVIGATE - Hash:", hash, "Route:", route, "Handler matches routes['#/register-organization']?", handler === routes["#/register-organization"]);
   handler();
 }
 

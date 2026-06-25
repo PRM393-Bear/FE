@@ -5,19 +5,7 @@
 
 import { getToken, getUser, getUserIdFromToken, saveUser } from "./auth.service.js";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
-
-async function apiFetch(path) {
-  const token = getToken();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+import { apiFetch, BASE_URL } from "../utils/api.js";
 
 /* ════════════════════════════════════════════
    MOCK DATA – all 4 actor profiles
@@ -155,149 +143,6 @@ export const MOCK_PROFILES = {
     ],
   },
 
-  /* ── SELLER ── */
-  seller: {
-    id: "u002",
-    role: "seller",
-    name: "Vintage House Saigon",
-    avatar: "https://i.pravatar.cc/150?img=52",
-    cover:
-      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=80",
-    bio: "Chuyên mua bán đồ secondhand, thời trang vintage và phụ kiện. Hàng chính hãng 100%, giá cả hợp lý, phục vụ tận tâm.",
-    location: "Quận 1, TP. Hồ Chí Minh",
-    joinedDate: "06/2022",
-    rating: 4.9,
-    reviewCount: 312,
-    shopStats: {
-      totalSold: 1240,
-      activeListings: 86,
-      responseRate: "98%",
-      responseTime: "< 1 giờ",
-    },
-    stats: { sold: 1240, rating: 4.9, reviews: 312, followers: 580 },
-    posts: [
-      {
-        id: "sp1",
-        title: "Lô 10 áo thun Uniqlo hàng thùng",
-        price: 850000,
-        condition: "Tốt",
-        image:
-          "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400",
-        category: "Quần áo",
-        qty: 10,
-      },
-      {
-        id: "sp2",
-        title: "Set 5 váy công sở thanh lý",
-        price: 1200000,
-        condition: "Như mới",
-        image:
-          "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400",
-        category: "Quần áo",
-        qty: 5,
-      },
-      {
-        id: "sp3",
-        title: "20 đôi giày mix các size",
-        price: 3500000,
-        condition: "Tốt",
-        image:
-          "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",
-        category: "Giày",
-        qty: 20,
-      },
-      {
-        id: "sp4",
-        title: "Lô túi xách da cao cấp 8 cái",
-        price: 2800000,
-        condition: "Tốt",
-        image:
-          "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400",
-        category: "Túi xách",
-        qty: 8,
-      },
-      {
-        id: "sp5",
-        title: "50 áo sơ mi nam các màu",
-        price: 2500000,
-        condition: "Tốt",
-        image:
-          "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400",
-        category: "Quần áo",
-        qty: 50,
-      },
-      {
-        id: "sp6",
-        title: "Bộ 12 phụ kiện thời trang mix",
-        price: 1500000,
-        condition: "Như mới",
-        image:
-          "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400",
-        category: "Phụ kiện",
-        qty: 12,
-      },
-    ],
-    reviews: [
-      {
-        id: "sr1",
-        author: "Thu Hà",
-        avatar: "https://i.pravatar.cc/40?img=15",
-        rating: 5,
-        comment:
-          "Shop uy tín, hàng đẹp, đóng gói cẩn thận. Đã mua nhiều lần rồi!",
-        date: "1 ngày trước",
-      },
-      {
-        id: "sr2",
-        author: "Bảo Anh",
-        avatar: "https://i.pravatar.cc/40?img=22",
-        rating: 5,
-        comment:
-          "Mua được lô áo rất ngon, chất vải tốt, đúng như mô tả. Sẽ ủng hộ tiếp.",
-        date: "3 ngày trước",
-      },
-      {
-        id: "sr3",
-        author: "Mỹ Linh",
-        avatar: "https://i.pravatar.cc/40?img=31",
-        rating: 4,
-        comment: "Shop hỗ trợ nhiệt tình, giao hàng nhanh.",
-        date: "1 tuần trước",
-      },
-    ],
-    events: [
-      {
-        id: "se1",
-        title: "Hội chợ đồ cũ Saigon Retro Market",
-        date: "20/06/2024",
-        location: "Công viên Tao Đàn, Q.1",
-        image:
-          "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=400",
-        role: "Người bán hàng",
-        status: "Sắp diễn ra",
-      },
-      {
-        id: "se2",
-        title: "Phiên chợ secondhand tháng 5",
-        date: "12/05/2024",
-        location: "SECC, Q.7",
-        image:
-          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
-        role: "Người bán hàng",
-        status: "Đã kết thúc",
-      },
-    ],
-    donations: [
-      {
-        id: "sd1",
-        org: "Tổ chức Kết nối Cộng đồng",
-        items: "50 áo + 20 quần (hàng tồn)",
-        date: "01/05/2024",
-        status: "Đã nhận",
-        orgAvatar: "https://i.pravatar.cc/40?img=60",
-      },
-    ],
-  },
 
   /* ── ORGANIZATION ── */
   org: {
@@ -526,7 +371,6 @@ export async function getMyProfile() {
   // Normalize role string to match MOCK_PROFILES key
   let role = "member";
   if (rawRole.toUpperCase() === "ADMIN") role = "admin";
-  else if (rawRole.toUpperCase() === "SELLER") role = "seller";
   else if (rawRole.toUpperCase() === "ORGANIZATION" || rawRole.toUpperCase() === "ORG") role = "org";
 
   const defaultMock = MOCK_PROFILES[role] || MOCK_PROFILES.member;
