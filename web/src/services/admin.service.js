@@ -60,9 +60,9 @@ export async function getAllDonationRequests() {
 
 export async function getPendingOrganizations() {
   try {
-    const allOrgs = await apiFetch("/api/organization-details");
-    if (Array.isArray(allOrgs)) {
-      return allOrgs.filter(org => org.status === "PENDING" || org.status === "pending" || org.status === null || org.status === undefined);
+    const pendingOrgs = await apiFetch("/api/organization-details/pending");
+    if (Array.isArray(pendingOrgs)) {
+      return pendingOrgs.filter(org => org.status === "PENDING");
     }
     return [];
   } catch (error) {

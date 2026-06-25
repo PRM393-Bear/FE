@@ -71,10 +71,20 @@ export async function attachOrganizationsListeners(container) {
   const tbody = document.getElementById('orgs-table-body');
   if (!tbody) return;
 
+  const isPendingStatus = (status) => status === 'PENDING';
+  const getApprovalErrorMessage = (error) => {
+    const message = error?.message || '';
+    if (message.includes('not in pending status')) {
+      return 'Tổ chức này không còn ở trạng thái chờ duyệt. Vui lòng tải lại danh sách.';
+    }
+    return message || 'Không thể thực hiện thao tác duyệt tổ chức.';
+  };
+
   try {
     const orgs = await getPendingOrganizations();
     if (orgs && orgs.length > 0) {
       tbody.innerHTML = orgs.map(org => {
+        const canModerate = isPendingStatus(org.status);
         const logoUrl = org.avtOrg || `https://ui-avatars.com/api/?name=${encodeURIComponent(org.orgName || 'O')}&background=006B2C&color=fff`;
         const acceptedTypesText = org.acceptedTypes && org.acceptedTypes.length > 0 
           ? org.acceptedTypes.map(t => `<span class="px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded text-xs mr-1">${t}</span>`).join('')
@@ -110,10 +120,10 @@ export async function attachOrganizationsListeners(container) {
               </div>
             </td>
             <td class="px-6 py-5 text-right space-x-2">
-              <button class="approve-org-btn bg-primary text-on-primary px-3 py-1.5 rounded-lg text-label-sm font-bold shadow-sm hover:opacity-90 transition-soft active:scale-95" data-id="${org.id}">
+              <button class="approve-org-btn bg-primary text-on-primary px-3 py-1.5 rounded-lg text-label-sm font-bold shadow-sm hover:opacity-90 transition-soft active:scale-95 ${canModerate ? '' : 'opacity-50 cursor-not-allowed'}" data-id="${org.id}" ${canModerate ? '' : 'disabled'}>
                 Duyệt
               </button>
-              <button class="reject-org-btn bg-error text-on-error px-3 py-1.5 rounded-lg text-label-sm font-bold shadow-sm hover:opacity-90 transition-soft active:scale-95" data-id="${org.id}">
+              <button class="reject-org-btn bg-error text-on-error px-3 py-1.5 rounded-lg text-label-sm font-bold shadow-sm hover:opacity-90 transition-soft active:scale-95 ${canModerate ? '' : 'opacity-50 cursor-not-allowed'}" data-id="${org.id}" ${canModerate ? '' : 'disabled'}>
                 Từ chối
               </button>
             </td>
@@ -134,7 +144,7 @@ export async function attachOrganizationsListeners(container) {
               // Reload tab
               attachOrganizationsListeners(container);
             } catch (err) {
-              alert('Lỗi khi duyệt tổ chức: ' + err.message);
+              alert('Lỗi khi duyệt tổ chức: ' + getApprovalErrorMessage(err));
               btn.disabled = false;
               btn.textContent = 'Duyệt';
             }
@@ -154,7 +164,7 @@ export async function attachOrganizationsListeners(container) {
               // Reload tab
               attachOrganizationsListeners(container);
             } catch (err) {
-              alert('Lỗi khi từ chối tổ chức: ' + err.message);
+              alert('Lỗi khi từ chối tổ chức: ' + getApprovalErrorMessage(err));
               btn.disabled = false;
               btn.textContent = 'Từ chối';
             }
