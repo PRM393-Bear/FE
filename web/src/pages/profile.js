@@ -7,6 +7,7 @@ import { getMyProfile, MOCK_PROFILES, updateUserProfile } from "../services/prof
 import { showToast } from "../utils/ui.js";
 import { isAuthenticated, getUser, getUserIdFromToken } from "../services/auth.service.js";
 import { getAllProducts } from "../services/product.service.js";
+import { getConditionPercentage } from "../utils/conditionMapping.js";
 
 /* ══════════════════════════════════════
    HELPERS & UI GENERATORS
@@ -493,7 +494,7 @@ function renderClosetTab(posts) {
                           </div>
                           <div class="meta-item">
                             <span class="meta-label">Độ mới</span>
-                            <span class="meta-value">${post.condition ? post.condition * 10 : 90}%</span>
+                            <span class="meta-value">${getConditionPercentage(post.condition)}%</span>
                           </div>
                           <div class="meta-item">
                             <span class="meta-label">Giá bán</span>
