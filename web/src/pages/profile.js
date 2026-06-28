@@ -21,6 +21,7 @@ import { showToast } from "../utils/ui.js";
 import { isAuthenticated, getUser, getUserIdFromToken } from "../services/auth.service.js";
 import { getAllProducts, isDraftProduct } from "../services/product.service.js";
 import { getConditionPercentage } from "../utils/conditionMapping.js";
+import { confirmOrder, shipOrder, confirmReceived, getOrdersByBuyer, getOrdersBySeller } from "../services/order.service.js";
 
 /* ══════════════════════════════════════
    HELPERS & UI GENERATORS
@@ -300,6 +301,19 @@ function renderSettingsTab(p) {
   `;
 }
 
+function mapOrderStatus(status) {
+  switch (status) {
+    case "PENDING": return { label: "Chờ xác nhận", class: "warning" };
+    case "PAID": return { label: "Đã thanh toán", class: "info" };
+    case "PROCESSING": return { label: "Đang chuẩn bị hàng", class: "warning" };
+    case "SHIPPING": return { label: "Đang giao", class: "warning" };
+    case "RECEIVED": return { label: "Đã nhận", class: "success" };
+    case "COMPLETED": return { label: "Hoàn thành", class: "success" };
+    case "CANCELLED": return { label: "Đã hủy", class: "danger" };
+    default: return { label: status, class: "neutral" };
+  }
+}
+
 function renderOrdersTab(orders) {
   return `
     <div class="dashboard-panel" id="panel-orders">
@@ -316,43 +330,71 @@ function renderOrdersTab(orders) {
           ? `<div style="padding: 48px 0;">${emptyStateHtml("shopping_bag", "Bạn chưa có đơn hàng nào.")}</div>`
           : orders
           .map(
-            (o) => `
-          <div class="order-item">
-            <div class="order-img-container">
-              <img src="${o.img}" alt="" />
-            </div>
-            
-            <div class="order-details">
-              <div class="order-row">
-                <h3 class="order-item-title">${o.item}</h3>
-                <span class="status-badge ${o.statusClass}">${o.status}</span>
-              </div>
+            (o) => {
+              const item = o.orderItems && o.orderItems.length > 0 ? o.orderItems[0].product : null;
+              const title = item ? item.title : "Sản phẩm EcoCycle";
+              const img = item && item.images && item.images.length > 0 ? item.images[0] : "https://placehold.co/800x800/E4EBE4/6E7B6C?text=No+Image";
+              const price = o.totalAmount || 0;
+              const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString("vi-VN") : "";
+              const statusInfo = mapOrderStatus(o.status);
               
-              <div class="order-meta-grid">
-                <div class="meta-item">
-                  <span class="meta-label">Ngày đặt</span>
-                  <span class="meta-value">${o.date}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">Mã đơn</span>
-                  <span class="meta-value text-primary font-semibold">${o.id}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">Tổng cộng</span>
-                  <span class="meta-value font-semibold text-on-surface">${o.price.toLocaleString("vi")}đ</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="order-actions">
-              ${o.status === "Đang giao" || o.status === "Đang xử lý"
-                ? `<button class="btn-outline" onclick="alert('Theo dõi đơn ${o.id}')">Theo dõi đơn</button>` 
-                : `<button class="btn-primary" onclick="alert('Đánh giá đơn hàng ${o.id}')">Đánh giá ngay</button>
-                   <button class="btn-link" onclick="alert('Mua lại đơn hàng ${o.id}')">Mua lại</button>`
+              // Actions based on status
+              let actionsHtml = "";
+              if (o.status === "SHIPPING") {
+                actionsHtml = `
+                  <button class="btn-primary btn-confirm-received px-4 py-2 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;" data-id="${o.id}">Đã nhận được hàng</button>
+                  ${o.trackingCode ? `<button class="btn-outline ml-2" onclick="alert('Mã vận đơn: ${o.trackingCode}')">Theo dõi đơn</button>` : ''}
+                `;
+              } else if (o.status === "PENDING" || o.status === "PROCESSING") {
+                actionsHtml = `<span class="text-body-sm text-on-surface-variant font-medium opacity-70">Chờ seller xử lý</span>`;
+              } else if (o.status === "COMPLETED") {
+                actionsHtml = `
+                  <button class="btn-primary px-4 py-2 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;" onclick="alert('Đánh giá đơn hàng ${o.id}')">Đánh giá ngay</button>
+                `;
+              } else {
+                actionsHtml = `<span class="text-body-sm text-on-surface-variant opacity-50">${statusInfo.label}</span>`;
               }
-            </div>
-          </div>
-        `,
+
+              return `
+                <div class="order-item">
+                  <div class="order-img-container">
+                    <img src="${img}" alt="" />
+                  </div>
+                  
+                  <div class="order-details">
+                    <div class="order-row">
+                      <h3 class="order-item-title">${title}</h3>
+                      <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+                    </div>
+                    
+                    <div class="order-meta-grid">
+                      <div class="meta-item">
+                        <span class="meta-label">Ngày đặt</span>
+                        <span class="meta-value">${date}</span>
+                      </div>
+                      <div class="meta-item">
+                        <span class="meta-label">Mã đơn</span>
+                        <span class="meta-value text-primary font-semibold">${o.id}</span>
+                      </div>
+                      <div class="meta-item">
+                        <span class="meta-label">Tổng cộng</span>
+                        <span class="meta-value font-semibold text-on-surface">${price.toLocaleString("vi")}đ</span>
+                      </div>
+                      ${o.trackingCode ? `
+                        <div class="meta-item col-span-2">
+                          <span class="meta-label">Mã vận đơn</span>
+                          <span class="meta-value font-mono font-bold text-secondary">${o.trackingCode}</span>
+                        </div>
+                      ` : ""}
+                    </div>
+                  </div>
+                  
+                  <div class="order-actions">
+                    ${actionsHtml}
+                  </div>
+                </div>
+              `;
+            }
           )
           .join("")}
       </div>
@@ -362,6 +404,102 @@ function renderOrdersTab(orders) {
           <span>Xem tất cả lịch sử đơn hàng</span>
           <span class="material-symbols-outlined">arrow_forward</span>
         </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSalesTab(salesOrders) {
+  return `
+    <div class="dashboard-panel" id="panel-sales">
+      <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
+        <h2 class="panel-title">Quản lý bán hàng</h2>
+        <div class="panel-filters">
+          <button class="btn-filter is-active">Đơn hàng bán</button>
+        </div>
+      </div>
+      
+      <div class="orders-list bg-white rounded-b-xl border border-t-0 border-outline-variant">
+        ${salesOrders.length === 0
+          ? `<div style="padding: 48px 0;">${emptyStateHtml("store", "Bạn chưa nhận được đơn hàng nào.")}</div>`
+          : salesOrders
+          .map(
+            (o) => {
+              const item = o.orderItems && o.orderItems.length > 0 ? o.orderItems[0].product : null;
+              const title = item ? item.title : "Sản phẩm EcoCycle";
+              const img = item && item.images && item.images.length > 0 ? item.images[0] : "https://placehold.co/800x800/E4EBE4/6E7B6C?text=No+Image";
+              const price = o.totalAmount || 0;
+              const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString("vi-VN") : "";
+              const statusInfo = mapOrderStatus(o.status);
+              const buyerName = o.buyer ? (o.buyer.fullName || o.buyer.userName) : "Người mua ẩn danh";
+
+              // Actions based on status
+              let actionsHtml = "";
+              if (o.status === "PENDING") {
+                actionsHtml = `
+                  <button class="btn-primary btn-confirm-sale-order px-4 py-2 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;" data-id="${o.id}">Xác nhận đơn hàng</button>
+                `;
+              } else if (o.status === "PROCESSING") {
+                actionsHtml = `
+                  <div class="flex flex-col gap-2 w-full max-w-xs" style="align-items: flex-start; text-align: left;">
+                    <input type="text" placeholder="Nhập mã vận đơn..." class="shipping-tracking-input border border-outline-variant rounded-lg p-2 text-body-sm w-full" style="border: 1px solid #bdcaba; border-radius: 8px; padding: 8px; font-size: 14px;" />
+                    <button class="btn-primary btn-ship-sale-order w-full px-4 py-2 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;" data-id="${o.id}">Giao hàng</button>
+                  </div>
+                `;
+              } else if (o.status === "SHIPPING") {
+                actionsHtml = `<span class="text-body-sm text-secondary font-semibold">Đang giao hàng</span>`;
+              } else if (o.status === "COMPLETED") {
+                actionsHtml = `<span class="text-body-sm text-primary font-semibold">Đã hoàn thành</span>`;
+              } else {
+                actionsHtml = `<span class="text-body-sm text-on-surface-variant opacity-50">${statusInfo.label}</span>`;
+              }
+
+              return `
+                <div class="order-item">
+                  <div class="order-img-container">
+                    <img src="${img}" alt="" />
+                  </div>
+                  
+                  <div class="order-details">
+                    <div class="order-row">
+                      <h3 class="order-item-title">${title}</h3>
+                      <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+                    </div>
+                    
+                    <div class="order-meta-grid">
+                      <div class="meta-item">
+                        <span class="meta-label">Người mua</span>
+                        <span class="meta-value font-semibold text-on-surface">${buyerName}</span>
+                      </div>
+                      <div class="meta-item">
+                        <span class="meta-label">Ngày đặt</span>
+                        <span class="meta-value">${date}</span>
+                      </div>
+                      <div class="meta-item">
+                        <span class="meta-label">Mã đơn</span>
+                        <span class="meta-value text-primary font-semibold">${o.id}</span>
+                      </div>
+                      <div class="meta-item">
+                        <span class="meta-label">Tổng cộng</span>
+                        <span class="meta-value font-semibold text-on-surface">${price.toLocaleString("vi")}đ</span>
+                      </div>
+                      ${o.trackingCode ? `
+                        <div class="meta-item col-span-2">
+                          <span class="meta-label">Mã vận đơn</span>
+                          <span class="meta-value font-mono font-bold text-secondary">${o.trackingCode}</span>
+                        </div>
+                      ` : ""}
+                    </div>
+                  </div>
+                  
+                  <div class="order-actions">
+                    ${actionsHtml}
+                  </div>
+                </div>
+              `;
+            }
+          )
+          .join("")}
       </div>
     </div>
   `;
@@ -815,6 +953,7 @@ export async function renderProfilePage(container) {
   let activeProducts = [];
   let draftProducts = [];
   let orders = [];
+  let salesOrders = [];
   let reviews = [];
   let donations = [];
   let avgRating = "4.8";
@@ -834,9 +973,23 @@ export async function renderProfilePage(container) {
       console.error("Failed to fetch products for user closet:", err);
     }
 
+    // Fetch orders dynamically from backend API
+    try {
+      orders = await getOrdersByBuyer();
+    } catch (err) {
+      console.error("Failed to fetch orders from backend:", err);
+      orders = [];
+    }
+
+    try {
+      salesOrders = await getOrdersBySeller();
+    } catch (err) {
+      console.error("Failed to fetch sales orders from backend:", err);
+      salesOrders = [];
+    }
+
     // Initialize and read local storage data
     initLocalStorageData();
-    orders = JSON.parse(localStorage.getItem("ecocycle_orders") || "[]");
     reviews = JSON.parse(localStorage.getItem("ecocycle_reviews") || "[]");
     
     // Manage dynamic donation request lists
@@ -969,6 +1122,7 @@ export async function renderProfilePage(container) {
       { id: "panel-closet", icon: "inventory_2", label: "Sản phẩm đăng bán", active: true },
       { id: "panel-drafts", icon: "edit_note", label: "Bản nháp" },
       { id: "panel-orders", icon: "shopping_bag", label: "Sản phẩm đã mua" },
+      { id: "panel-sales", icon: "store", label: "Quản lý bán hàng" },
       { id: "panel-donation-requests", icon: "feature_search", label: "Yêu cầu tặng đồ" },
       { id: "panel-saved", icon: "bookmark", label: "Đã lưu" },
       { id: "panel-reviews", icon: "grade", label: "Đánh giá" },
@@ -1062,6 +1216,7 @@ export async function renderProfilePage(container) {
         <!-- Right Content Panels -->
         <main class="dashboard-content">
           ${role === 'org' ? '' : renderOrdersTab(orders)}
+          ${role === 'org' ? '' : renderSalesTab(salesOrders)}
           ${role === 'org' ? '' : renderClosetTab(activeProducts, role)}
           ${role === 'org' ? '' : renderDraftsTab(draftProducts)}
           ${renderDonationsTab(donations, role)}
@@ -1134,13 +1289,63 @@ export async function renderProfilePage(container) {
     });
   }
 
-  // Logout button handler
-  const logoutBtn = container.querySelector(".logout-btn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      window.location.hash = "#/logout";
+  /* ── MARKETPLACE ORDER INTERACTION HANDLERS ── */
+
+  // 1. Buyer Confirm Received Order
+  container.querySelectorAll(".btn-confirm-received").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const orderId = btn.getAttribute("data-id");
+      if (!confirm("Bạn có chắc chắn đã nhận được hàng và muốn hoàn tất đơn hàng?")) return;
+      try {
+        btn.disabled = true;
+        await confirmReceived(orderId);
+        showToast("Đã xác nhận nhận hàng và hoàn tất giao dịch!", "success");
+        renderProfilePage(container); // Reload page
+      } catch (err) {
+        showToast("Lỗi xác nhận nhận hàng: " + err.message, "error");
+        btn.disabled = false;
+      }
     });
-  }
+  });
+
+  // 2. Seller Confirm Order
+  container.querySelectorAll(".btn-confirm-sale-order").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const orderId = btn.getAttribute("data-id");
+      try {
+        btn.disabled = true;
+        await confirmOrder(orderId);
+        showToast("Xác nhận đơn hàng thành công!", "success");
+        renderProfilePage(container); // Reload page
+      } catch (err) {
+        showToast("Lỗi xác nhận đơn hàng: " + err.message, "error");
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // 3. Seller Ship Order (with tracking code input)
+  container.querySelectorAll(".btn-ship-sale-order").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const orderId = btn.getAttribute("data-id");
+      const parent = btn.closest(".order-item");
+      const input = parent?.querySelector(".shipping-tracking-input");
+      const trackingCode = input?.value?.trim();
+      if (!trackingCode) {
+        showToast("Vui lòng nhập mã vận đơn trước khi giao hàng!", "error");
+        return;
+      }
+      try {
+        btn.disabled = true;
+        await shipOrder(orderId, trackingCode);
+        showToast("Cập nhật giao hàng thành công!", "success");
+        renderProfilePage(container); // Reload page
+      } catch (err) {
+        showToast("Lỗi cập nhật giao hàng: " + err.message, "error");
+        btn.disabled = false;
+      }
+    });
+  });
 
   /* ── DONATION FLOW INTERACTION HANDLERS ── */
 

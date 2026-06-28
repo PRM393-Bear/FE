@@ -1,6 +1,7 @@
 import "../styles/product-detail.css";
 import { getProductById, getAllProducts } from "../services/product.service.js";
 import { getConditionLabel, getConditionPercentage } from "../utils/conditionMapping.js";
+import { createOrder } from "../services/order.service.js";
 
 /**
  * Render the Product Detail Page
@@ -310,30 +311,19 @@ export async function renderProductDetailPage(container, productId) {
     // 4. Buy Now Button Handler
     const buyBtn = container.querySelector("#btn-buy-now");
     if (buyBtn) {
-      buyBtn.addEventListener("click", () => {
-        const orderId = `LC-${Math.floor(100000 + Math.random() * 900000)}`;
-        const today = new Date();
-        const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-        
-        const newOrder = {
-          id: orderId,
-          item: product.title || "Sản phẩm EcoCycle",
-          price: product.price || 0,
-          img: product.images && product.images.length > 0 ? product.images[0] : "https://placehold.co/800x800/E4EBE4/6E7B6C?text=No+Image",
-          date: dateStr,
-          status: "Đang xử lý",
-          statusClass: "warning"
-        };
-        
-        // Add to ecocycle_orders in localStorage
-        const orders = JSON.parse(localStorage.getItem("ecocycle_orders") || "[]");
-        orders.unshift(newOrder); // Put at the beginning
-        localStorage.setItem("ecocycle_orders", JSON.stringify(orders));
-        
-        alert(`Chúc mừng! Bạn đã đặt mua thành công: ${product.title}`);
-        
-        // Redirect to profile page
-        window.location.hash = "#/profile";
+      buyBtn.addEventListener("click", async () => {
+        try {
+          buyBtn.disabled = true;
+          await createOrder(product.id);
+          alert(`Chúc mừng! Bạn đã đặt mua thành công: ${product.title}`);
+          // Redirect to profile page
+          window.location.hash = "#/profile";
+        } catch (err) {
+          console.error("Lỗi đặt mua hàng:", err);
+          alert(`Đặt mua thất bại: ${err.message}`);
+        } finally {
+          buyBtn.disabled = false;
+        }
       });
     }
 
