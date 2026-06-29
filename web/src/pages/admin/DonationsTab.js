@@ -1,5 +1,6 @@
 import { showToast } from "../../utils/ui.js";
 import { getAllDonationRequests } from "../../services/admin.service.js";
+import { BASE_URL } from "../../utils/api.js";
 
 export function renderDonationsTab() {
   return `
@@ -137,7 +138,7 @@ export async function attachDonationsListeners(container) {
     // Fetch approved organizations list for reassign selection
     try {
       const token = localStorage.getItem("ecocycle_token");
-      const res = await fetch("/api/organization-details", {
+      const res = await fetch(`${BASE_URL}/api/organization-details`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -246,7 +247,7 @@ export async function attachDonationsListeners(container) {
         try {
           btn.disabled = true;
           const token = localStorage.getItem("ecocycle_token");
-          const res = await fetch(`/api/donation-requests/${id}/completed`, {
+          const res = await fetch(`${BASE_URL}/api/donation-requests/${id}/completed`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
@@ -331,7 +332,7 @@ export async function attachDonationsListeners(container) {
 
           try {
             const token = localStorage.getItem("ecocycle_token");
-            const res = await fetch(`/api/donation-requests/${id}/assign-organization/${orgId}`, {
+            const res = await fetch(`${BASE_URL}/api/donation-requests/${id}/assign-organization/${orgId}`, {
               method: "PATCH",
               headers: { "Authorization": `Bearer ${token}` }
             });

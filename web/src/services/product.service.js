@@ -4,8 +4,9 @@
  */
 
 import { getToken } from "./auth.service.js";
+import { BASE_URL } from "../utils/api.js";
 
-const API_BASE = "/api/products";
+const API_BASE = `${BASE_URL}/api/products`;
 const DRAFT_PRODUCT_IDS_STORAGE_KEY = "ecocycle_draft_product_ids";
 
 function normalizeProductStatus(status) {
@@ -227,7 +228,7 @@ export async function uploadProductImage(file) {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("/api/upload/image", {
+    const response = await fetch(`${BASE_URL}/api/upload/image`, {
       method: "POST",
       headers: headers,
       body: formData,

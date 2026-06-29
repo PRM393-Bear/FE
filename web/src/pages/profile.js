@@ -18,6 +18,7 @@ import {
   getAllDonationEventsApi
 } from "../services/profile.service.js";
 import { showToast } from "../utils/ui.js";
+import { BASE_URL } from "../utils/api.js";
 import { isAuthenticated, getUser, getUserIdFromToken } from "../services/auth.service.js";
 import { getAllProducts, isDraftProduct } from "../services/product.service.js";
 import { getConditionPercentage } from "../utils/conditionMapping.js";
@@ -1032,7 +1033,7 @@ export async function renderProfilePage(container) {
       try {
         const token = localStorage.getItem("ecocycle_token");
         if (token) {
-          const res = await fetch("/api/donation-requests/lists", {
+          const res = await fetch(`${BASE_URL}/api/donation-requests/lists`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
           if (res.ok) {
