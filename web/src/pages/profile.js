@@ -315,14 +315,27 @@ function mapOrderStatus(status) {
   }
 }
 
+function getFilterCategory(status) {
+  if (status === "PENDING" || status === "PROCESSING" || status === "PAID") return "pending";
+  if (status === "SHIPPING") return "shipping";
+  if (status === "RECEIVED") return "received";
+  if (status === "COMPLETED") return "completed";
+  if (status === "CANCELLED") return "cancelled";
+  return "all";
+}
+
 function renderOrdersTab(orders) {
   return `
     <div class="dashboard-panel" id="panel-orders">
-      <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
-        <h2 class="panel-title">Sản phẩm đã mua</h2>
-        <div class="panel-filters">
-          <button class="btn-filter is-active">Tất cả</button>
-          <button class="btn-filter" onclick="alert('Tính năng lọc đang phát triển')">Đang xử lý</button>
+      <div class="panel-header bg-white rounded-t-xl border border-outline-variant flex flex-wrap gap-2 justify-between items-center">
+        <h2 class="panel-title">Đơn mua</h2>
+        <div class="panel-filters order-status-filters flex flex-wrap gap-1">
+          <button class="btn-filter is-active" data-filter="all">Tất cả</button>
+          <button class="btn-filter" data-filter="pending">Chờ xác nhận</button>
+          <button class="btn-filter" data-filter="shipping">Đang giao</button>
+          <button class="btn-filter" data-filter="received">Đã nhận</button>
+          <button class="btn-filter" data-filter="completed">Hoàn tất</button>
+          <button class="btn-filter" data-filter="cancelled">Đã hủy</button>
         </div>
       </div>
       
@@ -338,6 +351,8 @@ function renderOrdersTab(orders) {
               const price = o.totalAmount || 0;
               const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString("vi-VN") : "";
               const statusInfo = mapOrderStatus(o.status);
+              const sellerName = o.seller ? (o.seller.fullName || o.seller.userName) : (item && item.seller ? (item.seller.fullName || item.seller.userName) : "Người bán EcoCycle");
+              const filterCat = getFilterCategory(o.status);
               
               // Actions based on status
               let actionsHtml = "";
@@ -357,7 +372,7 @@ function renderOrdersTab(orders) {
               }
 
               return `
-                <div class="order-item">
+                <div class="order-item" data-filter-status="${filterCat}">
                   <div class="order-img-container">
                     <img src="${img}" alt="" />
                   </div>
@@ -369,6 +384,10 @@ function renderOrdersTab(orders) {
                     </div>
                     
                     <div class="order-meta-grid">
+                      <div class="meta-item">
+                        <span class="meta-label">Người bán</span>
+                        <span class="meta-value font-semibold text-on-surface">${sellerName}</span>
+                      </div>
                       <div class="meta-item">
                         <span class="meta-label">Ngày đặt</span>
                         <span class="meta-value">${date}</span>
@@ -413,10 +432,15 @@ function renderOrdersTab(orders) {
 function renderSalesTab(salesOrders) {
   return `
     <div class="dashboard-panel" id="panel-sales">
-      <div class="panel-header bg-white rounded-t-xl border border-outline-variant">
-        <h2 class="panel-title">Quản lý bán hàng</h2>
-        <div class="panel-filters">
-          <button class="btn-filter is-active">Đơn hàng bán</button>
+      <div class="panel-header bg-white rounded-t-xl border border-outline-variant flex flex-wrap gap-2 justify-between items-center">
+        <h2 class="panel-title">Đơn bán</h2>
+        <div class="panel-filters order-status-filters flex flex-wrap gap-1">
+          <button class="btn-filter is-active" data-filter="all">Tất cả</button>
+          <button class="btn-filter" data-filter="pending">Chờ xác nhận</button>
+          <button class="btn-filter" data-filter="shipping">Đang giao</button>
+          <button class="btn-filter" data-filter="received">Đã nhận</button>
+          <button class="btn-filter" data-filter="completed">Hoàn tất</button>
+          <button class="btn-filter" data-filter="cancelled">Đã hủy</button>
         </div>
       </div>
       
@@ -433,6 +457,7 @@ function renderSalesTab(salesOrders) {
               const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString("vi-VN") : "";
               const statusInfo = mapOrderStatus(o.status);
               const buyerName = o.buyer ? (o.buyer.fullName || o.buyer.userName) : "Người mua ẩn danh";
+              const filterCat = getFilterCategory(o.status);
 
               // Actions based on status
               let actionsHtml = "";
@@ -456,7 +481,7 @@ function renderSalesTab(salesOrders) {
               }
 
               return `
-                <div class="order-item">
+                <div class="order-item" data-filter-status="${filterCat}">
                   <div class="order-img-container">
                     <img src="${img}" alt="" />
                   </div>
@@ -1122,8 +1147,8 @@ export async function renderProfilePage(container) {
     sidebarNavItems = [
       { id: "panel-closet", icon: "inventory_2", label: "Sản phẩm đăng bán", active: true },
       { id: "panel-drafts", icon: "edit_note", label: "Bản nháp" },
-      { id: "panel-orders", icon: "shopping_bag", label: "Sản phẩm đã mua" },
-      { id: "panel-sales", icon: "store", label: "Quản lý bán hàng" },
+      { id: "panel-orders", icon: "shopping_bag", label: "Đơn mua" },
+      { id: "panel-sales", icon: "store", label: "Đơn bán" },
       { id: "panel-donation-requests", icon: "feature_search", label: "Yêu cầu tặng đồ" },
       { id: "panel-saved", icon: "bookmark", label: "Đã lưu" },
       { id: "panel-reviews", icon: "grade", label: "Đánh giá" },
@@ -1263,8 +1288,15 @@ export async function renderProfilePage(container) {
     });
   }
 
-  // Set initial active tab based on role
-  const initialActiveTab = role === 'org' ? 'panel-donation-requests' : 'panel-closet';
+  // Set initial active tab based on role or URL query param
+  let initialActiveTab = role === 'org' ? 'panel-donation-requests' : 'panel-closet';
+  if (window.location.hash.includes("?")) {
+    const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
+    const tabParam = urlParams.get("tab");
+    if (tabParam && container.querySelector(`#${tabParam}`)) {
+      initialActiveTab = tabParam;
+    }
+  }
   switchTab(initialActiveTab);
 
   navItems.forEach((item) => {
@@ -1296,7 +1328,7 @@ export async function renderProfilePage(container) {
   container.querySelectorAll(".btn-confirm-received").forEach(btn => {
     btn.addEventListener("click", async () => {
       const orderId = btn.getAttribute("data-id");
-      if (!confirm("Bạn có chắc chắn đã nhận được hàng và muốn hoàn tất đơn hàng?")) return;
+      if (!confirm("Xác nhận đơn hàng đã nhận đủ và không hoàn trả? Đồng ý sẽ chuyển đơn hàng sang hoàn tất.")) return;
       try {
         btn.disabled = true;
         await confirmReceived(orderId);
@@ -1346,6 +1378,28 @@ export async function renderProfilePage(container) {
         btn.disabled = false;
       }
     });
+  });
+
+  // 4. Status Filtering Handlers for Orders & Sales Panels
+  container.querySelectorAll(".dashboard-panel").forEach(panel => {
+    const filterBtns = panel.querySelectorAll(".order-status-filters .btn-filter");
+    const orderItems = panel.querySelectorAll(".order-item");
+    if (filterBtns.length > 0) {
+      filterBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          filterBtns.forEach(b => b.classList.remove("is-active"));
+          btn.classList.add("is-active");
+          const filter = btn.getAttribute("data-filter");
+          orderItems.forEach(item => {
+            if (filter === "all" || item.getAttribute("data-filter-status") === filter) {
+              item.style.display = "";
+            } else {
+              item.style.display = "none";
+            }
+          });
+        });
+      });
+    }
   });
 
   /* ── DONATION FLOW INTERACTION HANDLERS ── */

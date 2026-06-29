@@ -2,6 +2,7 @@ import "../styles/product-detail.css";
 import { getProductById, getAllProducts } from "../services/product.service.js";
 import { getConditionLabel, getConditionPercentage } from "../utils/conditionMapping.js";
 import { createOrder } from "../services/order.service.js";
+import { showToast } from "../utils/ui.js";
 
 /**
  * Render the Product Detail Page
@@ -315,12 +316,12 @@ export async function renderProductDetailPage(container, productId) {
         try {
           buyBtn.disabled = true;
           await createOrder(product.id);
-          alert(`Chúc mừng! Bạn đã đặt mua thành công: ${product.title}`);
-          // Redirect to profile page
-          window.location.hash = "#/profile";
+          showToast("Đơn hàng đã được gửi tới người bán. Hãy theo dõi tại Đơn mua!", "success");
+          // Redirect to profile orders tab
+          window.location.hash = "#/profile?tab=panel-orders";
         } catch (err) {
           console.error("Lỗi đặt mua hàng:", err);
-          alert(`Đặt mua thất bại: ${err.message}`);
+          showToast(`Đặt mua thất bại: ${err.message}`, "error");
         } finally {
           buyBtn.disabled = false;
         }
