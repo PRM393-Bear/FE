@@ -378,6 +378,7 @@ export async function renderHomePage(container) {
   }
 
   // Hook scroll listeners and hover slide timers
+  let hoverScrollInterval = null;
   if (arrivalsContainer && arrivalsPrevBtn && arrivalsNextBtn) {
     arrivalsContainer.addEventListener("scroll", updateArrowState);
     window.addEventListener("resize", updateArrowState);
@@ -400,7 +401,6 @@ export async function renderHomePage(container) {
     });
 
     // Hover (trỏ chuột) slow continuous scroll
-    let hoverScrollInterval = null;
     const startHoverScroll = (direction) => {
       if (hoverScrollInterval) clearInterval(hoverScrollInterval);
       hoverScrollInterval = setInterval(() => {
@@ -426,4 +426,12 @@ export async function renderHomePage(container) {
     arrivalsNextBtn.addEventListener("mouseenter", () => startHoverScroll(1));
     arrivalsNextBtn.addEventListener("mouseleave", stopHoverScroll);
   }
+
+  return () => {
+    window.removeEventListener("resize", updateArrowState);
+    if (hoverScrollInterval) {
+      clearInterval(hoverScrollInterval);
+      hoverScrollInterval = null;
+    }
+  };
 }

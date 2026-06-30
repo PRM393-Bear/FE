@@ -1,13 +1,21 @@
 /**
  * EcoCycle Web - Product Service
- * Handles API calls for products.
+ * Handles API calls for products with in-memory caching.
  */
 
 import { getToken } from "./auth.service.js";
-import { BASE_URL } from "../utils/api.js";
+import { apiFetch } from "../utils/api.js";
 
-const API_BASE = `${BASE_URL}/api/products`;
 const DRAFT_PRODUCT_IDS_STORAGE_KEY = "ecocycle_draft_product_ids";
+
+let productsCache = null;
+let productsCacheTime = 0;
+const CACHE_TTL = 3 * 60 * 1000; // 3 phút
+
+export function invalidateProductCache() {
+  productsCache = null;
+  productsCacheTime = 0;
+}
 
 function normalizeProductStatus(status) {
   return String(status ?? "").trim().toUpperCase();
@@ -73,31 +81,18 @@ export function isDraftProduct(product) {
 }
 
 /**
- * Fetch all products from the backend.
+ * Fetch all products from the backend with caching.
  * @returns {Promise<Array>} Array of product objects.
  */
 export async function getAllProducts() {
+  const now = Date.now();
+  if (productsCache && now - productsCacheTime < CACHE_TTL) {
+    return productsCache;
+  }
   try {
-    const token = getToken();
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(API_BASE, {
-      method: "GET",
-      headers: headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Error fetching products: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
+    const data = await apiFetch("/api/products");
+    productsCache = data;
+    productsCacheTime = now;
     return data;
   } catch (error) {
     console.error("getAllProducts failed:", error);
@@ -112,27 +107,7 @@ export async function getAllProducts() {
  */
 export async function getProductById(id) {
   try {
-    const token = getToken();
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${API_BASE}/${id}`, {
-      method: "GET",
-      headers: headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Error fetching product: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
-    return data;
+    return await apiFetch(`/api/products/${id}`);
   } catch (error) {
     console.error("getProductById failed:", error);
     throw error;
@@ -146,28 +121,11 @@ export async function getProductById(id) {
  */
 export async function createProduct(productData) {
   try {
-    const token = getToken();
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(API_BASE, {
+    const data = await apiFetch("/api/products", {
       method: "POST",
-      headers: headers,
       body: JSON.stringify(productData),
     });
-
-    if (!response.ok) {
-      const errBody = await response.text();
-      throw new Error(
-        `Error creating product: ${response.status} ${response.statusText}. Details: ${errBody}`
-      );
-    }
-
-    const data = await response.json();
+    invalidateProductCache();
     return data;
   } catch (error) {
     console.error("createProduct failed:", error);
@@ -183,28 +141,11 @@ export async function createProduct(productData) {
  */
 export async function updateProduct(id, productData) {
   try {
-    const token = getToken();
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${API_BASE}/${id}`, {
+    const data = await apiFetch(`/api/products/${id}`, {
       method: "PUT",
-      headers: headers,
       body: JSON.stringify(productData),
     });
-
-    if (!response.ok) {
-      const errBody = await response.text();
-      throw new Error(
-        `Error updating product: ${response.status} ${response.statusText}. Details: ${errBody}`
-      );
-    }
-
-    const data = await response.json();
+    invalidateProductCache();
     return data;
   } catch (error) {
     console.error("updateProduct failed:", error);
@@ -219,30 +160,13 @@ export async function updateProduct(id, productData) {
  */
 export async function uploadProductImage(file) {
   try {
-    const token = getToken();
-    const headers = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${BASE_URL}/api/upload/image`, {
+    return await apiFetch("/api/upload/image", {
       method: "POST",
-      headers: headers,
       body: formData,
     });
-
-    if (!response.ok) {
-      const errBody = await response.text();
-      throw new Error(
-        `Error uploading image: ${response.status} ${response.statusText}. Details: ${errBody}`
-      );
-    }
-
-    const data = await response.json();
-    return data;
   } catch (error) {
     console.error("uploadProductImage failed:", error);
     throw error;

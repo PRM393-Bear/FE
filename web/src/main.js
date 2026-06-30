@@ -16,46 +16,49 @@ import { renderProductsPage } from "./pages/products.js";
 import { renderProductDetailPage } from "./pages/product-detail.js";
 import { renderAdminPage } from "./pages/admin/index.js";
 import { renderCreateListingPage } from "./pages/create-listing.js";
+import { renderPendingApprovalPage } from "./pages/pending-approval.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
-import { logoutApi, isAuthenticated } from "./services/auth.service.js";
+import { logoutApi, isAuthenticated, getUser } from "./services/auth.service.js";
 
 const app = document.getElementById("app");
+
+let currentCleanup = null;
 
 const routes = {
   "#/login": () => {
     renderHeader({ activePage: "login" });
-    renderLoginPage(app);
+    currentCleanup = renderLoginPage(app);
     removeFooter();
   },
   "#/register": () => {
     renderHeader({ activePage: "register" });
-    renderRegisterSelectionPage(app);
+    currentCleanup = renderRegisterSelectionPage(app);
     removeFooter();
   },
   "#/register-member": () => {
     renderHeader({ activePage: "register" });
-    renderRegisterPage(app);
+    currentCleanup = renderRegisterPage(app);
     removeFooter();
   },
   "#/register-organization": () => {
     renderHeader({ activePage: "register" });
-    renderRegisterOrgPage(app);
+    currentCleanup = renderRegisterOrgPage(app);
     removeFooter();
   },
   "#/forgot-password": () => {
     renderHeader({ activePage: "login" });
-    renderForgotPasswordPage(app);
+    currentCleanup = renderForgotPasswordPage(app);
     removeFooter();
   },
   "#/profile": () => {
     renderHeader({ activePage: "profile" });
-    renderProfilePage(app);
+    currentCleanup = renderProfilePage(app);
     renderFooter();
   },
   "#/products": () => {
     renderHeader({ activePage: "products" });
-    renderProductsPage(app);
+    currentCleanup = renderProductsPage(app);
     renderFooter();
   },
   "#/create-listing": () => {
@@ -64,7 +67,7 @@ const routes = {
       return;
     }
     renderHeader({ activePage: "" });
-    renderCreateListingPage(app);
+    currentCleanup = renderCreateListingPage(app);
     renderFooter();
   },
   "#/admin": () => {
@@ -73,12 +76,12 @@ const routes = {
       return;
     }
     removeHeader();
-    renderAdminPage(app);
+    currentCleanup = renderAdminPage(app);
     removeFooter();
   },
   "#/pending-approval": () => {
     renderHeader({ activePage: "" });
-    renderPendingApprovalPage(app);
+    currentCleanup = renderPendingApprovalPage(app);
     renderFooter();
   },
   "#/logout": handleLogout,
@@ -88,8 +91,12 @@ const routes = {
 
 /* ── Home handler ── */
 function handleHome() {
+  if (isAuthenticated() && getUser()?.role === "admin") {
+    window.location.hash = "#/admin";
+    return;
+  }
   renderHeader({ activePage: "home" });
-  renderHomePage(app);
+  currentCleanup = renderHomePage(app);
   renderFooter();
 }
 
@@ -136,6 +143,25 @@ function navigate() {
   // strip query params from hash if any
   const route = hash.split("?")[0];
 
+  // Run cleanup of previous page if any
+  if (currentCleanup && typeof currentCleanup === "function") {
+    try {
+      currentCleanup();
+    } catch (e) {
+      console.warn("Error during page cleanup:", e);
+    }
+    currentCleanup = null;
+  }
+
+  // Check Admin redirection away from Home
+  if (isAuthenticated()) {
+    const user = getUser();
+    if (user?.role === "admin" && (route === "#/" || route === "" || route === "#/home")) {
+      window.location.hash = "#/admin";
+      return;
+    }
+  }
+
   // Scroll to top on navigation
   window.scrollTo(0, 0);
 
@@ -144,14 +170,13 @@ function navigate() {
     const productId = route.replace("#/product/", "");
     if (productId) {
       renderHeader({ activePage: "products" });
-      renderProductDetailPage(app, productId);
+      currentCleanup = renderProductDetailPage(app, productId);
       renderFooter();
       return;
     }
   }
 
   const handler = routes[route] ?? routes["#/"];
-  console.log("NAVIGATE - Hash:", hash, "Route:", route, "Handler matches routes['#/register-organization']?", handler === routes["#/register-organization"]);
   handler();
 }
 

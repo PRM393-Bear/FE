@@ -580,4 +580,6 @@ export function renderCreateListingPage(container) {
       URL.revokeObjectURL(img.previewUrl);
     });
   }
+
+  return cleanup;
 }

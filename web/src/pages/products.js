@@ -1,15 +1,14 @@
 import "../styles/products.css";
 import { getAllProducts } from "../services/product.service.js";
 
-// Global state
-let allProducts = [];
-let filteredProducts = [];
-
 /**
  * Render the Product List page
  * @param {HTMLElement} container
  */
 export async function renderProductsPage(container) {
+  let allProducts = [];
+  let filteredProducts = [];
+
   container.innerHTML = `
     <div class="products-layout">
       <!-- Sidebar Filter -->

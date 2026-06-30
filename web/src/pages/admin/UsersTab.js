@@ -114,13 +114,29 @@ function getRoleBadge(roleName) {
 
 function renderUserRow(user) {
   const avatarUrl = user.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.userName || 'U')}&background=random`;
-  // Mock status for now, as UserAdminRes lacks status
-  const statusHtml = `
-    <div class="flex items-center gap-2 text-primary font-label-md">
-      <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-      Hoạt động
-    </div>
-  `;
+  let statusHtml;
+  if (user.isBlocked || user.status === "BLOCKED" || user.status === "LOCKED") {
+    statusHtml = `
+      <div class="flex items-center gap-2 text-error font-label-md">
+        <span class="w-2 h-2 rounded-full bg-error"></span>
+        Đã bị khóa
+      </div>
+    `;
+  } else if (user.status) {
+    statusHtml = `
+      <div class="flex items-center gap-2 text-primary font-label-md">
+        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+        ${user.status}
+      </div>
+    `;
+  } else {
+    statusHtml = `
+      <div class="flex items-center gap-2 text-on-surface-variant font-label-md">
+        <span class="w-2 h-2 rounded-full bg-outline"></span>
+        Đã xác thực
+      </div>
+    `;
+  }
 
   return `
     <tr class="hover:bg-surface-container transition-colors cursor-pointer group" data-userid="${user.userId}">
