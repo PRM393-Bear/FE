@@ -316,9 +316,9 @@ export async function renderProductDetailPage(container, productId) {
         try {
           buyBtn.disabled = true;
           await createOrder(product.id);
-          showToast("Đơn hàng đã được gửi tới người bán. Hãy theo dõi tại Đơn mua!", "success");
-          // Redirect to profile orders tab
-          window.location.hash = "#/profile?tab=panel-orders";
+          showToast("Đơn hàng đã được gửi tới người bán. Hãy theo dõi tại Tủ đồ cá nhân -> Đơn mua hàng!", "success");
+          // Redirect to profile orders tab inside wardrobe
+          window.location.hash = "#/profile?tab=panel-wardrobe&sub=wardrobe-orders";
         } catch (err) {
           console.error("Lỗi đặt mua hàng:", err);
           showToast(`Đặt mua thất bại: ${err.message}`, "error");

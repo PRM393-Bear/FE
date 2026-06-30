@@ -23,6 +23,7 @@ import { isAuthenticated, getUser, getUserIdFromToken } from "../services/auth.s
 import { getAllProducts, isDraftProduct } from "../services/product.service.js";
 import { getConditionPercentage } from "../utils/conditionMapping.js";
 import { confirmOrder, shipOrder, confirmReceived, getOrdersByBuyer, getOrdersBySeller } from "../services/order.service.js";
+import { getMyWardrobe } from "../services/wardrobe.service.js";
 
 /* ══════════════════════════════════════
    HELPERS & UI GENERATORS
@@ -324,6 +325,7 @@ function getFilterCategory(status) {
   return "all";
 }
 
+/* DEPRECATED SEPARATE TABS:
 function renderOrdersTab(orders) {
   return `
     <div class="dashboard-panel" id="panel-orders">
@@ -530,6 +532,140 @@ function renderSalesTab(salesOrders) {
     </div>
   `;
 }
+*/
+function renderOrdersTab() { return ""; }
+function renderSalesTab() { return ""; }
+
+function renderWardrobePanel(myWardrobe, orders) {
+  const wardrobeItemsHtml = (!myWardrobe || myWardrobe.length === 0)
+    ? `<div style="padding: 48px 0;">${emptyStateHtml("checkroom", "Tủ đồ cá nhân của bạn đang trống. Hãy đặt mua và nhận sản phẩm để lấp đầy tủ đồ nhé!")}</div>`
+    : `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4">` +
+      myWardrobe.map((item) => {
+        const imgUrl = item.imageUrl || "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=300";
+        return `
+          <div class="border border-outline-variant rounded-xl overflow-hidden bg-surface hover:shadow-md transition-all flex flex-col">
+            <div class="h-48 overflow-hidden relative bg-white flex items-center justify-center">
+              <img src="${imgUrl}" alt="${item.name || ''}" class="w-full h-full object-cover" />
+              <span class="absolute top-2 right-2 bg-primary text-on-primary text-xs font-bold px-2 py-1 rounded-full shadow" style="background-color: #006b2c; color: white;">Đang sở hữu</span>
+            </div>
+            <div class="p-3 flex-1 flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-on-surface text-base line-clamp-1 mb-1">${item.name || "Sản phẩm EcoCycle"}</h3>
+                <p class="text-xs text-on-surface-variant font-medium mb-2">${item.category || "Thời trang bền vững"}</p>
+              </div>
+              <div class="pt-2 border-t border-outline-variant flex justify-between items-center text-xs text-secondary">
+                <span>Đã mua vào tủ đồ</span>
+                <span class="material-symbols-outlined text-sm">verified</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("") + `</div>`;
+
+  const ordersHtml = (!orders || orders.length === 0)
+    ? `<div style="padding: 48px 0;">${emptyStateHtml("shopping_bag", "Bạn chưa có đơn đặt hàng nào.")}</div>`
+    : orders.map((o) => {
+        const item = o.orderItems && o.orderItems.length > 0 ? o.orderItems[0].product : null;
+        const title = item ? item.title : "Sản phẩm EcoCycle";
+        const img = item && item.images && item.images.length > 0 ? item.images[0] : "https://placehold.co/800x800/E4EBE4/6E7B6C?text=No+Image";
+        const price = o.totalAmount || 0;
+        const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString("vi-VN") : "";
+        const statusInfo = mapOrderStatus(o.status);
+        const sellerName = o.seller ? (o.seller.fullName || o.seller.userName) : (item && item.seller ? (item.seller.fullName || item.seller.userName) : "Người bán EcoCycle");
+        const filterCat = getFilterCategory(o.status);
+
+        let actionsHtml = "";
+        if (o.status === "SHIPPING") {
+          actionsHtml = `
+            <button class="btn-primary btn-confirm-received px-4 py-2 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;" data-id="${o.id}">Đã nhận được hàng</button>
+            ${o.trackingCode ? `<button class="btn-outline ml-2" onclick="alert('Mã vận đơn: ${o.trackingCode}')">Theo dõi đơn</button>` : ''}
+          `;
+        } else if (o.status === "PENDING" || o.status === "PROCESSING") {
+          actionsHtml = `<span class="text-body-sm text-on-surface-variant font-medium opacity-70">Chờ seller xử lý</span>`;
+        } else if (o.status === "COMPLETED") {
+          actionsHtml = `
+            <button class="btn-primary px-4 py-2 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;" onclick="alert('Đánh giá đơn hàng ${o.id}')">Đánh giá ngay</button>
+          `;
+        } else {
+          actionsHtml = `<span class="text-body-sm text-on-surface-variant opacity-50">${statusInfo.label}</span>`;
+        }
+
+        return `
+          <div class="order-item" data-filter-status="${filterCat}">
+            <div class="order-img-container">
+              <img src="${img}" alt="" />
+            </div>
+            <div class="order-details">
+              <div class="order-row">
+                <h3 class="order-item-title">${title}</h3>
+                <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+              </div>
+              <div class="order-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-label">Người bán</span>
+                  <span class="meta-value font-semibold text-on-surface">${sellerName}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Ngày đặt</span>
+                  <span class="meta-value">${date}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Mã đơn</span>
+                  <span class="meta-value text-primary font-semibold">${o.id}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Tổng cộng</span>
+                  <span class="meta-value font-semibold text-on-surface">${price.toLocaleString("vi")}đ</span>
+                </div>
+                ${o.trackingCode ? `
+                  <div class="meta-item col-span-2">
+                    <span class="meta-label">Mã vận đơn</span>
+                    <span class="meta-value font-mono font-bold text-secondary">${o.trackingCode}</span>
+                  </div>
+                ` : ""}
+              </div>
+            </div>
+            <div class="order-actions">
+              ${actionsHtml}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+  return `
+    <div class="dashboard-panel" id="panel-wardrobe">
+      <div class="panel-header bg-white rounded-t-xl border border-outline-variant flex flex-col md:flex-row gap-3 justify-between items-start md:items-center p-4">
+        <div class="flex items-center gap-3">
+          <h2 class="panel-title text-xl font-bold">Tủ đồ cá nhân</h2>
+        </div>
+        <div class="subtab-header flex flex-wrap gap-2 w-full md:w-auto border-b md:border-b-0 pb-2 md:pb-0 border-outline-variant">
+          <button class="btn-subtab is-active px-3 py-1.5 rounded-lg font-medium text-sm transition-all" data-target-subtab="wardrobe-items" style="background-color: #006b2c; color: white;">Đồ trong tủ (${myWardrobe ? myWardrobe.length : 0})</button>
+          <button class="btn-subtab px-3 py-1.5 rounded-lg font-medium text-sm transition-all bg-surface-variant text-on-surface-variant hover:bg-outline-variant" data-target-subtab="wardrobe-orders">Đơn mua hàng (${orders ? orders.length : 0})</button>
+        </div>
+      </div>
+      
+      <div class="subtab-body bg-white border border-t-0 border-outline-variant rounded-b-xl">
+        <div class="subtab-pane is-active" id="subtab-wardrobe-items">
+          ${wardrobeItemsHtml}
+        </div>
+        
+        <div class="subtab-pane hidden p-4" id="subtab-wardrobe-orders" style="display: none;">
+          <div class="panel-filters order-status-filters flex flex-wrap gap-1 mb-4 pb-3 border-b border-outline-variant">
+            <button class="btn-filter is-active" data-filter="all">Tất cả</button>
+            <button class="btn-filter" data-filter="pending">Chờ xác nhận</button>
+            <button class="btn-filter" data-filter="shipping">Đang giao</button>
+            <button class="btn-filter" data-filter="received">Đã nhận</button>
+            <button class="btn-filter" data-filter="completed">Hoàn tất</button>
+            <button class="btn-filter" data-filter="cancelled">Đã hủy</button>
+          </div>
+          <div class="orders-list">
+            ${ordersHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 function renderReviewsTab(reviews) {
   if (reviews.length === 0) {
@@ -717,6 +853,7 @@ function renderDonationsTab(donations, role) {
   `;
 }
 
+/* DEPRECATED SEPARATE TABS:
 function renderDraftsTab(posts) {
   return `
     <div class="dashboard-panel" id="panel-drafts">
@@ -834,6 +971,205 @@ function renderClosetTab(posts, role) {
                 })
                 .join("")
         }
+      </div>
+    </div>
+  `;
+}
+*/
+function renderDraftsTab() { return ""; }
+function renderClosetTab() { return ""; }
+
+function renderShopPanel(activeProducts, salesOrders, draftProducts, role) {
+  const listingsHtml = (!activeProducts || activeProducts.length === 0)
+    ? `<div style="padding: 48px 0;">${emptyStateHtml("storefront", "Cửa hàng của bạn đang trống. Hãy đăng sản phẩm mới để bán!")}</div>`
+    : activeProducts.map((post) => {
+        const imgUrl = (post.images && post.images.length > 0) ? post.images[0] : "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=100";
+        const status = normalizeProductStatus(post.status);
+        const statusLabel = status === "AVAILABLE" ? "Còn hàng" : (status === "SOLD" ? "Đã bán" : (status || "Chưa rõ"));
+        const statusClass = status === "AVAILABLE" ? "success" : "warning";
+        return `
+          <div class="order-item">
+            <div class="order-img-container">
+              <img src="${imgUrl}" alt="${post.title || ''}" />
+            </div>
+            <div class="order-details">
+              <div class="order-row">
+                <h3 class="order-item-title">${post.title || ''}</h3>
+                <span class="status-badge ${statusClass}">${statusLabel}</span>
+              </div>
+              <div class="order-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-label">Phân loại</span>
+                  <span class="meta-value">${post.category || "Chưa phân loại"}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Độ mới</span>
+                  <span class="meta-value">${getConditionPercentage(post.condition)}%</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Giá bán</span>
+                  <span class="meta-value font-semibold text-on-surface">${(post.price || 0).toLocaleString("vi")}₫</span>
+                </div>
+              </div>
+            </div>
+            <div class="order-actions flex items-center space-x-2">
+              ${status === "AVAILABLE" && role === "member" ? `
+                <button class="btn-primary btn-donate-item px-3 py-1 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all" data-title="${post.title || ''}">
+                  Quyên góp
+                </button>
+              ` : ''}
+              <button class="btn-outline-variant" onclick="alert('Tính năng đang phát triển')">Sửa</button>
+              <button class="btn-danger-text" onclick="alert('Tính năng đang phát triển')">Xóa</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+  const salesHtml = (!salesOrders || salesOrders.length === 0)
+    ? `<div style="padding: 48px 0;">${emptyStateHtml("store", "Bạn chưa nhận được đơn hàng nào.")}</div>`
+    : salesOrders.map((o) => {
+        const item = o.orderItems && o.orderItems.length > 0 ? o.orderItems[0].product : null;
+        const title = item ? item.title : "Sản phẩm EcoCycle";
+        const img = item && item.images && item.images.length > 0 ? item.images[0] : "https://placehold.co/800x800/E4EBE4/6E7B6C?text=No+Image";
+        const price = o.totalAmount || 0;
+        const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString("vi-VN") : "";
+        const statusInfo = mapOrderStatus(o.status);
+        const buyerName = o.buyer ? (o.buyer.fullName || o.buyer.userName) : "Người mua ẩn danh";
+        const filterCat = getFilterCategory(o.status);
+
+        let actionsHtml = "";
+        if (o.status === "PENDING") {
+          actionsHtml = `<button class="btn-primary btn-confirm-sale-order px-4 py-2 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;" data-id="${o.id}">Xác nhận đơn hàng</button>`;
+        } else if (o.status === "PROCESSING") {
+          actionsHtml = `
+            <div class="flex flex-col gap-2 w-full max-w-xs" style="align-items: flex-start; text-align: left;">
+              <input type="text" placeholder="Nhập mã vận đơn..." class="shipping-tracking-input border border-outline-variant rounded-lg p-2 text-body-sm w-full" style="border: 1px solid #bdcaba; border-radius: 8px; padding: 8px; font-size: 14px;" />
+              <button class="btn-primary btn-ship-sale-order w-full px-4 py-2 rounded-lg text-label-sm font-bold bg-primary text-on-primary hover:opacity-90 transition-all text-sm" style="background-color: #006b2c; color: white;" data-id="${o.id}">Giao hàng</button>
+            </div>
+          `;
+        } else if (o.status === "SHIPPING") {
+          actionsHtml = `<span class="text-body-sm text-secondary font-semibold">Đang giao hàng</span>`;
+        } else if (o.status === "COMPLETED") {
+          actionsHtml = `<span class="text-body-sm text-primary font-semibold">Đã hoàn thành</span>`;
+        } else {
+          actionsHtml = `<span class="text-body-sm text-on-surface-variant opacity-50">${statusInfo.label}</span>`;
+        }
+
+        return `
+          <div class="order-item" data-filter-status="${filterCat}">
+            <div class="order-img-container">
+              <img src="${img}" alt="" />
+            </div>
+            <div class="order-details">
+              <div class="order-row">
+                <h3 class="order-item-title">${title}</h3>
+                <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+              </div>
+              <div class="order-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-label">Người mua</span>
+                  <span class="meta-value font-semibold text-on-surface">${buyerName}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Ngày đặt</span>
+                  <span class="meta-value">${date}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Mã đơn</span>
+                  <span class="meta-value text-primary font-semibold">${o.id}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Tổng cộng</span>
+                  <span class="meta-value font-semibold text-on-surface">${price.toLocaleString("vi")}đ</span>
+                </div>
+                ${o.trackingCode ? `
+                  <div class="meta-item col-span-2">
+                    <span class="meta-label">Mã vận đơn</span>
+                    <span class="meta-value font-mono font-bold text-secondary">${o.trackingCode}</span>
+                  </div>
+                ` : ""}
+              </div>
+            </div>
+            <div class="order-actions">
+              ${actionsHtml}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+  const draftsHtml = (!draftProducts || draftProducts.length === 0)
+    ? `<div style="padding: 48px 0;">${emptyStateHtml("edit_note", "Không có bản nháp nào.")}</div>`
+    : draftProducts.map((post) => {
+        const imgUrl = (post.images && post.images.length > 0) ? post.images[0] : "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=100";
+        return `
+          <div class="order-item">
+            <div class="order-img-container">
+              <img src="${imgUrl}" alt="${post.title || ''}" />
+            </div>
+            <div class="order-details">
+              <div class="order-row">
+                <h3 class="order-item-title">${post.title || ''}</h3>
+                <span class="status-badge warning">Bản nháp</span>
+              </div>
+              <div class="order-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-label">Phân loại</span>
+                  <span class="meta-value">${post.category || "Chưa phân loại"}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Độ mới</span>
+                  <span class="meta-value">${post.condition ? post.condition * 10 : 90}%</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Giá bán dự kiến</span>
+                  <span class="meta-value font-semibold text-on-surface">${(post.price || 0).toLocaleString("vi")}₫</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+  return `
+    <div class="dashboard-panel is-active" id="panel-closet">
+      <div class="panel-header bg-white rounded-t-xl border border-outline-variant flex flex-col md:flex-row gap-3 justify-between items-start md:items-center p-4">
+        <div class="flex items-center gap-3">
+          <h2 class="panel-title text-xl font-bold">Cửa hàng của tôi</h2>
+          <button class="btn-primary text-sm px-3 py-1.5 rounded-lg" onclick="window.location.hash='#/create-listing'">+ Đăng sản phẩm mới</button>
+        </div>
+        <div class="subtab-header flex flex-wrap gap-2 w-full md:w-auto border-b md:border-b-0 pb-2 md:pb-0 border-outline-variant">
+          <button class="btn-subtab is-active px-3 py-1.5 rounded-lg font-medium text-sm transition-all" data-target-subtab="shop-listings" style="background-color: #006b2c; color: white;">Sản phẩm đang bán (${activeProducts ? activeProducts.length : 0})</button>
+          <button class="btn-subtab px-3 py-1.5 rounded-lg font-medium text-sm transition-all bg-surface-variant text-on-surface-variant hover:bg-outline-variant" data-target-subtab="shop-sales">Đơn hàng bán (${salesOrders ? salesOrders.length : 0})</button>
+          <button class="btn-subtab px-3 py-1.5 rounded-lg font-medium text-sm transition-all bg-surface-variant text-on-surface-variant hover:bg-outline-variant" data-target-subtab="shop-drafts">Bản nháp (${draftProducts ? draftProducts.length : 0})</button>
+        </div>
+      </div>
+      
+      <div class="subtab-body bg-white border border-t-0 border-outline-variant rounded-b-xl">
+        <div class="subtab-pane is-active p-4" id="subtab-shop-listings">
+          <div class="orders-list">
+            ${listingsHtml}
+          </div>
+        </div>
+        
+        <div class="subtab-pane hidden p-4" id="subtab-shop-sales" style="display: none;">
+          <div class="panel-filters order-status-filters flex flex-wrap gap-1 mb-4 pb-3 border-b border-outline-variant">
+            <button class="btn-filter is-active" data-filter="all">Tất cả</button>
+            <button class="btn-filter" data-filter="pending">Chờ xác nhận</button>
+            <button class="btn-filter" data-filter="shipping">Đang giao</button>
+            <button class="btn-filter" data-filter="received">Đã nhận</button>
+            <button class="btn-filter" data-filter="completed">Hoàn tất</button>
+            <button class="btn-filter" data-filter="cancelled">Đã hủy</button>
+          </div>
+          <div class="orders-list">
+            ${salesHtml}
+          </div>
+        </div>
+        
+        <div class="subtab-pane hidden p-4" id="subtab-shop-drafts" style="display: none;">
+          <div class="orders-list">
+            ${draftsHtml}
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -978,6 +1314,7 @@ export async function renderProfilePage(container) {
   let closetProducts = [];
   let activeProducts = [];
   let draftProducts = [];
+  let myWardrobe = [];
   let orders = [];
   let salesOrders = [];
   let reviews = [];
@@ -1012,6 +1349,14 @@ export async function renderProfilePage(container) {
     } catch (err) {
       console.error("Failed to fetch sales orders from backend:", err);
       salesOrders = [];
+    }
+
+    try {
+      const wardrobeRes = await getMyWardrobe();
+      myWardrobe = Array.isArray(wardrobeRes) ? wardrobeRes : [];
+    } catch (err) {
+      console.error("Failed to fetch wardrobe from backend:", err);
+      myWardrobe = [];
     }
 
     // Initialize and read local storage data
@@ -1145,10 +1490,8 @@ export async function renderProfilePage(container) {
     ];
   } else {
     sidebarNavItems = [
-      { id: "panel-closet", icon: "inventory_2", label: "Sản phẩm đăng bán", active: true },
-      { id: "panel-drafts", icon: "edit_note", label: "Bản nháp" },
-      { id: "panel-orders", icon: "shopping_bag", label: "Đơn mua" },
-      { id: "panel-sales", icon: "store", label: "Đơn bán" },
+      { id: "panel-closet", icon: "storefront", label: "Cửa hàng của tôi", active: true },
+      { id: "panel-wardrobe", icon: "checkroom", label: "Tủ đồ cá nhân" },
       { id: "panel-donation-requests", icon: "feature_search", label: "Yêu cầu tặng đồ" },
       { id: "panel-saved", icon: "bookmark", label: "Đã lưu" },
       { id: "panel-reviews", icon: "grade", label: "Đánh giá" },
@@ -1196,12 +1539,12 @@ export async function renderProfilePage(container) {
               <span class="profile-stat-label">Đang bán</span>
             </div>
             <div class="profile-stat-item">
-              <span class="profile-stat-value">${draftProducts.length}</span>
-              <span class="profile-stat-label">Bản nháp</span>
+              <span class="profile-stat-value">${myWardrobe.length}</span>
+              <span class="profile-stat-label">Tủ đồ</span>
             </div>
             <div class="profile-stat-item">
               <span class="profile-stat-value">${orders.length}</span>
-              <span class="profile-stat-label">Đã mua</span>
+              <span class="profile-stat-label">Đơn mua</span>
             </div>
             <div class="profile-stat-item">
               <span class="profile-stat-value">${donations.length}</span>
@@ -1241,10 +1584,8 @@ export async function renderProfilePage(container) {
         
         <!-- Right Content Panels -->
         <main class="dashboard-content">
-          ${role === 'org' ? '' : renderOrdersTab(orders)}
-          ${role === 'org' ? '' : renderSalesTab(salesOrders)}
-          ${role === 'org' ? '' : renderClosetTab(activeProducts, role)}
-          ${role === 'org' ? '' : renderDraftsTab(draftProducts)}
+          ${role === 'org' ? '' : renderShopPanel(activeProducts, salesOrders, draftProducts, role)}
+          ${role === 'org' ? '' : renderWardrobePanel(myWardrobe, orders)}
           ${renderDonationsTab(donations, role)}
           
           ${role === 'org' ? '' : `
@@ -1380,10 +1721,11 @@ export async function renderProfilePage(container) {
     });
   });
 
-  // 4. Status Filtering Handlers for Orders & Sales Panels
-  container.querySelectorAll(".dashboard-panel").forEach(panel => {
-    const filterBtns = panel.querySelectorAll(".order-status-filters .btn-filter");
-    const orderItems = panel.querySelectorAll(".order-item");
+  // 4. Status Filtering Handlers scoped to subtabs/panels
+  container.querySelectorAll(".order-status-filters").forEach(filterGroup => {
+    const filterBtns = filterGroup.querySelectorAll(".btn-filter");
+    const parentContainer = filterGroup.closest(".subtab-pane") || filterGroup.closest(".dashboard-panel");
+    const orderItems = parentContainer ? parentContainer.querySelectorAll(".order-item") : [];
     if (filterBtns.length > 0) {
       filterBtns.forEach(btn => {
         btn.addEventListener("click", () => {
@@ -1401,6 +1743,50 @@ export async function renderProfilePage(container) {
       });
     }
   });
+
+  // 5. Sub-tab switching logic
+  container.querySelectorAll(".dashboard-panel").forEach(panel => {
+    const subtabBtns = panel.querySelectorAll(".btn-subtab");
+    if (subtabBtns.length > 0) {
+      subtabBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          subtabBtns.forEach(b => {
+            b.classList.remove("is-active");
+            b.style.backgroundColor = "";
+            b.style.color = "";
+            b.classList.add("bg-surface-variant", "text-on-surface-variant");
+          });
+          btn.classList.add("is-active");
+          btn.classList.remove("bg-surface-variant", "text-on-surface-variant");
+          btn.style.backgroundColor = "#006b2c";
+          btn.style.color = "white";
+
+          const targetSub = btn.getAttribute("data-target-subtab");
+          panel.querySelectorAll(".subtab-pane").forEach(pane => {
+            if (pane.id === `subtab-${targetSub}`) {
+              pane.style.display = "";
+              pane.classList.remove("hidden");
+            } else {
+              pane.style.display = "none";
+              pane.classList.add("hidden");
+            }
+          });
+        });
+      });
+    }
+  });
+
+  // Activate subtab if present in URL query params
+  if (window.location.hash.includes("?")) {
+    const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
+    const subParam = urlParams.get("sub");
+    if (subParam) {
+      const targetSubBtn = container.querySelector(`.btn-subtab[data-target-subtab="${subParam}"]`);
+      if (targetSubBtn) {
+        targetSubBtn.click();
+      }
+    }
+  }
 
   /* ── DONATION FLOW INTERACTION HANDLERS ── */
 
