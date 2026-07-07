@@ -5,7 +5,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../routes/route_names.dart';
 
-enum RegisterRole { member, shop, organization }
+enum RegisterRole { member, organization }
 
 class SelectRolePage extends StatefulWidget {
   const SelectRolePage({super.key});
@@ -61,17 +61,6 @@ class _SelectRolePageState extends State<SelectRolePage> {
               const SizedBox(height: 14),
 
               _RoleCard(
-                icon: Icons.storefront_outlined,
-                title: 'Shop kinh doanh',
-                description: 'Bán không giới hạn, tạo Bundle, xem báo cáo doanh thu',
-                badge: 'Cần xác minh giấy tờ',
-                badgeColor: AppColors.secondary,
-                isSelected: _selectedRole == RegisterRole.shop,
-                onTap: () => setState(() => _selectedRole = RegisterRole.shop),
-              ),
-              const SizedBox(height: 14),
-
-              _RoleCard(
                 icon: Icons.volunteer_activism_outlined,
                 title: 'Tổ chức từ thiện',
                 description: 'Nhận đồ quyên góp, tạo sự kiện từ thiện, kết nối cộng đồng',
@@ -96,14 +85,11 @@ class _SelectRolePageState extends State<SelectRolePage> {
   }
 
   void _navigateToRegister(BuildContext context) {
-    // Tất cả 3 role đều vào RegisterPage trước
+    // Tất cả 2 role đều vào RegisterPage trước
     // Truyền roleName qua extra để RegisterPage biết role
     switch (_selectedRole!) {
       case RegisterRole.member:
         context.push(RouteNames.register, extra: 'MEMBER');
-        break;
-      case RegisterRole.shop:
-        context.push(RouteNames.register, extra: 'SELLER');
         break;
       case RegisterRole.organization:
         context.push(RouteNames.register, extra: 'ORGANIZATION');
