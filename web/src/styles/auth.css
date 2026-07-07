@@ -558,3 +558,242 @@
 .auth-terms-text a:hover {
   text-decoration: underline;
 }
+
+/* ============================================================
+   Forgot Password – Centered Card Layout (Figma)
+   ============================================================ */
+
+.auth-forgot-wrapper {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--stack-xl) var(--margin-mobile);
+  background-color: #fafaf9;
+  position: relative;
+  font-family: var(--font-body);
+  color: var(--on-background);
+}
+
+.auth-forgot-wrapper::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 107, 44, 0.03) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-forgot-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-forgot-card {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--surface-container-lowest);
+  border-radius: var(--rounded-xl);
+  box-shadow: 0 4px 20px rgba(28, 25, 23, 0.05);
+  border: 1px solid var(--surface-container);
+  padding: var(--stack-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-lg);
+}
+
+.auth-forgot-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--stack-sm);
+  margin-bottom: var(--stack-sm);
+}
+
+.auth-forgot-logo {
+  width: 48px;
+  height: 48px;
+  background-color: var(--primary);
+  border-radius: var(--rounded-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-primary);
+}
+
+.auth-forgot-logo svg {
+  width: 32px;
+  height: 32px;
+}
+
+.auth-forgot-brand-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--on-surface);
+  text-align: center;
+  margin: 0;
+}
+
+.auth-forgot-heading {
+  text-align: center;
+}
+
+.auth-forgot-heading h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--on-surface);
+  margin: 0 0 var(--stack-sm) 0;
+}
+
+.auth-forgot-heading p {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--on-surface-variant);
+  margin: 0 auto;
+  max-width: 340px;
+  line-height: 1.6;
+}
+
+.auth-forgot-email-hint {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--outline);
+  text-align: center;
+  margin: 0;
+}
+
+.auth-forgot-email-hint strong {
+  color: var(--on-surface);
+  font-weight: 500;
+}
+
+.auth-forgot-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-lg);
+}
+
+.auth-forgot-back {
+  padding-top: var(--stack-md);
+  text-align: center;
+  border-top: 1px solid var(--surface-container);
+}
+
+.auth-forgot-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--stack-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.auth-forgot-back-link:hover {
+  color: var(--primary);
+}
+
+.auth-forgot-back-link svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s;
+}
+
+.auth-forgot-back-link:hover svg {
+  transform: translateX(-4px);
+}
+
+.auth-forgot-footer {
+  width: 100%;
+  padding: var(--stack-lg) 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--outline-variant);
+  position: relative;
+  z-index: 1;
+}
+
+.auth-forgot-resend {
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--on-surface-variant);
+}
+
+.auth-forgot-resend button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.auth-forgot-resend button:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.auth-forgot-resend button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.otp-input {
+  text-align: center;
+  letter-spacing: 0.4em;
+  font-size: 20px;
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+
+/* ── Toast Notifications ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: white;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.toast--visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast--error {
+  background-color: var(--error);
+}
+
+.toast--success {
+  background-color: var(--primary);
+}
