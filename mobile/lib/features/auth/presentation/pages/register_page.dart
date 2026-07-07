@@ -154,7 +154,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text(
                   widget.roleName == 'ORGANIZATION'
                       ? 'Đăng ký tài khoản Tổ chức từ thiện'
-                      : 'Mỗi món đồ đều có vòng đời mới',
+                      : 'Đăng ký tài khoản Cá nhân',
                   style: AppTextStyles.bodyMedium,
                   textAlign: TextAlign.center,
                 ),

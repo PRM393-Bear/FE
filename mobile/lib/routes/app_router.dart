@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
 import '../features/auth/presentation/pages/select_role_page.dart';
-import '../features/auth/presentation/pages/shop_register_page.dart';
+import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/auth/presentation/pages/org_register_page.dart';
 import '../features/product/presentation/pages/product_list_page.dart';
 import '../features/product/presentation/pages/product_detail_page.dart';
@@ -38,12 +38,12 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: RouteNames.registerShop,
-      builder: (context, state) => const ShopRegisterPage(),
-    ),
-    GoRoute(
       path: RouteNames.registerOrg,
       builder: (context, state) => const OrgRegisterPage(),
+    ),
+    GoRoute(
+      path: RouteNames.forgotPassword,
+      builder: (context, state) => const ForgotPasswordPage(),
     ),
 
     ShellRoute(
