@@ -10,7 +10,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 
 class RegisterPage extends StatefulWidget {
-  /// roleName: 'MEMBER' | 'SELLER' | 'ORGANIZATION'
+  /// roleName: 'MEMBER' | 'ORGANIZATION'
   /// Truyền vào từ SelectRolePage qua GoRouter extra
   final String roleName;
 
@@ -81,9 +81,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (!mounted) return;
 
       // 4. Điều hướng theo role
-      if (widget.roleName == 'SELLER') {
-        context.go(RouteNames.registerShop);
-      } else if (widget.roleName == 'ORGANIZATION') {
+      if (widget.roleName == 'ORGANIZATION') {
         context.go(RouteNames.registerOrg);
       } else {
         context.go(RouteNames.productList);
@@ -141,9 +139,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    widget.roleName == 'SELLER'
-                        ? Icons.storefront_rounded
-                        : widget.roleName == 'ORGANIZATION'
+                    widget.roleName == 'ORGANIZATION'
                         ? Icons.volunteer_activism_rounded
                         : Icons.person_rounded,
                     color: Colors.white,
@@ -156,9 +152,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text('Tạo tài khoản mới', style: AppTextStyles.headline2),
                 const SizedBox(height: 6),
                 Text(
-                  widget.roleName == 'SELLER'
-                      ? 'Đăng ký tài khoản Shop kinh doanh'
-                      : widget.roleName == 'ORGANIZATION'
+                  widget.roleName == 'ORGANIZATION'
                       ? 'Đăng ký tài khoản Tổ chức từ thiện'
                       : 'Mỗi món đồ đều có vòng đời mới',
                   style: AppTextStyles.bodyMedium,
