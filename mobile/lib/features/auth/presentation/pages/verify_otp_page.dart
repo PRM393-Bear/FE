@@ -74,7 +74,7 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
         
         // 3. Điều hướng theo role
         if (widget.roleName == 'ORGANIZATION') {
-          context.go(RouteNames.registerOrg);
+          context.go(RouteNames.orgDashboard);
         } else {
           context.go(RouteNames.productList);
         }

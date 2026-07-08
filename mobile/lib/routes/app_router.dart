@@ -77,6 +77,10 @@ final appRouter = GoRouter(
           path: RouteNames.explore,
           builder: (context, state) => const DonationEventListPage(),
         ),
+        GoRoute(
+          path: RouteNames.community,
+          builder: (context, state) => const Placeholder(),
+        ),
       ],
     ),
 

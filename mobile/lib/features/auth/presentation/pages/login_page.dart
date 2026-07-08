@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../core/auth/auth_storage.dart';
 import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -48,7 +49,13 @@ class _LoginPageState extends State<LoginPage> {
       await _storage.write(key: 'auth_token', value: token);
 
       if (!mounted) return;
-      context.go(RouteNames.productList);
+      
+      final role = await AuthStorage.getRole();
+      if (role == 'ORGANIZATION') {
+        context.go(RouteNames.orgDashboard);
+      } else {
+        context.go(RouteNames.productList);
+      }
     } on DioException catch (e) {
       debugPrint('🔴 Login error: ${e.response?.data}');
 
