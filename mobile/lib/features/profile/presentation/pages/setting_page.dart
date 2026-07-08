@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../routes/route_names.dart';
+import 'change_password_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -45,7 +46,10 @@ class _SettingsPageState extends State<SettingsPage> {
               _buildMenuItem(
                 icon: Icons.lock_outline_rounded,
                 title: 'Đổi mật khẩu',
-                onTap: () {},
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+                ),
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
               _buildMenuItem(

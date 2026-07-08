@@ -144,10 +144,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       
       _showSnack('Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại');
       
-      // Đợi một chút để tránh xung đột context khi chuyển trang
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) context.go(RouteNames.login);
-      });
+      // Quay lại màn hình Login bằng Navigator (vì GoRouter.go gây lỗi stack)
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } on DioException catch (e) {
       String msg = 'Đặt lại mật khẩu thất bại, vui lòng thử lại';
       final data = e.response?.data;

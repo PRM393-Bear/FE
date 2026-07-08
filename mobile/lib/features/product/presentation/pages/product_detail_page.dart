@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -417,20 +419,18 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               context: context,
               builder: (ctx) => AlertDialog(
                 title: const Text('Ẩn sản phẩm'),
-                content:
-                const Text('Sản phẩm sẽ không hiển thị với người mua.'),
+                content: const Text('Sản phẩm sẽ không hiển thị với người mua.'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text('Hủy'),
                   ),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.pop();
+                    onPressed: () async {
+                      Navigator.pop(ctx); // đóng dialog trước
+                      await _handleHideProduct(product);
                     },
-                    child: const Text('Ẩn',
-                        style: TextStyle(color: Colors.redAccent)),
+                    child: const Text('Ẩn', style: TextStyle(color: Colors.redAccent)),
                   ),
                 ],
               ),
@@ -439,6 +439,31 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
       ],
     );
+  }
+
+  Future<void> _handleHideProduct(ProductModel product) async {
+    try {
+      await ApiClient.dio.put(
+        '/api/products/hide',
+        queryParameters: {'productId': product.id},
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Đã ẩn sản phẩm thành công'),
+        backgroundColor: AppColors.primary,
+      ));
+      Navigator.pop(context, true); // trả về true để trang trước biết cần refresh
+    } on DioException catch (e) {
+      debugPrint('🔴 Hide product error: ${e.response?.data}');
+      final data = e.response?.data;
+      String msg = 'Ẩn sản phẩm thất bại';
+      if (data is Map && data['message'] != null) msg = data['message'].toString();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.error,
+      ));
+    }
   }
 
   // Bottom bar cho người mua

@@ -49,9 +49,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       Navigator.pop(context);
     } on DioException catch (e) {
       debugPrint('🔴 Change password error: ${e.response?.data}');
-      final msg = e.response?.data?['message']?.toString() ??
-          e.response?.data?.toString() ??
-          'Đổi mật khẩu thất bại';
+      final data = e.response?.data;
+      String msg = 'Đổi mật khẩu thất bại';
+      if (data is Map && data['message'] != null) {
+        msg = data['message'].toString();
+      } else if (data is String && data.isNotEmpty) {
+        msg = data;
+      }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(msg),
         backgroundColor: AppColors.error,

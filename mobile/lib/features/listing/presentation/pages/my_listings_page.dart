@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/network/api_client.dart';
@@ -112,12 +113,46 @@ class _MyListingsPageState extends State<MyListingsPage> {
     }
   }
 
-  // TODO: Khi BE có API update status → AVAILABLE thì gắn vào đây
   Future<void> _unhideProduct(String productId) async {
-    if (mounted) {
+    try {
+      final getRes = await ApiClient.dio.get('/api/products/$productId');
+      final Map<String, dynamic> productData =
+          Map<String, dynamic>.from(getRes.data);
+
+      await ApiClient.dio.put(
+        '/api/products/$productId',
+        data: {
+          'title': productData['title'],
+          'description': productData['description'],
+          'type': productData['type'],
+          'condition': productData['condition'],
+          'price': productData['price'],
+          'size': productData['size'],
+          'color': productData['color'],
+          'images': productData['images'],
+          'aiTags': productData['aiTags'],
+          'brand': productData['brand'],
+          'status': 'AVAILABLE',
+          'lifecycleGeneration': productData['lifecycleGeneration'] ?? 1,
+        },
+      );
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Tính năng hiện lại sản phẩm đang phát triển'),
-        backgroundColor: AppColors.neutral,
+        content: Text('Đã hiện lại sản phẩm'),
+        backgroundColor: AppColors.primary,
+      ));
+      _fetchMyProducts();
+    } on DioException catch (e) {
+      debugPrint('🔴 Unhide product error: ${e.response?.data}');
+      final data = e.response?.data;
+      String msg = 'Hiện lại sản phẩm thất bại';
+      if (data is Map && data['message'] != null)
+        msg = data['message'].toString();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.error,
       ));
     }
   }
