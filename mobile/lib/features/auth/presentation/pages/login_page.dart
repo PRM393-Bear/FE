@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
         'password': _passwordController.text,
       });
 
-      final token = res.data['token'] as String;
+      final token = res.data['accessToken'] as String;
       await _storage.write(key: 'auth_token', value: token);
 
       if (!mounted) return;
@@ -51,14 +52,20 @@ class _LoginPageState extends State<LoginPage> {
     } on DioException catch (e) {
       debugPrint('🔴 Login error: ${e.response?.data}');
 
-      // BE trả 500 khi sai mật khẩu → hiện thông báo thân thiện
       final statusCode = e.response?.statusCode;
-      String msg;
-      if (statusCode == 500 || statusCode == 401 || statusCode == 403) {
-        msg = 'Sai tên đăng nhập hoặc mật khẩu';
-      } else {
-        msg = e.response?.data?['message'] ?? 'Đăng nhập thất bại';
+      String msg = 'Đăng nhập thất bại';
+      
+      final data = e.response?.data;
+      if (data is Map) {
+        if (statusCode == 401 || statusCode == 403) {
+          msg = 'Sai tên đăng nhập hoặc mật khẩu';
+        } else {
+          msg = data['message']?.toString() ?? msg;
+        }
+      } else if (data is String && data.isNotEmpty) {
+        msg = data;
       }
+
       _showSnack(msg);
     } catch (e) {
       debugPrint('🔴 Unknown error: $e');
@@ -156,7 +163,11 @@ class _LoginPageState extends State<LoginPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordPage()),
+                    ),
                     child: Text(
                       'Quên mật khẩu?',
                       style: AppTextStyles.bodyMedium.copyWith(

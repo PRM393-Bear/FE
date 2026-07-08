@@ -9,6 +9,7 @@ import '../../../../routes/route_names.dart';
 import 'edit_profile_page.dart';
 import 'my_shop_page.dart';
 import 'setting_page.dart';
+import '../../../notification/presentation/pages/notification_list_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -323,12 +324,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         _buildDivider(),
                         _buildMenuItem(
-                          icon: Icons.storefront_outlined,
-                          title: 'Seller Dashboard',
-                          onTap: () => context.push(RouteNames.sellerDashboard),
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
                           icon: Icons.volunteer_activism_outlined,
                           title: 'Organization Dashboard',
                           onTap: () => context.push(RouteNames.orgDashboard),
@@ -364,7 +359,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildMenuItem(
                           icon: Icons.notifications_outlined,
                           title: 'Thông báo',
-                          onTap: () {},
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const NotificationListPage()),
+                          ),
                         ),
                         _buildDivider(),
                         _buildMenuItem(

@@ -11,6 +11,7 @@ class AppTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final Widget? suffixIcon;
   final bool readOnly;
+  final Iterable<String>? autofillHints;
 
   const AppTextField({
     super.key,
@@ -22,6 +23,7 @@ class AppTextField extends StatelessWidget {
     this.validator,
     this.suffixIcon,
     this.readOnly = false,
+    this.autofillHints,
   });
 
   @override
@@ -37,6 +39,7 @@ class AppTextField extends StatelessWidget {
           keyboardType: keyboardType,
           validator: validator,
           readOnly: readOnly,
+          autofillHints: autofillHints,
           style: AppTextStyles.bodyLarge,
           decoration: InputDecoration(
             hintText: hint,

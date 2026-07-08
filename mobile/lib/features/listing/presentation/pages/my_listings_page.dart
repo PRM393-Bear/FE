@@ -9,6 +9,7 @@ import '../../../listing/presentation/pages/listing_form_page.dart';
 import '../../../listing/presentation/pages/upload_image_page.dart';
 import '../../../product/data/product_model.dart';
 import '../../../product/presentation/pages/product_detail_page.dart';
+import '../../../notification/presentation/pages/notification_list_page.dart';
 
 class MyListingsPage extends StatefulWidget {
   const MyListingsPage({super.key});
@@ -139,7 +140,10 @@ class _MyListingsPageState extends State<MyListingsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationListPage()),
+            ),
           ),
         ],
       ),

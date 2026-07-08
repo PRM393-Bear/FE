@@ -14,6 +14,5 @@ class RouteNames {
   static const String explore = '/explore';
   static const String myListings = '/my-listings';
   static const String wardrobe = '/wardrobe';
-  static const String sellerDashboard = '/seller-dashboard';
   static const String orgDashboard = '/org-dashboard';
 }

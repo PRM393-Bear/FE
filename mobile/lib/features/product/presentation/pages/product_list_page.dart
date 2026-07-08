@@ -6,6 +6,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../data/product_model.dart';
 import '../../widgets/product_card.dart';
 import '../../../../routes/route_names.dart';
+import '../../../notification/presentation/pages/notification_list_page.dart';
 
 class ProductListPage extends StatefulWidget {
   const ProductListPage({super.key});
@@ -314,7 +315,10 @@ class _ProductListPageState extends State<ProductListPage> {
             ),
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {},
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationListPage()),
+              ),
             ),
           ],
         ),
