@@ -17,6 +17,7 @@ import 'route_names.dart';
 import '../features/wardrobe/presentation/pages/wardrobe_page.dart';
 import '../features/organization/presentation/pages/org_dashboard_page.dart';
 import '../features/chat/presentation/pages/chat_list_page.dart';
+import '../features/donation/presentation/pages/donation_event_list_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: RouteNames.login,
@@ -74,7 +75,7 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: RouteNames.explore,
-          builder: (context, state) => const Placeholder(),
+          builder: (context, state) => const DonationEventListPage(),
         ),
       ],
     ),
