@@ -6,10 +6,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../core/auth/auth_storage.dart';
+import '../../../../core/auth/auth_state.dart';
 import 'edit_profile_page.dart';
 import 'my_shop_page.dart';
 import 'setting_page.dart';
 import '../../../notification/presentation/pages/notification_list_page.dart';
+import '../../../order/presentation/pages/seller_orders_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -50,6 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _handleLogout() async {
     await AuthStorage.clear();
+    AuthState.notifyChanged();
     if (!mounted) return;
     context.go(RouteNames.login);
   }
@@ -246,6 +249,15 @@ class _ProfilePageState extends State<ProfilePage> {
                           icon: Icons.shopping_bag_outlined,
                           title: 'Đơn hàng của tôi',
                           onTap: () {},
+                        ),
+                        _buildMenuItem(
+                          icon: Icons.storefront_outlined,
+                          title: 'Đơn bán hàng',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const SellerOrdersPage()),
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

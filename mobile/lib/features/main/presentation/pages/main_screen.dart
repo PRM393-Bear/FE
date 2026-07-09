@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/auth/auth_storage.dart';
+import '../../../../core/auth/auth_state.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/login_prompt_sheet.dart';
 
@@ -22,6 +23,16 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _loadRole();
+    // Lắng nghe tín hiệu đăng nhập/đăng xuất từ bất kỳ đâu trong app, để
+    // tự load lại role dù widget này không bị huỷ/tạo lại (do dùng push()
+    // để giữ màn phía sau cho back-button hoạt động).
+    AuthState.version.addListener(_loadRole);
+  }
+
+  @override
+  void dispose() {
+    AuthState.version.removeListener(_loadRole);
+    super.dispose();
   }
 
   Future<void> _loadRole() async {

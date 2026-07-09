@@ -9,6 +9,7 @@ import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../core/auth/auth_storage.dart';
+import '../../../../core/auth/auth_state.dart';
 import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -57,6 +58,7 @@ class _LoginPageState extends State<LoginPage> {
         debugPrint('🔴 Fetch /api/user/me failed, default to MEMBER: $e');
       }
       await AuthStorage.saveRole(roleName);
+      AuthState.notifyChanged();
 
       if (!mounted) return;
 
