@@ -7,6 +7,7 @@ import '../../data/product_model.dart';
 import '../../widgets/product_card.dart';
 import '../../../../routes/route_names.dart';
 import '../../../notification/presentation/pages/notification_list_page.dart';
+import '../../../cart/presentation/pages/cart_page.dart';
 
 class ProductListPage extends StatefulWidget {
   const ProductListPage({super.key});
@@ -312,6 +313,12 @@ class _ProductListPageState extends State<ProductListPage> {
                     ),
                   ),
               ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.shopping_cart_outlined),
+              onPressed: () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(builder: (_) => const CartPage()),
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.notifications_outlined),

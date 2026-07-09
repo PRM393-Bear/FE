@@ -81,7 +81,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
     _stompClient = StompClient(
       config: StompConfig(
-        url: 'wss://prm393-backend.onrender.com/ws/websocket',
+        url: 'wss://prm393-backend.onrender.com/ws',
         webSocketConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: _onConnect,
         onDisconnect: (_) {

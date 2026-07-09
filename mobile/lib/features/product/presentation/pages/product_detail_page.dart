@@ -29,6 +29,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   int _currentImageIndex = 0;
   bool _isOwner = false;
   bool _isBuying = false;
+  bool _isAddingToCart = false;
 
   @override
   void initState() {
@@ -489,7 +490,31 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        // Đồ tặng (DONATE) thì không có "thêm vào giỏ" — chỉ áp dụng cho
+        // sản phẩm bán/trao đổi có giá.
+        if (product.type != 'DONATE') ...[
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: OutlinedButton(
+              onPressed:
+                  _isAddingToCart ? null : () => _handleAddToCart(product),
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(48, 48),
+              ),
+              child: _isAddingToCart
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_shopping_cart_outlined, size: 20),
+            ),
+          ),
+        ],
+        const SizedBox(width: 8),
         Expanded(
           child: AppButton(
             label: product.type == 'DONATE' ? 'Xin nhận' : 'Mua ngay',
@@ -499,6 +524,36 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
       ],
     );
+  }
+
+  Future<void> _handleAddToCart(ProductModel product) async {
+    final ok = await _requireLogin('Đăng nhập để thêm vào giỏ hàng');
+    if (!ok || !mounted) return;
+
+    setState(() => _isAddingToCart = true);
+    try {
+      await ApiClient.dio.post('/api/cart/add',
+          queryParameters: {'productId': product.id});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Đã thêm vào giỏ hàng'),
+        backgroundColor: AppColors.primary,
+      ));
+    } on DioException catch (e) {
+      debugPrint('🔴 Add to cart error: ${e.response?.data}');
+      final data = e.response?.data;
+      String msg = 'Thêm vào giỏ hàng thất bại';
+      if (data is Map && data['message'] != null) {
+        msg = data['message'].toString();
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _isAddingToCart = false);
+    }
   }
 
   /// Guest bấm vào hành động cần đăng nhập -> hiện bottom-sheet yêu cầu
