@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../core/auth/auth_storage.dart';
 
 class VerifyOtpPage extends StatefulWidget {
   final String email;
@@ -69,6 +70,7 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
 
         final token = loginRes.data['accessToken'] as String;
         await _storage.write(key: 'auth_token', value: token);
+        await AuthStorage.saveRole(widget.roleName); // roleName đã biết sẵn từ SelectRolePage
 
         if (!mounted) return;
         

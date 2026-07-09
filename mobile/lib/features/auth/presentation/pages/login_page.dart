@@ -48,10 +48,19 @@ class _LoginPageState extends State<LoginPage> {
       final token = res.data['accessToken'] as String;
       await _storage.write(key: 'auth_token', value: token);
 
+      // JWT hiện tại chưa có claim role, nên gọi thêm /api/user/me để lấy role thật
+      String roleName = 'MEMBER';
+      try {
+        final meRes = await ApiClient.dio.get('/api/user/me');
+        roleName = (meRes.data['role']?['roleName'] as String?)?.toUpperCase() ?? 'MEMBER';
+      } catch (e) {
+        debugPrint('🔴 Fetch /api/user/me failed, default to MEMBER: $e');
+      }
+      await AuthStorage.saveRole(roleName);
+
       if (!mounted) return;
-      
-      final role = await AuthStorage.getRole();
-      if (role == 'ORGANIZATION') {
+
+      if (roleName == 'ORGANIZATION') {
         context.go(RouteNames.orgDashboard);
       } else {
         context.go(RouteNames.productList);

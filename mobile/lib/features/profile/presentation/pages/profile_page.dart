@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../routes/route_names.dart';
+import '../../../../core/auth/auth_storage.dart';
 import 'edit_profile_page.dart';
 import 'my_shop_page.dart';
 import 'setting_page.dart';
@@ -49,8 +49,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleLogout() async {
-    const storage = FlutterSecureStorage();
-    await storage.delete(key: 'auth_token');
+    await AuthStorage.clear();
     if (!mounted) return;
     context.go(RouteNames.login);
   }
