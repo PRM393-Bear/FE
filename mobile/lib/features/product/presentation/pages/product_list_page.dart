@@ -66,6 +66,7 @@ class _ProductListPageState extends State<ProductListPage> {
           .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
           .where((p) => p.status == 'AVAILABLE')
           .toList();
+      if (!mounted) return;
       setState(() {
         _products = list;
         _applyFilter();
@@ -73,6 +74,7 @@ class _ProductListPageState extends State<ProductListPage> {
       });
     } catch (e) {
       debugPrint('🔴 Fetch products error: $e');
+      if (!mounted) return;
       setState(() {
         _error = 'Không thể tải sản phẩm, vui lòng thử lại';
         _isLoading = false;
@@ -94,12 +96,14 @@ class _ProductListPageState extends State<ProductListPage> {
           .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
           .where((p) => p.status == 'AVAILABLE')
           .toList();
+      if (!mounted) return;
       setState(() {
         _filtered = list;
         _isSearchLoading = false;
       });
     } catch (e) {
       debugPrint('🔴 Search error: $e');
+      if (!mounted) return;
       setState(() => _isSearchLoading = false);
     }
   }
@@ -118,12 +122,14 @@ class _ProductListPageState extends State<ProductListPage> {
           .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
           .where((p) => p.status == 'AVAILABLE')
           .toList();
+      if (!mounted) return;
       setState(() {
         _filtered = list;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('🔴 Filter error: $e');
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }

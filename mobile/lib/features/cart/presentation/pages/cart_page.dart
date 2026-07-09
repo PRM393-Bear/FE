@@ -76,10 +76,6 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
-  // Backend hiện chưa có API "checkout" cho giỏ hàng — endpoint này (POST
-  // /api/cart/checkout) đã được đề xuất trong spec_be_cart_checkout.md,
-  // đang chờ BE làm. Trong lúc chờ, nếu server trả 404/405 (chưa tồn tại)
-  // thì hiện thông báo rõ ràng thay vì lỗi khó hiểu.
   Future<void> _handleCheckout() async {
     final cart = _cart;
     if (cart == null || cart.items.isEmpty) return;
@@ -135,146 +131,161 @@ class _CartPageState extends State<CartPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text('Giỏ hàng', style: AppTextStyles.headline3),
-        actions: [
-          if (!isEmpty)
-            TextButton(
-              onPressed: _clearCart,
-              child: Text('Xoá hết',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.error)),
-            ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(
-          child: CircularProgressIndicator(color: AppColors.primary))
-          : isEmpty
-          ? RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: _fetchCart,
-        child: ListView(
+      body: SafeArea(
+        child: Column(
           children: [
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.6,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+            // Custom App Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.textPrimary),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Expanded(
+                    child: Text('Giỏ hàng', style: AppTextStyles.headline3),
+                  ),
+                  if (!isEmpty)
+                    TextButton(
+                      onPressed: _clearCart,
+                      child: Text('Xoá hết',
+                          style: AppTextStyles.bodyMedium
+                              .copyWith(color: AppColors.error)),
+                    ),
+                ],
+              ),
+            ),
+
+            // Content
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary))
+                  : isEmpty
+                  ? RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: _fetchCart,
+                child: ListView(
                   children: [
-                    const Icon(Icons.shopping_cart_outlined,
-                        size: 60, color: AppColors.neutral),
-                    const SizedBox(height: 12),
-                    Text('Giỏ hàng trống',
-                        style: AppTextStyles.bodyLarge),
-                    const SizedBox(height: 4),
-                    Text('Thêm sản phẩm bạn thích vào giỏ nhé!',
-                        style: AppTextStyles.bodyMedium),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.shopping_cart_outlined,
+                                size: 60, color: AppColors.neutral),
+                            const SizedBox(height: 12),
+                            Text('Giỏ hàng trống',
+                                style: AppTextStyles.bodyLarge),
+                            const SizedBox(height: 4),
+                            Text('Thêm sản phẩm bạn thích vào giỏ nhé!',
+                                style: AppTextStyles.bodyMedium),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
+                ),
+              )
+                  : RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: _fetchCart,
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: cart.items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final item = cart.items[index];
+                    final isRemoving =
+                    _removingIds.contains(item.cartItemId);
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.productName,
+                                  style: AppTextStyles.bodyLarge,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_formatPrice(item.price)} đ',
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          isRemoving
+                              ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2),
+                          )
+                              : IconButton(
+                            icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: AppColors.error),
+                            onPressed: () => _removeItem(item),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-          ],
-        ),
-      )
-          : RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: _fetchCart,
-        child: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: cart.items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final item = cart.items[index];
-            final isRemoving =
-            _removingIds.contains(item.cartItemId);
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.productName,
-                          style: AppTextStyles.bodyLarge,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_formatPrice(item.price)} đ',
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
+
+            // Bottom Bar
+            if (!isEmpty)
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border(top: BorderSide(color: AppColors.border)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Tổng cộng', style: AppTextStyles.bodyMedium),
+                          Text(
+                            '${_formatPrice(cart.totalPrice)} đ',
+                            style: AppTextStyles.headline3
+                                .copyWith(color: AppColors.primary),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  isRemoving
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2),
-                  )
-                      : IconButton(
-                    icon: const Icon(
-                        Icons.delete_outline_rounded,
-                        color: AppColors.error),
-                    onPressed: () => _removeItem(item),
-                  ),
-                ],
+                    SizedBox(
+                      width: 160,
+                      child: AppButton(
+                        label: 'Đặt hàng',
+                        isLoading: _isCheckingOut,
+                        onPressed: _isCheckingOut ? null : _handleCheckout,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          },
-        ),
-      ),
-      bottomNavigationBar: isEmpty
-          ? null
-          : Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Tổng cộng', style: AppTextStyles.bodyMedium),
-                  Text(
-                    '${_formatPrice(cart.totalPrice)} đ',
-                    style: AppTextStyles.headline3
-                        .copyWith(color: AppColors.primary),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 160,
-              child: AppButton(
-                label: 'Đặt hàng',
-                isLoading: _isCheckingOut,
-                onPressed: _isCheckingOut ? null : _handleCheckout,
-              ),
-            ),
           ],
         ),
       ),
