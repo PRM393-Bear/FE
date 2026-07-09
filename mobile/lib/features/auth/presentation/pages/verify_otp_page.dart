@@ -9,6 +9,7 @@ import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../core/auth/auth_storage.dart';
 import '../../../../core/auth/auth_state.dart';
+import 'org_register_page.dart';
 
 class VerifyOtpPage extends StatefulWidget {
   final String email;
@@ -75,10 +76,15 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
         AuthState.notifyChanged();
 
         if (!mounted) return;
-        
-        // 3. Điều hướng theo role
+
+        // 3. Điều hướng theo role — Tổ chức phải hoàn tất hồ sơ (tên,
+        // địa chỉ, giấy tờ xác minh) và CHỜ DUYỆT trước khi được vào
+        // dashboard, không được vào thẳng ngay sau khi đăng ký như trước.
         if (widget.roleName == 'ORGANIZATION') {
-          context.go(RouteNames.orgDashboard);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const OrgRegisterPage()),
+          );
         } else {
           context.go(RouteNames.productList);
         }

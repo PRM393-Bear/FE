@@ -9,6 +9,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../routes/route_names.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
+import '../../../../core/auth/auth_storage.dart';
+import '../../../../core/auth/auth_state.dart';
 
 class OrgRegisterPage extends StatefulWidget {
   const OrgRegisterPage({super.key});
@@ -905,7 +907,7 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
           Text('Đang chờ xét duyệt', style: AppTextStyles.headline3),
           const SizedBox(height: 12),
           Text(
-            'Hồ sơ tổ chức của bạn đang được xem xét. Thường mất 1-2 ngày làm việc. Chúng tôi sẽ thông báo qua email/app khi có kết quả.',
+            'Hồ sơ tổ chức của bạn đang được xem xét. Thường mất 1-2 ngày làm việc. Chúng tôi sẽ thông báo qua email khi có kết quả — hãy đăng nhập lại sau để kiểm tra.',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMedium
                 .copyWith(color: AppColors.textSecondary),
@@ -991,8 +993,17 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
           const SizedBox(height: 24),
 
           AppButton(
-            label: 'Về trang chủ',
-            onPressed: () => context.go(RouteNames.productList),
+            label: 'Về màn đăng nhập',
+            onPressed: () async {
+              // BE hiện chưa có API để tự kiểm tra trạng thái duyệt theo
+              // thời gian thực, nên đăng xuất tại đây là an toàn nhất —
+              // tránh để tài khoản "lơ lửng" trong app mà không biết đã
+              // được duyệt hay chưa. Đăng nhập lại sau sẽ biết ngay.
+              await AuthStorage.clear();
+              AuthState.notifyChanged();
+              if (!mounted) return;
+              context.go(RouteNames.login);
+            },
           ),
           const SizedBox(height: 12),
           OutlinedButton(

@@ -64,6 +64,8 @@ class _SelectRolePageState extends State<SelectRolePage> {
                 icon: Icons.volunteer_activism_outlined,
                 title: 'Tổ chức từ thiện',
                 description: 'Nhận đồ quyên góp, tạo sự kiện từ thiện, kết nối cộng đồng',
+                badge: 'Cần duyệt hồ sơ',
+                badgeColor: AppColors.secondary,
                 isSelected: _selectedRole == RegisterRole.organization,
                 onTap: () => setState(() => _selectedRole = RegisterRole.organization),
               ),
