@@ -6,7 +6,7 @@ class AuthStorage {
   static const _storage = FlutterSecureStorage();
 
   /// Lưu role lấy được từ /api/user/me ngay sau khi login,
-  /// vì JWT hiện tại chưa mang claim role.
+  /// vì JWT hiện tại chưa mang claim role (BE chưa bổ sung).
   static Future<void> saveRole(String role) async {
     await _storage.write(key: 'user_role', value: role.toUpperCase());
   }
@@ -42,6 +42,14 @@ class AuthStorage {
       debugPrint('🔴 Decode JWT error: $e');
       return null;
     }
+  }
+
+  /// true nếu đang có token đăng nhập đã lưu (bất kể đã biết role hay chưa).
+  /// Dùng để phân biệt Guest (chưa đăng nhập) với user đã đăng nhập —
+  /// khác với getRole(), hàm này không suy luận role mặc định.
+  static Future<bool> isLoggedIn() async {
+    final token = await _storage.read(key: 'auth_token');
+    return token != null && token.isNotEmpty;
   }
 
   /// Dùng khi logout để xoá sạch cả token lẫn role đã lưu

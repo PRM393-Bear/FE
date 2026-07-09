@@ -10,6 +10,10 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../data/product_model.dart';
 import '../../../listing/data/listing_model.dart';
 import '../../../listing/presentation/pages/listing_form_page.dart';
+import '../../../chat/presentation/pages/chat_detail_page.dart';
+import '../../../order/presentation/pages/my_orders_page.dart';
+import '../../../../core/auth/auth_storage.dart';
+import '../../../../shared/widgets/login_prompt_sheet.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final ProductModel product;
@@ -24,6 +28,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   bool _isExpanded = false;
   int _currentImageIndex = 0;
   bool _isOwner = false;
+  bool _isBuying = false;
 
   @override
   void initState() {
@@ -97,8 +102,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         : Icons.favorite_border_rounded,
                     color: _isFavorite ? Colors.red : null,
                   ),
-                  onPressed: () =>
-                      setState(() => _isFavorite = !_isFavorite),
+                  onPressed: () async {
+                    final ok = await _requireLogin(
+                        'Đăng nhập để lưu sản phẩm yêu thích');
+                    if (!ok || !mounted) return;
+                    setState(() => _isFavorite = !_isFavorite);
+                  },
                 ),
               if (_isOwner)
                 IconButton(
@@ -466,13 +475,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-  // Bottom bar cho người mua
+  // Bottom bar cho người mua (kể cả guest chưa đăng nhập)
   Widget _buildBuyerActions(ProductModel product) {
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () => _openChatWithSeller(product),
             icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
             label: const Text('Chat với seller'),
             style: OutlinedButton.styleFrom(
@@ -484,11 +493,106 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         Expanded(
           child: AppButton(
             label: product.type == 'DONATE' ? 'Xin nhận' : 'Mua ngay',
-            onPressed: () {},
+            isLoading: _isBuying,
+            onPressed: _isBuying ? null : () => _handleBuyNow(product),
           ),
         ),
       ],
     );
+  }
+
+  /// Guest bấm vào hành động cần đăng nhập -> hiện bottom-sheet yêu cầu
+  /// đăng nhập, trả về false để hàm gọi nó dừng lại, không làm tiếp.
+  Future<bool> _requireLogin(String message) async {
+    final loggedIn = await AuthStorage.isLoggedIn();
+    if (!loggedIn) {
+      if (!mounted) return false;
+      LoginPromptSheet.show(context, message: message);
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _openChatWithSeller(ProductModel product) async {
+    final ok = await _requireLogin('Đăng nhập để nhắn tin với người bán');
+    if (!ok || !mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatDetailPage(
+          otherUserId: product.sellerId,
+          otherUsername: product.sellerName,
+        ),
+      ),
+    );
+  }
+
+  void _showDonateComingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Tính năng xin nhận đồ tặng sẽ có trong bản cập nhật tới'),
+    ));
+  }
+
+  Future<void> _handleBuyNow(ProductModel product) async {
+    final ok = await _requireLogin(
+      product.type == 'DONATE'
+          ? 'Đăng nhập để xin nhận sản phẩm này'
+          : 'Đăng nhập để mua sản phẩm này',
+    );
+    if (!ok || !mounted) return;
+
+    if (product.type == 'DONATE') {
+      _showDonateComingSoon();
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận mua hàng'),
+        content: Text(
+            'Bạn có chắc muốn mua "${product.title}" với giá ${_formatPrice(product.price)}đ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xác nhận'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _isBuying = true);
+    try {
+      await ApiClient.dio.post('/api/orders', data: {
+        'productId': product.id,
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Đặt mua thành công! Chờ người bán xác nhận.'),
+        backgroundColor: AppColors.primary,
+      ));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MyOrdersPage()),
+      );
+    } on DioException catch (e) {
+      debugPrint('🔴 Create order error: ${e.response?.data}');
+      final data = e.response?.data;
+      String msg = 'Đặt mua thất bại';
+      if (data is Map && data['message'] != null) msg = data['message'].toString();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _isBuying = false);
+    }
   }
 
   Widget _infoChip(IconData icon, String label, Color color) {
