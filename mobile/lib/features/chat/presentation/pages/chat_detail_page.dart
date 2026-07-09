@@ -28,6 +28,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   bool _isLoading = true;
   String _currentUserId = '';
   StompClient? _stompClient;
+  bool _isConnected = false;
 
   @override
   void initState() {
@@ -83,9 +84,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         url: 'wss://prm393-backend.onrender.com/ws/websocket',
         webSocketConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: _onConnect,
-        onDisconnect: (_) => debugPrint('🔴 WebSocket disconnected'),
-        onWebSocketError: (e) => debugPrint('🔴 WebSocket error: $e'),
-        onStompError: (f) => debugPrint('🔴 STOMP error: ${f.body}'),
+        onDisconnect: (_) {
+          debugPrint('🔴 WebSocket disconnected');
+          if (mounted) setState(() => _isConnected = false);
+        },
+        onWebSocketError: (e) {
+          debugPrint('🔴 WebSocket error: $e');
+          if (mounted) setState(() => _isConnected = false);
+        },
+        onStompError: (f) {
+          debugPrint('🔴 STOMP error: ${f.body}');
+          if (mounted) setState(() => _isConnected = false);
+        },
       ),
     );
     _stompClient!.activate();
@@ -93,13 +103,20 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   void _onConnect(StompFrame frame) {
     debugPrint('✅ WebSocket connected');
-    // Subscribe nhận tin nhắn
+    if (mounted) setState(() => _isConnected = true);
     _stompClient!.subscribe(
       destination: '/user/queue/messages',
       callback: (frame) {
         if (frame.body == null) return;
         final msg = ChatMessageModel.fromJson(
             jsonDecode(frame.body!) as Map<String, dynamic>);
+        // Tin nhắn mình vừa tự gửi đã được hiện ngay (optimistic) trong
+        // _sendMessage rồi — nếu server vọng lại đúng tin đó, bỏ qua để
+        // tránh hiện trùng 2 lần.
+        final isEchoOfMine = msg.senderId == _currentUserId &&
+            _messages.any((m) =>
+                m.id.startsWith('local-') && m.content == msg.content);
+        if (isEchoOfMine) return;
         setState(() => _messages.add(msg));
         _scrollToBottom();
       },
@@ -108,17 +125,47 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   void _sendMessage() {
     final content = _messageController.text.trim();
-    if (content.isEmpty || _stompClient == null) return;
+    if (content.isEmpty) return;
 
-    _stompClient!.send(
-      destination: '/app/chat.send',
-      body: jsonEncode({
-        'receiverId': widget.otherUserId,
-        'content': content,
-        'imageUrl': null,
-      }),
+    if (_stompClient == null || !_isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Chưa kết nối được tới máy chủ chat, vui lòng thử lại sau vài giây.'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+
+    // Hiện ngay tin nhắn của mình trên UI (optimistic), không chờ server
+    // phản hồi — tránh cảm giác "bấm gửi không thấy gì" khi mạng chậm.
+    final optimisticMsg = ChatMessageModel(
+      id: 'local-${DateTime.now().millisecondsSinceEpoch}',
+      roomId: '',
+      senderId: _currentUserId,
+      content: content,
+      createdAt: DateTime.now().toIso8601String(),
+      status: 'SENT',
     );
+    setState(() => _messages.add(optimisticMsg));
+    _scrollToBottom();
     _messageController.clear();
+
+    try {
+      _stompClient!.send(
+        destination: '/app/chat.send',
+        body: jsonEncode({
+          'receiverId': widget.otherUserId,
+          'content': content,
+          'imageUrl': null,
+        }),
+      );
+    } catch (e) {
+      debugPrint('🔴 Send message error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Gửi tin nhắn thất bại, vui lòng thử lại.'),
+        backgroundColor: AppColors.error,
+      ));
+    }
   }
 
   void _scrollToBottom() {

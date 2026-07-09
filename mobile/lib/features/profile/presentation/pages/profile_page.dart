@@ -11,6 +11,8 @@ import 'edit_profile_page.dart';
 import 'my_shop_page.dart';
 import 'setting_page.dart';
 import '../../../notification/presentation/pages/notification_list_page.dart';
+import '../../../order/presentation/pages/my_orders_page.dart';
+import '../../../order/data/order_model.dart';
 import '../../../order/presentation/pages/seller_orders_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -26,11 +28,36 @@ class _ProfilePageState extends State<ProfilePage> {
   String _email = '';
   String _phone = '';
   bool _isLoading = true;
+  int _pendingOrders = 0;
+  int _shippingOrders = 0;
+  int _completedOrders = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchProfile();
+    _fetchOrderCounts();
+  }
+
+  Future<void> _fetchOrderCounts() async {
+    try {
+      final res = await ApiClient.dio.get('/api/orders/history/all');
+      final orders = (res.data as List)
+          .map((e) => OrderModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _pendingOrders = orders
+            .where((o) => o.status == 'PENDING' || o.status == 'PROCESSING')
+            .length;
+        _shippingOrders = orders.where((o) => o.status == 'SHIPPING').length;
+        _completedOrders = orders
+            .where((o) => o.status == 'RECEIVED' || o.status == 'COMPLETED')
+            .length;
+      });
+    } catch (e) {
+      debugPrint('🔴 Fetch order counts error: $e');
+    }
   }
 
   Future<void> _fetchProfile() async {
@@ -248,7 +275,13 @@ class _ProfilePageState extends State<ProfilePage> {
                         _buildMenuItem(
                           icon: Icons.shopping_bag_outlined,
                           title: 'Đơn hàng của tôi',
-                          onTap: () {},
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const MyOrdersPage()),
+                            );
+                            _fetchOrderCounts();
+                          },
                         ),
                         _buildMenuItem(
                           icon: Icons.storefront_outlined,
@@ -266,13 +299,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             children: [
                               _buildOrderStatus(
                                   Icons.access_time_outlined,
-                                  'Chờ xác nhận', '0'),
+                                  'Chờ xác nhận', '$_pendingOrders'),
                               _buildOrderStatus(
                                   Icons.local_shipping_outlined,
-                                  'Đang giao', '0'),
+                                  'Đang giao', '$_shippingOrders'),
                               _buildOrderStatus(
                                   Icons.check_circle_outline_rounded,
-                                  'Hoàn tất', '0'),
+                                  'Hoàn tất', '$_completedOrders'),
                             ],
                           ),
                         ),
