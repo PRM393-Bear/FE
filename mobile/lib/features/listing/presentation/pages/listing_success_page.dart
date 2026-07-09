@@ -46,7 +46,8 @@ class ListingSuccessPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Món đồ của bạn đã sẵn sàng tìm kiếm vòng đời mới.',
+                      'Bài đăng đang chờ đội ngũ kiểm duyệt. Sau khi được duyệt, '
+                      'sản phẩm sẽ hiển thị công khai để tìm người mua mới.',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Colors.white70,
                       ),
@@ -68,11 +69,11 @@ class ListingSuccessPage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          color: Colors.orange,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'Đã đăng',
+                          'Chờ duyệt',
                           style: AppTextStyles.label.copyWith(
                             color: Colors.white,
                             fontSize: 11,
@@ -208,13 +209,16 @@ class ListingSuccessPage extends StatelessWidget {
                     AppButton(
                       label: '⊕ Đăng bài mới',
                       type: AppButtonType.secondary,
-                      onPressed: () => Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const UploadImagePage(),
-                        ),
-                            (route) => false,
-                      ),
+                      onPressed: () {
+                        // Lùi về đúng màn gốc (Bài đăng của tôi) trước, rồi mới
+                        // đẩy màn đăng bài mới lên trên — để nút back luôn có
+                        // chỗ quay về, tránh bị màn hình trắng như trước.
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const UploadImagePage()),
+                        );
+                      },
                     ),
                     const SizedBox(height: 12),
 
@@ -223,9 +227,8 @@ class ListingSuccessPage extends StatelessWidget {
                       onPressed: () => Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const MyListingsPage(),
-                        ),
-                            (route) => false,
+                            builder: (_) => const MyListingsPage(initialTab: 'Chờ duyệt')),
+                        (route) => false,
                       ),
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 52),

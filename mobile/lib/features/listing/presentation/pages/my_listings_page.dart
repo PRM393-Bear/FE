@@ -13,7 +13,8 @@ import '../../../product/presentation/pages/product_detail_page.dart';
 import '../../../notification/presentation/pages/notification_list_page.dart';
 
 class MyListingsPage extends StatefulWidget {
-  const MyListingsPage({super.key});
+  final String? initialTab;
+  const MyListingsPage({super.key, this.initialTab});
 
   @override
   State<MyListingsPage> createState() => _MyListingsPageState();
@@ -21,7 +22,7 @@ class MyListingsPage extends StatefulWidget {
 
 class _MyListingsPageState extends State<MyListingsPage> {
   String _selectedTab = 'Đang bán';
-  final List<String> _tabs = ['Đang bán', 'Đã bán', 'Nháp', 'Ẩn'];
+  final List<String> _tabs = ['Đang bán', 'Chờ duyệt', 'Đã bán', 'Bị từ chối', 'Ẩn'];
 
   List<ProductModel> _products = [];
   bool _isLoading = true;
@@ -30,6 +31,7 @@ class _MyListingsPageState extends State<MyListingsPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialTab != null) _selectedTab = widget.initialTab!;
     _fetchMyProducts();
   }
 
@@ -67,10 +69,14 @@ class _MyListingsPageState extends State<MyListingsPage> {
     switch (_selectedTab) {
       case 'Đang bán':
         return _products.where((p) => p.status == 'AVAILABLE').toList();
+      case 'Chờ duyệt':
+        return _products.where((p) => p.status == 'PENDING').toList();
       case 'Đã bán':
         return _products
             .where((p) => p.status == 'SOLD' || p.status == 'DONATED')
             .toList();
+      case 'Bị từ chối':
+        return _products.where((p) => p.status == 'REJECTED').toList();
       case 'Ẩn':
         return _products.where((p) => p.status == 'HIDDEN').toList();
       default:
@@ -80,6 +86,8 @@ class _MyListingsPageState extends State<MyListingsPage> {
 
   int get _availableCount =>
       _products.where((p) => p.status == 'AVAILABLE').length;
+  int get _pendingCount =>
+      _products.where((p) => p.status == 'PENDING').length;
   int get _soldCount =>
       _products.where((p) => p.status == 'SOLD' || p.status == 'DONATED').length;
   int get _hiddenCount =>
@@ -203,6 +211,8 @@ class _MyListingsPageState extends State<MyListingsPage> {
                 children: [
                   _buildStat('$_availableCount', 'Đang bán'),
                   _buildStatDivider(),
+                  _buildStat('$_pendingCount', 'Chờ duyệt'),
+                  _buildStatDivider(),
                   _buildStat('$_soldCount', 'Đã bán'),
                   _buildStatDivider(),
                   _buildStat('$_hiddenCount', 'Đã ẩn'),
@@ -263,7 +273,11 @@ class _MyListingsPageState extends State<MyListingsPage> {
                     Icon(
                       _selectedTab == 'Ẩn'
                           ? Icons.visibility_off_outlined
-                          : Icons.inbox_outlined,
+                          : _selectedTab == 'Chờ duyệt'
+                              ? Icons.hourglass_empty_rounded
+                              : _selectedTab == 'Bị từ chối'
+                                  ? Icons.cancel_outlined
+                                  : Icons.inbox_outlined,
                       size: 60,
                       color: AppColors.neutral,
                     ),
@@ -271,7 +285,11 @@ class _MyListingsPageState extends State<MyListingsPage> {
                     Text(
                       _selectedTab == 'Ẩn'
                           ? 'Không có sản phẩm nào đang ẩn'
-                          : 'Chưa có bài đăng nào',
+                          : _selectedTab == 'Chờ duyệt'
+                              ? 'Không có bài nào đang chờ duyệt'
+                              : _selectedTab == 'Bị từ chối'
+                                  ? 'Không có bài nào bị từ chối'
+                                  : 'Chưa có bài đăng nào',
                       style: AppTextStyles.bodyLarge,
                     ),
                     const SizedBox(height: 4),
@@ -405,6 +423,19 @@ class _MyListingsPageState extends State<MyListingsPage> {
                       ),
                     ],
                   ),
+                  if (product.status == 'REJECTED' &&
+                      (product.rejectReason ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Lý do: ${product.rejectReason}',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.error,
+                        fontSize: 11,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -536,8 +567,10 @@ class _MyListingsPageState extends State<MyListingsPage> {
   String _statusText(String status) {
     switch (status) {
       case 'AVAILABLE': return '● Đang bán';
+      case 'PENDING': return '● Chờ duyệt';
       case 'SOLD': return '● Đã bán';
       case 'DONATED': return '● Đã tặng';
+      case 'REJECTED': return '● Bị từ chối';
       case 'HIDDEN': return '● Đã ẩn';
       default: return status;
     }
@@ -555,8 +588,10 @@ class _MyListingsPageState extends State<MyListingsPage> {
   Color _statusColor(String status) {
     switch (status) {
       case 'AVAILABLE': return AppColors.primary;
+      case 'PENDING': return Colors.orange;
       case 'SOLD': return AppColors.tertiary;
       case 'DONATED': return AppColors.secondary;
+      case 'REJECTED': return AppColors.error;
       case 'HIDDEN': return AppColors.neutral;
       default: return AppColors.neutral;
     }

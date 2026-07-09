@@ -13,6 +13,7 @@ class ProductModel {
   final String status;
   final String sellerId;
   final String sellerName;
+  final String? rejectReason; // lý do bị từ chối, chỉ có giá trị khi status == REJECTED
 
   // FE-only fields (giữ lại để không phải sửa nhiều chỗ)
   final bool isFavorite;
@@ -32,6 +33,7 @@ class ProductModel {
     required this.status,
     required this.sellerId,
     required this.sellerName,
+    this.rejectReason,
     this.isFavorite = false,
   });
 
@@ -73,6 +75,7 @@ class ProductModel {
       status: json['status'] ?? '',
       sellerId: json['sellerId']?.toString() ?? '',
       sellerName: json['sellerName'] ?? '',
+      rejectReason: json['rejectReason'],
     );
   }
 }
