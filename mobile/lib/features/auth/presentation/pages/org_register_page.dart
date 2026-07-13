@@ -13,7 +13,13 @@ import '../../../../core/auth/auth_storage.dart';
 import '../../../../core/auth/auth_state.dart';
 
 class OrgRegisterPage extends StatefulWidget {
-  const OrgRegisterPage({super.key});
+  /// Truyền sẵn organizationStatus BE trả về ('PENDING' | 'APPROVED' |
+  /// 'REJECTED') khi mở lại trang này từ login_page.dart (không phải lần
+  /// đăng ký đầu tiên), để nhảy thẳng tới đúng màn trạng thái thay vì bắt
+  /// người dùng điền lại form từ Bước 1. null = chưa nộp hồ sơ.
+  final String? initialStatus;
+
+  const OrgRegisterPage({super.key, this.initialStatus});
 
   @override
   State<OrgRegisterPage> createState() => _OrgRegisterPageState();
@@ -22,6 +28,20 @@ class OrgRegisterPage extends StatefulWidget {
 class _OrgRegisterPageState extends State<OrgRegisterPage> {
   int _currentStep = 0;
   bool _isLoading = false;
+
+  /// Trạng thái đang hiển thị ở màn hình cuối (_currentStep == 3).
+  /// null / 'PENDING' / 'REJECTED' -> dùng UI "Đang chờ xét duyệt" hiện có.
+  /// 'APPROVED' -> dùng UI "Đã được duyệt" mới, có nút vào thẳng Dashboard.
+  String? _viewStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialStatus != null) {
+      _viewStatus = widget.initialStatus;
+      _currentStep = 3; // bỏ qua form nhập liệu, vào thẳng màn trạng thái
+    }
+  }
 
   // ── Bước 1 ──
   final _formKey1 = GlobalKey<FormState>();
@@ -150,7 +170,10 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
       });
 
       if (!mounted) return;
-      setState(() => _currentStep = 3);
+      setState(() {
+         _viewStatus = 'PENDING';
+         _currentStep = 3;
+      });
     } on DioException catch (e) {
       debugPrint('🔴 Org register error: ${e.response?.data}');
       final msg = e.response?.data?['message'] ?? 'Lỗi kết nối server';
@@ -861,9 +884,21 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
   }
 
   // ════════════════════════════════════════════
-  // Màn hình chờ duyệt
+  // Màn hình cuối (_currentStep == 3) — phân theo trạng thái duyệt
   // ════════════════════════════════════════════
   Widget _buildSuccessScreen() {
+    if (_viewStatus == 'APPROVED') {
+      return _buildApprovedScreen();
+    }
+    return _buildPendingScreen();
+  }
+
+  // ════════════════════════════════════════════
+  // Màn hình chờ duyệt (dùng cho vừa-nộp-xong / PENDING / REJECTED —
+  // REJECTED tạm dùng chung UI này; có thể tách riêng UI "bị từ chối"
+  // sau, không nằm trong phạm vi task này)
+  // ════════════════════════════════════════════
+  Widget _buildPendingScreen() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
@@ -883,8 +918,7 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
 
           // Badge trạng thái
           Container(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.secondary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
@@ -892,8 +926,7 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.schedule,
-                    color: AppColors.secondary, size: 16),
+                const Icon(Icons.schedule, color: AppColors.secondary, size: 16),
                 const SizedBox(width: 6),
                 Text('Trạng thái: Chờ duyệt',
                     style: AppTextStyles.bodyMedium.copyWith(
@@ -1018,6 +1051,71 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
             child: Text('Liên hệ hỗ trợ',
                 style: AppTextStyles.bodyLarge.copyWith(
                     color: AppColors.primary, fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // ════════════════════════════════════════════
+  // Màn hình đã được duyệt — hiển thị ngay khi tài khoản Tổ chức đăng
+  // nhập lại và phát hiện organizationStatus == APPROVED, để người dùng
+  // biết chắc trước khi vào Dashboard (đây chính là hành vi được yêu cầu
+  // thêm — thay vì bị đưa thẳng vào Dashboard một cách âm thầm).
+  // ════════════════════════════════════════════
+  Widget _buildApprovedScreen() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Column(
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle_rounded,
+                color: AppColors.primary, size: 48),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.verified_rounded,
+                    color: AppColors.primary, size: 16),
+                const SizedBox(width: 6),
+                Text('Trạng thái: Đã duyệt',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text('Tài khoản của bạn đã được duyệt!',
+              textAlign: TextAlign.center, style: AppTextStyles.headline3),
+          const SizedBox(height: 12),
+          Text(
+            'Chúc mừng! Hồ sơ tổ chức của bạn đã được Admin/Staff xét duyệt '
+            'thành công. Hãy tiến hành đăng nhập để bắt đầu sử dụng đầy đủ '
+            'tính năng dành cho Tổ chức.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium
+                .copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 32),
+          AppButton(
+            label: 'Tiến hành đăng nhập',
+            onPressed: () {
+              context.go(RouteNames.orgDashboard);
+            },
           ),
           const SizedBox(height: 24),
         ],

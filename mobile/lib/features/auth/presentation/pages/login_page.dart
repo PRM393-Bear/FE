@@ -10,6 +10,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../core/auth/auth_storage.dart';
 import '../../../../core/auth/auth_state.dart';
+import 'org_register_page.dart';
 import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -49,6 +50,12 @@ class _LoginPageState extends State<LoginPage> {
       final token = res.data['accessToken'] as String;
       await _storage.write(key: 'auth_token', value: token);
 
+      // BE trả kèm organizationStatus trong response login (null nếu tài
+      // khoản không phải ORGANIZATION, hoặc ORGANIZATION nhưng chưa nộp
+      // hồ sơ). Lưu lại để org_register_page.dart biết hiển thị màn nào.
+      final orgStatus = res.data['organizationStatus'] as String?;
+      await AuthStorage.saveOrganizationStatus(orgStatus);
+
       // JWT hiện tại chưa có claim role, nên gọi thêm /api/user/me để lấy role thật
       String roleName = 'MEMBER';
       try {
@@ -63,7 +70,17 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       if (roleName == 'ORGANIZATION') {
-        context.go(RouteNames.orgDashboard);
+        // Tài khoản Tổ chức KHÔNG được vào thẳng Dashboard chỉ vì role là
+        // ORGANIZATION — phải dừng đúng ở màn trạng thái hồ sơ trước.
+        // PENDING / REJECTED / chưa nộp hồ sơ -> màn trạng thái tương ứng.
+        // APPROVED -> vẫn dừng lại 1 nhịp ở màn "đã được duyệt" để thông
+        // báo cho người dùng, thay vì âm thầm vào thẳng Dashboard.
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrgRegisterPage(initialStatus: orgStatus),
+          ),
+        );
       } else {
         context.go(RouteNames.productList);
       }

@@ -11,6 +11,20 @@ class AuthStorage {
     await _storage.write(key: 'user_role', value: role.toUpperCase());
   }
 
+  /// Cache trạng thái duyệt hồ sơ Tổ chức lần gần nhất, lấy trực tiếp từ
+  /// field `organizationStatus` trong response `/api/auth/login`.
+  static Future<void> saveOrganizationStatus(String? status) async {
+    if (status == null) {
+      await _storage.delete(key: 'organization_status');
+    } else {
+      await _storage.write(key: 'organization_status', value: status);
+    }
+  }
+
+  static Future<String?> getOrganizationStatus() async {
+    return _storage.read(key: 'organization_status');
+  }
+
   static Future<String?> getRole() async {
     // Ưu tiên đọc role đã lưu trực tiếp (lấy từ /api/user/me lúc login)
     final savedRole = await _storage.read(key: 'user_role');
@@ -56,5 +70,6 @@ class AuthStorage {
   static Future<void> clear() async {
     await _storage.delete(key: 'auth_token');
     await _storage.delete(key: 'user_role');
+    await _storage.delete(key: 'organization_status');
   }
 }
