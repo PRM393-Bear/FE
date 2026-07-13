@@ -1,6 +1,6 @@
 /**
  * EcoCycle Web - Profile Shop Panel
- * Renders seller order management, active products (with Edit & Hide/Unhide), and draft products.
+ * Renders seller order management with full history status filtering, active products (with Edit & Hide/Unhide), and draft products.
  */
 
 import { confirmOrder, shipOrder } from "../../services/order.service.js";
@@ -12,14 +12,26 @@ function formatPrice(num) {
   return Number(num).toLocaleString("vi-VN") + "đ";
 }
 
+let currentShopFilter = "ALL";
+
 export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], myProducts = [], onRefresh }) {
+  const filteredOrders = currentShopFilter === "ALL"
+    ? sellerOrders
+    : sellerOrders.filter(ord => {
+        const st = String(ord.status || "PENDING").toUpperCase();
+        if (currentShopFilter === "COMPLETED") {
+          return st === "COMPLETED" || st === "RECEIVED";
+        }
+        return st === currentShopFilter;
+      });
+
   let html = `
     <div class="shop-panel flex flex-col gap-8">
       <!-- Header banner -->
       <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm flex justify-between items-center flex-wrap gap-4">
         <div>
           <h3 class="text-headline-sm font-bold text-on-surface mb-1">Quản lý Bán hàng</h3>
-          <p class="text-body-md text-on-surface-variant">Xử lý đơn đặt mua, chỉnh sửa/ẩn hiện bài đăng bán và quản lý bản nháp.</p>
+          <p class="text-body-md text-on-surface-variant">Xử lý toàn bộ đơn đặt mua, theo dõi lịch sử bán, chỉnh sửa/ẩn hiện bài đăng và quản lý bản nháp.</p>
         </div>
         <a href="#/create-listing" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-medium shadow hover:bg-primary/90 transition-colors flex items-center gap-2">
           <span class="material-symbols-outlined text-base">add_circle</span> Đăng bán mới
@@ -27,36 +39,47 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
       </div>
   `;
 
-  // Section 1: Seller Orders
+  // Section 1: Seller Orders & History
   html += `
     <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm">
-      <h4 class="text-title-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">local_shipping</span>
-        Đơn hàng cần xử lý (${sellerOrders.length})
-      </h4>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h4 class="text-title-lg font-bold text-on-surface flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">local_shipping</span>
+          Lịch sử và Đơn hàng bán (${sellerOrders.length})
+        </h4>
+
+        <!-- Status Filter Tabs -->
+        <div class="flex flex-wrap gap-2 bg-surface-variant/40 p-1 rounded-xl">
+          <button class="btn-shop-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentShopFilter === 'ALL' ? 'bg-surface shadow-sm text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="ALL">Tất cả (${sellerOrders.length})</button>
+          <button class="btn-shop-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentShopFilter === 'PENDING' ? 'bg-surface shadow-sm text-blue-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="PENDING">Chờ duyệt</button>
+          <button class="btn-shop-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentShopFilter === 'CONFIRMED' ? 'bg-surface shadow-sm text-amber-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="CONFIRMED">Chờ gửi hàng</button>
+          <button class="btn-shop-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentShopFilter === 'SHIPPING' ? 'bg-surface shadow-sm text-purple-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="SHIPPING">Đang giao</button>
+          <button class="btn-shop-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentShopFilter === 'COMPLETED' ? 'bg-surface shadow-sm text-emerald-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="COMPLETED">Hoàn tất</button>
+        </div>
+      </div>
   `;
 
-  if (sellerOrders.length === 0) {
+  if (filteredOrders.length === 0) {
     html += `
       <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl">
         <span class="material-symbols-outlined text-4xl text-outline mb-2">storefront</span>
-        <p class="font-medium text-on-surface">Chưa có đơn đặt mua sản phẩm nào</p>
-        <p class="text-body-sm text-on-surface-variant mt-1">Khi khách hàng đặt mua món đồ của bạn, đơn hàng sẽ hiển thị tại đây.</p>
+        <p class="font-medium text-on-surface">Chưa có đơn hàng nào ở trạng thái này</p>
+        <p class="text-body-sm text-on-surface-variant mt-1">Khi khách hàng đặt mua món đồ của bạn, thông tin và lịch sử xử lý sẽ hiển thị tại đây.</p>
       </div>
     `;
   } else {
     html += `<div class="flex flex-col gap-4">`;
-    sellerOrders.forEach((ord) => {
+    filteredOrders.forEach((ord) => {
       const statusStr = String(ord.status || "PENDING").toUpperCase();
       let statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-surface-variant text-on-surface-variant">${statusStr}</span>`;
       if (statusStr === "PENDING") {
-        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Chờ duyệt</span>`;
+        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Chờ duyệt</span>`;
       } else if (statusStr === "CONFIRMED") {
-        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Chờ gửi hàng</span>`;
+        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Chờ gửi hàng</span>`;
       } else if (statusStr === "SHIPPING") {
-        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">Đang giao</span>`;
+        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse"></span>Đang giao</span>`;
       } else if (statusStr === "RECEIVED" || statusStr === "COMPLETED") {
-        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Hoàn tất</span>`;
+        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>Hoàn tất</span>`;
       }
 
       html += `
@@ -64,8 +87,11 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
           <div class="flex items-center gap-4">
             <img src="${ord.productImage || 'https://placehold.co/100x100/E4EBE4/6E7B6C?text=Order'}" class="w-16 h-16 rounded-lg object-cover border border-outline-variant/30 shrink-0" />
             <div>
-              <p class="text-xs text-on-surface-variant font-mono">Đơn hàng: #${ord.id?.slice(0, 8) || "N/A"}</p>
-              <h5 class="font-bold text-on-surface mt-0.5">${ord.productTitle || "Sản phẩm không có tên"}</h5>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono text-on-surface-variant bg-surface-variant px-2 py-0.5 rounded">#${ord.id?.slice(0, 8) || "N/A"}</span>
+                <span class="text-xs text-on-surface-variant">${ord.createdAt || ord.date ? new Date(ord.createdAt || ord.date).toLocaleDateString("vi-VN") : "Gần đây"}</span>
+              </div>
+              <h5 class="font-bold text-on-surface mt-1">${ord.productTitle || ord.productName || "Sản phẩm không có tên"}</h5>
               <p class="text-primary font-semibold text-sm mt-1">${formatPrice(ord.price || ord.totalAmount)}</p>
             </div>
           </div>
@@ -74,12 +100,16 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
             <div class="flex gap-2 mt-1">
               ${
                 statusStr === "PENDING"
-                  ? `<button class="btn-confirm-order px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm" data-orderid="${ord.id}">Xác nhận bán</button>`
+                  ? `<button class="btn-confirm-order px-3.5 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1" data-orderid="${ord.id}">
+                       <span class="material-symbols-outlined text-sm">check</span> Xác nhận bán
+                     </button>`
                   : ""
               }
               ${
                 statusStr === "CONFIRMED"
-                  ? `<button class="btn-ship-order px-3 py-1.5 bg-secondary text-on-secondary rounded-lg text-xs font-semibold hover:bg-secondary/90 transition-colors shadow-sm" data-orderid="${ord.id}">Gửi hàng cho shipper</button>`
+                  ? `<button class="btn-ship-order px-3.5 py-1.5 bg-secondary text-on-secondary rounded-lg text-xs font-semibold hover:bg-secondary/90 transition-colors shadow-sm flex items-center gap-1" data-orderid="${ord.id}">
+                       <span class="material-symbols-outlined text-sm">local_shipping</span> Gửi cho shipper
+                     </button>`
                   : ""
               }
             </div>
@@ -184,6 +214,14 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
 
   html += `</div>`;
   container.innerHTML = html;
+
+  // Bind filter tab buttons
+  container.querySelectorAll(".btn-shop-filter").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentShopFilter = btn.getAttribute("data-filter") || "ALL";
+      renderShopPanel(container, { sellerOrders, myDrafts, myProducts, onRefresh });
+    });
+  });
 
   // Bind buttons: Orders
   container.querySelectorAll(".btn-confirm-order").forEach((btn) => {

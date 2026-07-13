@@ -87,6 +87,7 @@ export function renderHeader(opts = {}) {
             <div class="site-header__dropdown-menu">
               <a href="#/profile" class="site-header__dropdown-item">Tài Khoản Của Tôi</a>
               ${user?.role === 'admin' ? '<a href="#/admin" class="site-header__dropdown-item">Trang Quản Trị</a>' : ''}
+              ${user?.role === 'staff' ? '<a href="#/staff" class="site-header__dropdown-item font-bold text-primary">Khu Vực Staff</a>' : ''}
               <button class="site-header__dropdown-item" id="header-logout-btn">Đăng Xuất</button>
             </div>
           </div>

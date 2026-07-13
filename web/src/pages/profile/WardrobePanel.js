@@ -1,9 +1,9 @@
 /**
  * EcoCycle Web - Profile Wardrobe Panel
- * Renders personal wardrobe items and buying orders.
+ * Renders personal wardrobe items and buying orders with status filtering.
  */
 
-import { confirmOrder, confirmReceived } from "../../services/order.service.js";
+import { confirmReceived, getOrderHistory } from "../../services/order.service.js";
 import { showToast } from "../../utils/ui.js";
 
 function formatPrice(num) {
@@ -20,15 +20,29 @@ function getConditionPercentage(condition) {
   return "Cũ 70%";
 }
 
+// Module-level active status filter for Wardrobe orders
+let currentWardrobeFilter = "ALL";
+
 export function renderWardrobePanel(container, { orders = [], wardrobe = [], profile, onRefresh }) {
   const isMember = profile?.role !== "org" && profile?.role !== "admin";
+
+  // Filter orders by currentWardrobeFilter
+  const filteredOrders = currentWardrobeFilter === "ALL"
+    ? orders
+    : orders.filter((o) => {
+        const st = String(o.status || "PENDING").toUpperCase();
+        if (currentWardrobeFilter === "COMPLETED") {
+          return st === "COMPLETED" || st === "RECEIVED";
+        }
+        return st === currentWardrobeFilter;
+      });
 
   let html = `
     <div class="wardrobe-panel flex flex-col gap-8">
       <!-- Header banner -->
       <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm">
-        <h3 class="text-headline-sm font-bold text-on-surface mb-1">Tủ đồ và Đơn mua của bạn</h3>
-        <p class="text-body-md text-on-surface-variant">Quản lý các món đồ thời trang cá nhân và theo dõi tình trạng đơn hàng đã đặt mua.</p>
+        <h3 class="text-headline-sm font-bold text-on-surface mb-1">Tủ đồ và Lịch sử đơn mua của bạn</h3>
+        <p class="text-body-md text-on-surface-variant">Quản lý các món đồ thời trang cá nhân và theo dõi toàn bộ trạng thái đơn hàng đã đặt mua.</p>
       </div>
   `;
 
@@ -83,49 +97,69 @@ export function renderWardrobePanel(container, { orders = [], wardrobe = [], pro
     html += `</div>`;
   }
 
-  // Section 2: Buyer Orders
+  // Section 2: Buyer Orders & Status Filters
   html += `
     <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm">
-      <h4 class="text-title-lg font-bold text-on-surface mb-4">Đơn hàng đã mua (${orders.length})</h4>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h4 class="text-title-lg font-bold text-on-surface">Lịch sử đơn mua hàng (${orders.length})</h4>
+          <p class="text-body-sm text-on-surface-variant">Theo dõi chi tiết trạng thái từng đơn bạn đã đặt mua</p>
+        </div>
+        
+        <!-- Status Filter Tabs -->
+        <div class="flex flex-wrap gap-2 bg-surface-variant/40 p-1 rounded-xl">
+          <button class="btn-wardrobe-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentWardrobeFilter === 'ALL' ? 'bg-surface shadow-sm text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="ALL">Tất cả (${orders.length})</button>
+          <button class="btn-wardrobe-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentWardrobeFilter === 'PENDING' ? 'bg-surface shadow-sm text-blue-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="PENDING">Chờ duyệt</button>
+          <button class="btn-wardrobe-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentWardrobeFilter === 'CONFIRMED' ? 'bg-surface shadow-sm text-amber-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="CONFIRMED">Chờ giao</button>
+          <button class="btn-wardrobe-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentWardrobeFilter === 'SHIPPING' ? 'bg-surface shadow-sm text-purple-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="SHIPPING">Đang giao</button>
+          <button class="btn-wardrobe-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentWardrobeFilter === 'COMPLETED' ? 'bg-surface shadow-sm text-emerald-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="COMPLETED">Hoàn tất</button>
+        </div>
+      </div>
   `;
 
-  if (orders.length === 0) {
+  if (filteredOrders.length === 0) {
     html += `
       <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl">
         <span class="material-symbols-outlined text-4xl text-outline mb-2">shopping_bag</span>
-        <p class="font-medium text-on-surface">Bạn chưa có đơn mua hàng nào</p>
-        <a href="#/products" class="mt-3 px-4 py-2 bg-surface-variant text-on-surface-variant rounded-lg text-sm font-medium hover:bg-outline-variant transition-colors">Khám phá sản phẩm</a>
+        <p class="font-medium text-on-surface">Không có đơn mua hàng nào ở trạng thái này</p>
+        <a href="#/products" class="mt-3 px-4 py-2 bg-surface-variant text-on-surface-variant rounded-lg text-sm font-medium hover:bg-outline-variant transition-colors">Khám phá cửa hàng</a>
       </div>
     `;
   } else {
     html += `<div class="flex flex-col gap-4">`;
-    orders.forEach((ord) => {
+    filteredOrders.forEach((ord) => {
       const statusStr = String(ord.status || "PENDING").toUpperCase();
       let statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-surface-variant text-on-surface-variant">${statusStr}</span>`;
-      if (statusStr === "CONFIRMED" || statusStr === "SHIPPING") {
-        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Đang giao hàng</span>`;
+      if (statusStr === "CONFIRMED") {
+        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Chờ gửi hàng</span>`;
+      } else if (statusStr === "SHIPPING") {
+        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse"></span>Đang giao hàng</span>`;
       } else if (statusStr === "RECEIVED" || statusStr === "COMPLETED") {
-        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Đã nhận hàng</span>`;
+        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>Hoàn tất</span>`;
       } else if (statusStr === "PENDING") {
-        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Chờ xác nhận</span>`;
+        statusBadge = `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>Chờ xác nhận</span>`;
       }
 
       html += `
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-colors gap-4">
           <div class="flex items-center gap-4">
-            <img src="${ord.productImage || 'https://placehold.co/100x100/E4EBE4/6E7B6C?text=Order'}" class="w-16 h-16 rounded-lg object-cover border border-outline-variant/30" />
+            <img src="${ord.productImage || 'https://placehold.co/100x100/E4EBE4/6E7B6C?text=Order'}" class="w-16 h-16 rounded-lg object-cover border border-outline-variant/30 shrink-0" />
             <div>
-              <p class="text-xs text-on-surface-variant">Mã đơn: #${ord.id?.slice(0, 8) || "N/A"}</p>
-              <h5 class="font-bold text-on-surface mt-0.5">${ord.productTitle || ord.item || "Sản phẩm không có tên"}</h5>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono text-on-surface-variant bg-surface-variant px-2 py-0.5 rounded">#${ord.id?.slice(0, 8) || "N/A"}</span>
+                <span class="text-xs text-on-surface-variant">${ord.createdAt || ord.date ? new Date(ord.createdAt || ord.date).toLocaleDateString("vi-VN") : "Vừa đặt"}</span>
+              </div>
+              <h5 class="font-bold text-on-surface mt-1">${ord.productTitle || ord.productName || "Sản phẩm thời trang"}</h5>
               <p class="text-primary font-semibold text-sm mt-1">${formatPrice(ord.price || ord.totalAmount)}</p>
             </div>
           </div>
           <div class="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
             ${statusBadge}
-            <span class="text-xs text-on-surface-variant">${ord.createdAt || ord.date || ""}</span>
             ${
               statusStr === "CONFIRMED" || statusStr === "SHIPPING"
-                ? `<button class="btn-confirm-received px-3 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors" data-orderid="${ord.id}">Xác nhận đã nhận hàng</button>`
+                ? `<button class="btn-confirm-received px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold shadow hover:bg-primary/90 transition-all flex items-center gap-1 mt-1" data-orderid="${ord.id}">
+                     <span class="material-symbols-outlined text-sm">check_circle</span> Xác nhận đã nhận hàng
+                   </button>`
                 : ""
             }
           </div>
@@ -138,21 +172,30 @@ export function renderWardrobePanel(container, { orders = [], wardrobe = [], pro
   html += `</div></div>`;
   container.innerHTML = html;
 
+  // Bind filter tab buttons
+  container.querySelectorAll(".btn-wardrobe-filter").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentWardrobeFilter = btn.getAttribute("data-filter") || "ALL";
+      renderWardrobePanel(container, { orders, wardrobe, profile, onRefresh });
+    });
+  });
+
   // Bind confirmation actions
   container.querySelectorAll(".btn-confirm-received").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const orderId = btn.getAttribute("data-orderid");
       if (!orderId) return;
       btn.disabled = true;
-      btn.textContent = "Đang xử lý...";
+      const origText = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Đang xử lý...';
       try {
         await confirmReceived(orderId);
         showToast("Xác nhận nhận hàng thành công!", "success");
         if (onRefresh) onRefresh();
       } catch (err) {
-        showToast("Lỗi khi xác nhận đơn hàng: " + err.message, "error");
+        showToast("Lỗi cập nhật: " + err.message, "error");
         btn.disabled = false;
-        btn.textContent = "Xác nhận đã nhận hàng";
+        btn.innerHTML = origText;
       }
     });
   });

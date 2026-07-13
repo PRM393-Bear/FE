@@ -18,6 +18,7 @@ import { renderAdminPage } from "./pages/admin/index.js";
 import { renderCreateListingPage } from "./pages/create-listing.js";
 import { renderPendingApprovalPage } from "./pages/pending-approval.js";
 import { renderCartPage } from "./pages/cart.js";
+import { renderStaffDashboard } from "./pages/staff/index.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
 import { logoutApi, isAuthenticated, getUser } from "./services/auth.service.js";
@@ -94,8 +95,27 @@ const routes = {
       window.location.hash = "#/login";
       return;
     }
+    const u = getUser();
+    if (!u || u.role !== "admin") {
+      window.location.hash = u?.role === "staff" ? "#/staff" : "#/";
+      return;
+    }
     removeHeader();
     currentCleanup = renderAdminPage(app);
+    removeFooter();
+  },
+  "#/staff": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
+    const u = getUser();
+    if (!u || (u.role !== "staff" && u.role !== "admin")) {
+      window.location.hash = "#/";
+      return;
+    }
+    removeHeader();
+    currentCleanup = renderStaffDashboard(app);
     removeFooter();
   },
   "#/pending-approval": () => {
@@ -110,8 +130,13 @@ const routes = {
 
 /* ── Home handler ── */
 function handleHome() {
-  if (isAuthenticated() && getUser()?.role === "admin") {
+  const u = getUser();
+  if (isAuthenticated() && u?.role === "admin") {
     window.location.hash = "#/admin";
+    return;
+  }
+  if (isAuthenticated() && u?.role === "staff") {
+    window.location.hash = "#/staff";
     return;
   }
   renderHeader({ activePage: "home" });

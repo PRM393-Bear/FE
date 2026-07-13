@@ -206,6 +206,8 @@ export function renderLoginPage(container) {
       const user = getUser();
       if (user && user.role === 'admin') {
         setTimeout(() => { window.location.hash = '#/admin'; }, 800);
+      } else if (user && user.role === 'staff') {
+        setTimeout(() => { window.location.hash = '#/staff'; }, 800);
       } else {
         setTimeout(() => { window.location.hash = '#/'; }, 800);
       }
