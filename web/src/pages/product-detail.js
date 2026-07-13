@@ -2,6 +2,7 @@ import "../styles/product-detail.css";
 import { getProductById, getAllProducts } from "../services/product.service.js";
 import { getConditionLabel, getConditionPercentage } from "../utils/conditionMapping.js";
 import { createOrder } from "../services/order.service.js";
+import { addToCart } from "../services/cart.service.js";
 import { showToast } from "../utils/ui.js";
 
 /**
@@ -194,11 +195,17 @@ export async function renderProductDetailPage(container, productId) {
 
               <!-- Actions -->
               <div class="pd-actions-wrapper">
-                <button class="pd-btn-buy" id="btn-buy-now">
-                  <span class="material-symbols-outlined">shopping_bag</span>
-                  Mua ngay
-                </button>
-                <div class="pd-secondary-actions">
+                <div class="flex flex-col sm:flex-row gap-3 w-full">
+                  <button class="pd-btn-buy flex-1 !bg-surface-variant !text-primary border border-primary/40 hover:!bg-primary/10 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm" id="btn-add-to-cart">
+                    <span class="material-symbols-outlined">add_shopping_cart</span>
+                    Thêm vào giỏ
+                  </button>
+                  <button class="pd-btn-buy flex-1 !bg-primary !text-on-primary hover:!bg-primary/90 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm" id="btn-buy-now">
+                    <span class="material-symbols-outlined">shopping_bag</span>
+                    Đặt hàng ngay
+                  </button>
+                </div>
+                <div class="pd-secondary-actions mt-3">
                   <button class="pd-btn-chat" onclick="alert('Tính năng Nhắn tin sẽ sớm ra mắt!')">
                     <span class="material-symbols-outlined">chat</span>
                     Chat với seller
@@ -317,13 +324,36 @@ export async function renderProductDetailPage(container, productId) {
           buyBtn.disabled = true;
           await createOrder(product.id);
           showToast("Đơn hàng đã được gửi tới người bán. Hãy theo dõi tại Tủ đồ cá nhân -> Đơn mua hàng!", "success");
-          // Redirect to profile orders tab inside wardrobe
           window.location.hash = "#/profile?tab=panel-wardrobe&sub=wardrobe-orders";
         } catch (err) {
           console.error("Lỗi đặt mua hàng:", err);
           showToast(`Đặt mua thất bại: ${err.message}`, "error");
         } finally {
           buyBtn.disabled = false;
+        }
+      });
+    }
+
+    // 4.5 Add to Cart Button Handler
+    const cartBtn = container.querySelector("#btn-add-to-cart");
+    if (cartBtn) {
+      cartBtn.addEventListener("click", async () => {
+        try {
+          cartBtn.disabled = true;
+          const origText = cartBtn.innerHTML;
+          cartBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Đang thêm...';
+          await addToCart(product.id);
+          showToast("Đã thêm sản phẩm vào giỏ hàng!", "success");
+          window.dispatchEvent(new CustomEvent("ecocycle:cart-updated"));
+          cartBtn.innerHTML = '<span class="material-symbols-outlined">check</span> Đã thêm vào giỏ';
+          setTimeout(() => {
+            cartBtn.disabled = false;
+            cartBtn.innerHTML = origText;
+          }, 1500);
+        } catch (err) {
+          console.error("Lỗi thêm giỏ hàng:", err);
+          showToast(`Thêm vào giỏ thất bại: ${err.message}`, "error");
+          cartBtn.disabled = false;
         }
       });
     }

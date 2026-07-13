@@ -1,6 +1,6 @@
 /**
  * EcoCycle – Site Header Component (Figma V2)
- * Renders a sticky navigation header with the official logo + search bar.
+ * Renders a sticky navigation header with the official logo + search bar + cart badge.
  */
 
 import "./header.css";
@@ -9,13 +9,34 @@ import {
   getUser,
   logoutApi,
 } from "../services/auth.service.js";
+import { getCart } from "../services/cart.service.js";
+
+async function updateCartBadge() {
+  if (!isAuthenticated()) return;
+  const badgeEl = document.getElementById("header-cart-badge");
+  if (!badgeEl) return;
+  try {
+    const cart = await getCart();
+    const count = cart?.items?.length || 0;
+    if (count > 0) {
+      badgeEl.textContent = count > 99 ? "99+" : count;
+      badgeEl.classList.remove("hidden");
+      badgeEl.style.display = "inline-flex";
+    } else {
+      badgeEl.classList.add("hidden");
+      badgeEl.style.display = "none";
+    }
+  } catch (e) {
+    console.warn("Badge cart fetch error:", e);
+  }
+}
 
 /**
  * Inject the header as the first child of <body>.
  * Call once per page render.
  *
  * @param {object} [opts]
- * @param {string} [opts.activePage] - 'home' | 'explore' | 'donate'
+ * @param {string} [opts.activePage] - 'home' | 'explore' | 'donate' | 'cart' | 'profile'
  */
 export function renderHeader(opts = {}) {
   const existing = document.getElementById("site-header");
@@ -53,8 +74,11 @@ export function renderHeader(opts = {}) {
 
       <div class="site-header__actions">
         ${authenticated ? `
-          <button class="site-header__icon-btn"><span class="material-symbols-outlined">notifications</span></button>
-          <button class="site-header__icon-btn"><span class="material-symbols-outlined">shopping_cart</span></button>
+          <button class="site-header__icon-btn" title="Thông báo"><span class="material-symbols-outlined">notifications</span></button>
+          <a href="#/cart" class="site-header__icon-btn relative ${opts.activePage === 'cart' ? 'bg-surface-variant text-primary' : ''}" title="Giỏ hàng">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            <span id="header-cart-badge" class="absolute -top-1.5 -right-1.5 bg-error text-on-error text-[11px] font-bold w-5 h-5 rounded-full hidden items-center justify-center border-2 border-surface shadow-sm">0</span>
+          </a>
           
           <div class="site-header__user-dropdown">
             <!-- Fixed default profile image or dynamic initial -->
@@ -76,6 +100,10 @@ export function renderHeader(opts = {}) {
 
   document.body.insertBefore(header, document.body.firstChild);
 
+  if (authenticated) {
+    updateCartBadge();
+  }
+
   // Logout listener
   document.getElementById("header-logout-btn")?.addEventListener("click", async () => {
     await logoutApi();
@@ -90,3 +118,8 @@ export function renderHeader(opts = {}) {
     }
   });
 }
+
+// Global listen for cart updates across pages
+window.addEventListener("ecocycle:cart-updated", () => {
+  updateCartBadge();
+});

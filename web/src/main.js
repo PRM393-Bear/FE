@@ -17,6 +17,7 @@ import { renderProductDetailPage } from "./pages/product-detail.js";
 import { renderAdminPage } from "./pages/admin/index.js";
 import { renderCreateListingPage } from "./pages/create-listing.js";
 import { renderPendingApprovalPage } from "./pages/pending-approval.js";
+import { renderCartPage } from "./pages/cart.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
 import { logoutApi, isAuthenticated, getUser } from "./services/auth.service.js";
@@ -59,6 +60,15 @@ const routes = {
   "#/products": () => {
     renderHeader({ activePage: "products" });
     currentCleanup = renderProductsPage(app);
+    renderFooter();
+  },
+  "#/cart": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
+    renderHeader({ activePage: "cart" });
+    currentCleanup = renderCartPage(app);
     renderFooter();
   },
   "#/create-listing": () => {

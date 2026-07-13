@@ -31,7 +31,7 @@ export async function confirmReceived(orderId) {
 }
 
 export async function getOrdersByBuyer() {
-  return await apiFetch("/api/orders/buyer");
+  return await apiFetch("/api/orders/history/all");
 }
 
 export async function getOrdersBySeller() {
@@ -41,3 +41,9 @@ export async function getOrdersBySeller() {
 export async function getOrderById(orderId) {
   return await apiFetch(`/api/orders/${orderId}`);
 }
+
+export async function getOrderHistory(status) {
+  const query = status ? `?status=${status}` : "";
+  return await apiFetch(`/api/orders/history${query}`);
+}
+
