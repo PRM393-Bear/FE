@@ -14,6 +14,23 @@ export async function getAllUsers() {
   }
 }
 
+export async function banUser(userId, isBanned) {
+  return await apiFetch(`/api/user/banned?userId=${userId}&isBanned=${isBanned}`, {
+    method: "PUT",
+  });
+}
+
+export async function getListBanned(isBanned) {
+  return await apiFetch(`/api/user/list-banned?isBanned=${isBanned}`);
+}
+
+export async function createStaff(userData) {
+  return await apiFetch("/api/user/staff", {
+    method: "POST",
+    body: JSON.stringify(userData),
+  });
+}
+
 export async function getAllDonationRequests() {
   try {
     return await apiFetch("/api/donation-requests/lists");
@@ -47,4 +64,3 @@ export async function rejectOrganization(id) {
     method: "PATCH",
   });
 }
-
