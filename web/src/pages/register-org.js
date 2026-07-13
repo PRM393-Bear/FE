@@ -134,12 +134,11 @@ export function renderRegisterOrgPage(container) {
                         <div style="margin-bottom: 16px;">
                             <label class="org-label" style="display:block; margin-bottom: 8px;">Loại đồ dùng cần nhận</label>
                             <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="chipContainer">
-                                <button type="button" class="org-chip">Quần áo</button>
-                                <button type="button" class="org-chip">Giày dép</button>
+                                <button type="button" class="org-chip">Quần áo người lớn</button>
+                                <button type="button" class="org-chip">Quần áo trẻ em</button>
+                                <button type="button" class="org-chip">Áo khoác / Áo ấm</button>
                                 <button type="button" class="org-chip">Váy đầm</button>
-                                <button type="button" class="org-chip">Áo khoác</button>
-                                <button type="button" class="org-chip">Túi xách</button>
-                                <button type="button" class="org-chip">Phụ kiện thời trang</button>
+                                <button type="button" class="org-chip">Đồ đồng phục</button>
                             </div>
                         </div>
 

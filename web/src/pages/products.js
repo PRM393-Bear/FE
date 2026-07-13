@@ -20,20 +20,19 @@ export async function renderProductsPage(container) {
 
         <!-- Category Tree -->
         <div class="filter-section">
-          <span class="filter-title">Danh mục thời trang</span>
+          <span class="filter-title">Danh mục Quần áo</span>
           <ul class="category-list">
-            <li class="category-item category-parent active" data-category="Thời Trang">
-              <span>Danh mục Thời Trang</span>
+            <li class="category-item category-parent active" data-category="Quần áo">
+              <span>Danh mục Quần Áo</span>
               <span class="material-symbols-outlined icon-sm">expand_more</span>
             </li>
             <li class="category-item category-child" data-category="Quần áo">Quần áo (Apparel)</li>
-            <li class="category-item category-child" data-category="Áo (Tops)">Áo (Tops / Shirts)</li>
-            <li class="category-item category-child" data-category="Quần (Bottoms)">Quần (Bottoms / Pants)</li>
-            <li class="category-item category-child" data-category="Váy & Đầm">Váy & Đầm (Dresses)</li>
-            <li class="category-item category-child" data-category="Áo khoác">Áo khoác (Blazers / Outwear)</li>
-            <li class="category-item category-child" data-category="Giày">Giày dép (Footwear)</li>
-            <li class="category-item category-child" data-category="Túi xách">Túi xách (Bags)</li>
-            <li class="category-item category-child" data-category="Phụ kiện">Phụ kiện thời trang (Accessories)</li>
+            <li class="category-item category-child" data-category="Áo thun / Sơ mi">Áo thun / Sơ mi (Tops / Shirts)</li>
+            <li class="category-item category-child" data-category="Quần dài / Short">Quần dài / Short (Bottoms / Pants)</li>
+            <li class="category-item category-child" data-category="Váy & Đầm">Váy & Đầm (Dresses / Skirts)</li>
+            <li class="category-item category-child" data-category="Áo khoác / Blazer">Áo khoác / Blazer (Outwear)</li>
+            <li class="category-item category-child" data-category="Đồ thể thao">Đồ thể thao (Sportswear)</li>
+            <li class="category-item category-child" data-category="Đồ ngủ / Mặc nhà">Đồ ngủ / Mặc nhà (Loungewear)</li>
           </ul>
         </div>
 

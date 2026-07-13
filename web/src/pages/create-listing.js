@@ -91,7 +91,7 @@ export function renderCreateListingPage(container) {
                 </div>
 
                 <div class="cl-group">
-                  <label class="cl-label">Danh mục <span class="text-xs font-normal text-on-surface-variant">(chọn từ danh mục do Staff tạo)</span></label>
+                  <label class="cl-label">Danh mục</label>
                   <input type="hidden" id="cl-category" required />
                   <input type="hidden" id="cl-category-id" />
                   <div id="cl-category-bubbles" class="cl-bubble-container">
@@ -242,14 +242,18 @@ export function renderCreateListingPage(container) {
       if (!Array.isArray(categories) || categories.length === 0) {
         categories = [
           { id: "c1", name: "Quần áo" },
-          { id: "c2", name: "Áo (Tops)" },
-          { id: "c3", name: "Quần (Bottoms)" },
+          { id: "c2", name: "Áo thun / Sơ mi" },
+          { id: "c3", name: "Quần dài / Short" },
           { id: "c4", name: "Váy & Đầm" },
-          { id: "c5", name: "Áo khoác" },
-          { id: "c6", name: "Giày dép" },
-          { id: "c7", name: "Túi xách" },
-          { id: "c8", name: "Phụ kiện" },
+          { id: "c5", name: "Áo khoác / Blazer" },
+          { id: "c6", name: "Đồ thể thao" },
+          { id: "c7", name: "Đồ ngủ / Mặc nhà" },
         ];
+      } else {
+        categories = categories.filter((c) => {
+          const n = (c.name || "").toLowerCase();
+          return !n.includes("giày") && !n.includes("dép") && !n.includes("túi") && !n.includes("phụ kiện") && !n.includes("balo") && !n.includes("ví") && !n.includes("đồng hồ");
+        });
       }
       categoryBubblesContainer.innerHTML = categories.map((cat) => {
         const catName = cat.name || "Không tên";
@@ -580,21 +584,24 @@ export function renderCreateListingPage(container) {
       }
     }
 
-    // Verify only fashion products are allowed
-    const nonFashionKeywords = ["điện tử", "sách", "máy tính", "điện thoại", "laptop", "tủ lạnh", "máy giặt", "xe máy", "ô tô", "đồ gia dụng", "tivi", "ti vi", "đồ chơi"];
+    // Verify only clothing products are allowed
+    const nonClothingKeywords = [
+      "giày", "dép", "túi xách", "túi đeo", "balo", "ba lô", "phụ kiện", "đồng hồ", "mắt kính", "kính mát", "nhẫn", "dây chuyền", "vòng tay", "thắt lưng", "ví",
+      "điện tử", "sách", "máy tính", "điện thoại", "laptop", "tủ lạnh", "máy giặt", "xe máy", "ô tô", "đồ gia dụng", "tivi", "ti vi", "đồ chơi"
+    ];
     const lowerTitle = (title || "").toLowerCase();
     const lowerDesc = (description || "").toLowerCase();
     const lowerCat = (category || "").toLowerCase();
-    for (const kw of nonFashionKeywords) {
+    for (const kw of nonClothingKeywords) {
       if (lowerTitle.includes(kw) || lowerDesc.includes(kw) || lowerCat.includes(kw)) {
-        alert("Hệ thống EcoCycle chỉ hỗ trợ đăng bán, mua bán các sản phẩm về thời trang (Quần áo, Giày dép, Túi xách, Phụ kiện...). Vui lòng kiểm tra lại thông tin sản phẩm.");
+        alert("Hệ thống EcoCycle chỉ hỗ trợ đăng bán, mua bán các sản phẩm Quần áo (Áo, Quần, Váy đầm, Áo khoác...). Các mặt hàng khác như giày dép, túi xách, phụ kiện hay điện tử không thuộc phạm vi hỗ trợ.");
         return false;
       }
     }
 
     try {
       showLoading("Đang xử lý dữ liệu...");
-      
+
       // Upload images
       const imageUrls = await uploadAllImages();
 
@@ -755,7 +762,7 @@ export function renderCreateListingPage(container) {
 
   async function hashGuard() {
     if (!isDirty || isSubmitting) return;
-    
+
     const newHash = window.location.hash;
     if (newHash === originalHash) return;
 
@@ -777,7 +784,7 @@ export function renderCreateListingPage(container) {
         window.addEventListener("hashchange", hashGuard);
         return;
       }
-      
+
       const success = await saveProduct("DRAFT");
       if (success) {
         window.location.hash = newHash;
@@ -812,7 +819,7 @@ export function renderCreateListingPage(container) {
   function cleanup() {
     window.removeEventListener("hashchange", hashGuard);
     window.removeEventListener("beforeunload", beforeUnloadHandler);
-    
+
     // Revoke any created Object URLs
     selectedImages.forEach((img) => {
       URL.revokeObjectURL(img.previewUrl);

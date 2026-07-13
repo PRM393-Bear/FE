@@ -246,7 +246,7 @@ export async function renderProductDetailPage(container, productId) {
                 </div>
                 <div class="pd-attribute-item">
                   <p class="pd-attribute-label">Danh mục</p>
-                  <p class="pd-attribute-value">${product.category || "Thời trang"}</p>
+                  <p class="pd-attribute-value">${product.category || "Quần áo"}</p>
                 </div>
               </div>
 

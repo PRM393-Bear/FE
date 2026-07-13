@@ -58,33 +58,29 @@ export async function renderHomePage(container) {
             <div class="category-icon-box"><span class="material-symbols-outlined">apparel</span></div>
             <span class="category-label">Quần áo</span>
           </button>
-          <button class="category-btn" data-cat="Áo (Tops)">
+          <button class="category-btn" data-cat="Áo thun / Sơ mi">
             <div class="category-icon-box"><span class="material-symbols-outlined">checkroom</span></div>
-            <span class="category-label">Áo (Tops)</span>
+            <span class="category-label">Áo thun / Sơ mi</span>
           </button>
-          <button class="category-btn" data-cat="Quần (Bottoms)">
+          <button class="category-btn" data-cat="Quần dài / Short">
             <div class="category-icon-box"><span class="material-symbols-outlined">dry_cleaning</span></div>
-            <span class="category-label">Quần (Bottoms)</span>
+            <span class="category-label">Quần dài / Short</span>
           </button>
           <button class="category-btn" data-cat="Váy & Đầm">
             <div class="category-icon-box"><span class="material-symbols-outlined">styler</span></div>
             <span class="category-label">Váy & Đầm</span>
           </button>
-          <button class="category-btn" data-cat="Áo khoác">
+          <button class="category-btn" data-cat="Áo khoác / Blazer">
             <div class="category-icon-box"><span class="material-symbols-outlined">ac_unit</span></div>
-            <span class="category-label">Áo khoác</span>
+            <span class="category-label">Áo khoác / Blazer</span>
           </button>
-          <button class="category-btn" data-cat="Giày">
-            <div class="category-icon-box"><span class="material-symbols-outlined">steps</span></div>
-            <span class="category-label">Giày dép</span>
+          <button class="category-btn" data-cat="Đồ thể thao">
+            <div class="category-icon-box"><span class="material-symbols-outlined">fitness_center</span></div>
+            <span class="category-label">Đồ thể thao</span>
           </button>
-          <button class="category-btn" data-cat="Túi xách">
-            <div class="category-icon-box"><span class="material-symbols-outlined">handyman</span></div>
-            <span class="category-label">Túi xách</span>
-          </button>
-          <button class="category-btn" data-cat="Phụ kiện">
-            <div class="category-icon-box"><span class="material-symbols-outlined">watch</span></div>
-            <span class="category-label">Phụ kiện</span>
+          <button class="category-btn" data-cat="Đồ ngủ / Mặc nhà">
+            <div class="category-icon-box"><span class="material-symbols-outlined">bed</span></div>
+            <span class="category-label">Đồ ngủ / Mặc nhà</span>
           </button>
         </div>
       </section>
