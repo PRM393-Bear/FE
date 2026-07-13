@@ -1,4 +1,5 @@
 import { getAllUsers, banUser, createStaff } from '../../services/admin.service.js';
+import { recordLocalAuditLog } from '../../services/audit.service.js';
 import { showToast } from '../../utils/ui.js';
 
 // Module-level state
@@ -180,12 +181,14 @@ function getRoleBadge(roleName) {
   return '<span class="px-3 py-1 bg-surface-variant text-on-surface-variant text-label-sm rounded-full">Cá nhân</span>';
 }
 
+function isUserBlocked(user) {
+  if (!user) return false;
+  return Boolean(user.isBlocked || user.blocked || user.isVerified === false || user.verified === false);
+}
+
 function getStatusInfo(user) {
-  if (user.isBlocked || user.blocked) {
+  if (isUserBlocked(user)) {
     return { html: '<div class="flex items-center gap-2 text-error font-label-md"><span class="w-2 h-2 rounded-full bg-error"></span>Bị khóa</div>', key: 'blocked' };
-  }
-  if (user.isVerified === false || user.verified === false) {
-    return { html: '<div class="flex items-center gap-2 text-amber-600 font-label-md"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Chưa xác thực</div>', key: 'unverified' };
   }
   return { html: '<div class="flex items-center gap-2 text-primary font-label-md"><span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>Hoạt động</div>', key: 'active' };
 }
@@ -193,7 +196,7 @@ function getStatusInfo(user) {
 function renderUserRow(user) {
   const avatarUrl = user.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.userName || 'U')}&background=random`;
   const statusInfo = getStatusInfo(user);
-  const isBlocked = user.isBlocked || user.blocked || false;
+  const isBlocked = isUserBlocked(user);
   const blockBtnLabel = isBlocked ? 'Mở khóa' : 'Khóa';
   const blockBtnIcon = isBlocked ? 'lock_open' : 'block';
   const blockBtnColor = isBlocked ? 'hover:text-primary' : 'hover:text-error';
@@ -230,7 +233,7 @@ function renderUserRow(user) {
 function renderDrawerContent(user) {
   const avatarUrl = user.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.userName || 'U')}&background=random`;
   const statusInfo = getStatusInfo(user);
-  const isBlocked = user.isBlocked || user.blocked || false;
+  const isBlocked = isUserBlocked(user);
 
   return `
     <div class="p-6 border-b border-outline-variant flex items-center justify-between">
@@ -285,8 +288,8 @@ function applyFilters() {
       return false;
     }
     // Status filter
-    if (status === 'blocked' && !(user.isBlocked || user.blocked)) return false;
-    if (status === 'active' && (user.isBlocked || user.blocked)) return false;
+    if (status === 'blocked' && !isUserBlocked(user)) return false;
+    if (status === 'active' && isUserBlocked(user)) return false;
     // Search filter
     if (search) {
       const q = search.toLowerCase();
@@ -361,7 +364,15 @@ function attachBanButtons() {
         newConfirmBtn.disabled = true;
         newConfirmBtn.textContent = 'Đang xử lý...';
         try {
-          await banUser(userId, !isCurrentlyBlocked);
+          await banUser(userId, isCurrentlyBlocked);
+          recordLocalAuditLog({
+            action: isCurrentlyBlocked ? 'UNBAN_USER' : 'BAN_USER',
+            username: 'Admin',
+            entity: 'User',
+            entityId: userId,
+            detail: `${isCurrentlyBlocked ? 'Mở khóa' : 'Khóa'} tài khoản "${user.fullName || user.userName}" từ Admin Console | ip=127.0.0.1`,
+            status: 'SUCCESS'
+          });
           showToast(isCurrentlyBlocked ? 'Đã mở khóa tài khoản!' : 'Đã khóa tài khoản!', 'success');
           modal.classList.add('hidden');
           // Refresh data

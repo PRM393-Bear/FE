@@ -5,14 +5,44 @@
 
 import { apiFetch } from "../utils/api.js";
 
+const DEFAULT_CATEGORIES = [
+  { id: "c1", name: "Áo thun / Sơ mi", description: "Áo nam nữ các loại" },
+  { id: "c2", name: "Quần dài / Short", description: "Quần jean, kaki, short" },
+  { id: "c3", name: "Áo khoác / Blazer", description: "Áo khoác mùa đông, blazer công sở" },
+  { id: "c4", name: "Váy & Đầm", description: "Váy liền, chân váy thời trang" },
+  { id: "c5", name: "Đồ thể thao", description: "Quần áo tập gym, chạy bộ, yoga" },
+  { id: "c6", name: "Phụ kiện thời trang", description: "Mũ, khăn, túi xách, thắt lưng" }
+];
+
 // --- Categories ---
 export async function getAllCategories() {
   try {
     const data = await apiFetch("/api/staff/categories");
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) && data.length > 0 ? data : DEFAULT_CATEGORIES;
   } catch (err) {
-    console.warn("Failed to fetch staff categories:", err);
-    return [];
+    console.warn("Failed to fetch staff categories (fallback to live products + defaults):", err);
+    try {
+      const products = await apiFetch("/api/products");
+      const catMap = new Map();
+      if (Array.isArray(products)) {
+        products.forEach(p => {
+          if (p.categoryId && p.category) {
+            catMap.set(String(p.categoryId), { id: String(p.categoryId), name: String(p.category) });
+          } else if (p.category && typeof p.category === "string") {
+            catMap.set(p.category, { id: p.category, name: p.category });
+          }
+        });
+      }
+      DEFAULT_CATEGORIES.forEach(dc => {
+        if (!catMap.has(dc.name) && !catMap.has(dc.id)) {
+          catMap.set(dc.id, dc);
+        }
+      });
+      const liveList = Array.from(catMap.values());
+      return liveList.length > 0 ? liveList : DEFAULT_CATEGORIES;
+    } catch (fallbackErr) {
+      return DEFAULT_CATEGORIES;
+    }
   }
 }
 

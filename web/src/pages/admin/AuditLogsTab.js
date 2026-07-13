@@ -1,4 +1,4 @@
-import { getAuditLogs } from '../../services/audit.service.js';
+import { getAuditLogs, getLocalSessionAuditLogs } from '../../services/audit.service.js';
 import { showToast } from '../../utils/ui.js';
 
 let logsCache = [];
@@ -161,7 +161,7 @@ function renderLogRow(log) {
 
 function generateSimulatedLogs() {
   const now = new Date();
-  return [
+  const baseSimulated = [
     {
       id: 'log-1',
       action: 'LOGIN',
@@ -213,6 +213,7 @@ function generateSimulatedLogs() {
       timestamp: new Date(now.getTime() - 1 * 60000).toISOString()
     }
   ];
+  return [...getLocalSessionAuditLogs(), ...baseSimulated];
 }
 
 function applyFilters() {

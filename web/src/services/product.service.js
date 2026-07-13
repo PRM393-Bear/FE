@@ -114,13 +114,15 @@ export function isDraftProduct(product) {
 export async function getAllProducts() {
   const now = Date.now();
   if (productsCache && now - productsCacheTime < CACHE_TTL) {
-    return await enrichProductsWithLiveCategory(productsCache);
+    const availableOnly = (productsCache || []).filter(p => !p.status || p.status.toUpperCase() === "AVAILABLE");
+    return await enrichProductsWithLiveCategory(availableOnly);
   }
   try {
     const data = await apiFetch("/api/products");
     productsCache = data;
     productsCacheTime = now;
-    return await enrichProductsWithLiveCategory(data);
+    const availableOnly = (data || []).filter(p => !p.status || p.status.toUpperCase() === "AVAILABLE");
+    return await enrichProductsWithLiveCategory(availableOnly);
   } catch (error) {
     console.error("getAllProducts failed:", error);
     throw error;
@@ -253,6 +255,57 @@ export async function getMyProducts(userId) {
     console.warn("getMyProducts endpoint error, falling back to filtering getAllProducts:", error);
     const all = await getAllProducts();
     return all.filter(p => p.sellerId === userId || p.sellerUserId === userId);
+  }
+}
+
+/**
+ * Filter products using backend specification API (`GET /api/products/filter`).
+ * @param {Object} params - Filter query parameters (category, minPrice, maxPrice, condition, size, color, location, type, sortBy).
+ * @returns {Promise<Array>} List of filtered available products.
+ */
+export async function filterProductsApi(params = {}) {
+  try {
+    const query = new URLSearchParams();
+    Object.keys(params).forEach(key => {
+      if (params[key] !== null && params[key] !== undefined && params[key] !== "") {
+        query.append(key, params[key]);
+      }
+    });
+    const url = `/api/products/filter${query.toString() ? '?' + query.toString() : ''}`;
+    const data = await apiFetch(url);
+    return await enrichProductsWithLiveCategory(data || []);
+  } catch (error) {
+    console.warn("filterProductsApi failed, falling back to client filtering:", error);
+    const all = await getAllProducts();
+    return all.filter(p => {
+      if (params.category && p.category && !p.category.toLowerCase().includes(params.category.toLowerCase())) return false;
+      if (params.minPrice !== undefined && p.price < params.minPrice) return false;
+      if (params.maxPrice !== undefined && p.price > params.maxPrice) return false;
+      if (params.condition !== undefined && p.condition != params.condition) return false;
+      if (params.size && p.size !== params.size) return false;
+      if (params.color && p.color !== params.color) return false;
+      return true;
+    });
+  }
+}
+
+/**
+ * Search products by keyword using backend API (`GET /api/products/search-by-keyword`).
+ * @param {string} keyword - Search term.
+ * @returns {Promise<Array>} List of matching available products.
+ */
+export async function searchProductsByKeywordApi(keyword) {
+  try {
+    if (!keyword || !keyword.trim()) {
+      return await getAllProducts();
+    }
+    const data = await apiFetch(`/api/products/search-by-keyword?keyword=${encodeURIComponent(keyword.trim())}`);
+    return await enrichProductsWithLiveCategory(data || []);
+  } catch (error) {
+    console.warn("searchProductsByKeywordApi failed, falling back to client filtering:", error);
+    const all = await getAllProducts();
+    const q = keyword.trim().toLowerCase();
+    return all.filter(p => (p.title || "").toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q) || (p.brand || "").toLowerCase().includes(q));
   }
 }
 

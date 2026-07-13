@@ -1,5 +1,5 @@
 import "../styles/products.css";
-import { getAllProducts } from "../services/product.service.js";
+import { getAllProducts, filterProductsApi, searchProductsByKeywordApi } from "../services/product.service.js";
 
 /**
  * Render the Product List page
@@ -227,25 +227,36 @@ export async function renderProductsPage(container) {
     allProducts = data || [];
     filteredProducts = [...allProducts];
 
-    // Check query params for category filter from home/header
+    // Check query params for category/search filter from home/header
     const hashParts = (window.location.hash || "").split("?");
-    let initialCat = false;
+    let initialFilter = false;
     if (hashParts.length > 1) {
       const params = new URLSearchParams(hashParts[1]);
       const catParam = params.get("category");
+      const searchParam = params.get("search");
       if (catParam) {
         container.querySelectorAll(".category-child").forEach(el => {
           const dsCat = el.dataset.category || "";
           if (dsCat.toLowerCase() === catParam.toLowerCase() || dsCat.toLowerCase().includes(catParam.toLowerCase()) || catParam.toLowerCase().includes(dsCat.toLowerCase())) {
             el.style.fontWeight = '600';
             el.style.color = 'var(--primary)';
-            initialCat = true;
+            initialFilter = true;
           }
         });
       }
+      if (searchParam) {
+        try {
+          filteredProducts = await searchProductsByKeywordApi(searchParam);
+          updateGrid();
+          if (resultsCount) resultsCount.textContent = `Tìm kiếm cho "${searchParam}": ${filteredProducts.length} sản phẩm`;
+          return;
+        } catch (e) {
+          console.warn("Search keyword error:", e);
+        }
+      }
     }
 
-    if (initialCat) {
+    if (initialFilter) {
       applyFilters();
     } else {
       updateGrid();
@@ -313,13 +324,39 @@ export async function renderProductsPage(container) {
       filters.lifecycles.push(Number(cb.dataset.lifecycle));
     });
 
+    const selectSort = container.querySelector('.select-sort');
+    let sortBy = selectSort ? selectSort.value : "";
+    if (sortBy === "price_asc") sortBy = "priceAsc";
+    if (sortBy === "price_desc") sortBy = "priceDesc";
+    filters.sortBy = sortBy;
+
     return filters;
   }
 
-  function applyFilters() {
+  async function applyFilters() {
     const filters = getFiltersFromUI();
+    if (gridContainer) gridContainer.innerHTML = renderSkeletons(8);
 
-    filteredProducts = allProducts.filter(p => {
+    let baseList = allProducts;
+    try {
+      if (filters.categories.length > 0 || filters.minPrice !== null || filters.maxPrice !== null || filters.conditions.length > 0 || filters.sizes.length > 0 || filters.colors.length > 0 || (filters.sortBy && filters.sortBy !== "relevant")) {
+        const queryParams = {
+          category: filters.categories[0] || "",
+          minPrice: filters.minPrice !== null ? filters.minPrice : undefined,
+          maxPrice: filters.maxPrice !== null ? filters.maxPrice : undefined,
+          condition: filters.conditions[0] !== undefined ? filters.conditions[0] : undefined,
+          size: filters.sizes[0] || "",
+          color: filters.colors[0] || "",
+          sortBy: filters.sortBy && filters.sortBy !== "relevant" ? filters.sortBy : "newest"
+        };
+        baseList = await filterProductsApi(queryParams);
+      }
+    } catch (err) {
+      console.warn("Backend filter API fallback to local:", err);
+      baseList = allProducts;
+    }
+
+    filteredProducts = baseList.filter(p => {
       // Category
       if (filters.categories.length > 0) {
         if (!p.category) return false;
@@ -350,6 +387,14 @@ export async function renderProductsPage(container) {
 
       return true;
     });
+
+    if (filters.sortBy === "priceAsc") {
+      filteredProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
+    } else if (filters.sortBy === "priceDesc") {
+      filteredProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
+    } else if (filters.sortBy === "newest") {
+      filteredProducts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }
 
     updateGrid();
     renderActiveFilterTags(filters);
@@ -507,6 +552,13 @@ export async function renderProductsPage(container) {
           gridContainer.style.gridTemplateColumns = '';
         }
       }
+    });
+  }
+
+  const selectSortControl = container.querySelector('.select-sort');
+  if (selectSortControl) {
+    selectSortControl.addEventListener('change', () => {
+      applyFilters();
     });
   }
 }

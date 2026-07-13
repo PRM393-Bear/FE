@@ -118,6 +118,16 @@ export function renderHeader(opts = {}) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   });
+
+  // Search input keydown listener
+  const searchInput = header.querySelector(".site-header__search input");
+  if (searchInput) {
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && searchInput.value.trim()) {
+        window.location.hash = `#/products?search=${encodeURIComponent(searchInput.value.trim())}`;
+      }
+    });
+  }
 }
 
 // Global listen for cart updates across pages
