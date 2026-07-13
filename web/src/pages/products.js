@@ -20,15 +20,20 @@ export async function renderProductsPage(container) {
 
         <!-- Category Tree -->
         <div class="filter-section">
-          <span class="filter-title">Danh mục</span>
+          <span class="filter-title">Danh mục thời trang</span>
           <ul class="category-list">
-            <li class="category-item category-parent active" data-category="Thời trang Nam">
-              <span>Thời trang Nam</span>
+            <li class="category-item category-parent active" data-category="Thời Trang">
+              <span>Danh mục Thời Trang</span>
               <span class="material-symbols-outlined icon-sm">expand_more</span>
             </li>
-            <li class="category-item category-child" data-category="Áo khoác">Áo khoác</li>
-            <li class="category-item category-child" data-category="Quần dài">Quần dài</li>
-            <li class="category-item category-child" data-category="Giày dép">Giày dép</li>
+            <li class="category-item category-child" data-category="Quần áo">Quần áo (Apparel)</li>
+            <li class="category-item category-child" data-category="Áo (Tops)">Áo (Tops / Shirts)</li>
+            <li class="category-item category-child" data-category="Quần (Bottoms)">Quần (Bottoms / Pants)</li>
+            <li class="category-item category-child" data-category="Váy & Đầm">Váy & Đầm (Dresses)</li>
+            <li class="category-item category-child" data-category="Áo khoác">Áo khoác (Blazers / Outwear)</li>
+            <li class="category-item category-child" data-category="Giày">Giày dép (Footwear)</li>
+            <li class="category-item category-child" data-category="Túi xách">Túi xách (Bags)</li>
+            <li class="category-item category-child" data-category="Phụ kiện">Phụ kiện thời trang (Accessories)</li>
           </ul>
         </div>
 
@@ -223,7 +228,29 @@ export async function renderProductsPage(container) {
     allProducts = data || [];
     filteredProducts = [...allProducts];
 
-    updateGrid();
+    // Check query params for category filter from home/header
+    const hashParts = (window.location.hash || "").split("?");
+    let initialCat = false;
+    if (hashParts.length > 1) {
+      const params = new URLSearchParams(hashParts[1]);
+      const catParam = params.get("category");
+      if (catParam) {
+        container.querySelectorAll(".category-child").forEach(el => {
+          const dsCat = el.dataset.category || "";
+          if (dsCat.toLowerCase() === catParam.toLowerCase() || dsCat.toLowerCase().includes(catParam.toLowerCase()) || catParam.toLowerCase().includes(dsCat.toLowerCase())) {
+            el.style.fontWeight = '600';
+            el.style.color = 'var(--primary)';
+            initialCat = true;
+          }
+        });
+      }
+    }
+
+    if (initialCat) {
+      applyFilters();
+    } else {
+      updateGrid();
+    }
   } catch (error) {
     gridContainer.innerHTML = `
       <div class="products-error">
@@ -295,7 +322,13 @@ export async function renderProductsPage(container) {
 
     filteredProducts = allProducts.filter(p => {
       // Category
-      if (filters.categories.length > 0 && (!p.category || !filters.categories.includes(p.category))) return false;
+      if (filters.categories.length > 0) {
+        if (!p.category) return false;
+        const matchCat = filters.categories.some(fc => 
+          p.category.toLowerCase().includes(fc.toLowerCase()) || fc.toLowerCase().includes(p.category.toLowerCase())
+        );
+        if (!matchCat) return false;
+      }
 
       // Price
       if (filters.minPrice !== null && (p.price === undefined || p.price < filters.minPrice)) return false;
@@ -457,6 +490,7 @@ export async function renderProductsPage(container) {
           item.style.fontWeight = '600';
           item.style.color = 'var(--primary)';
         }
+        applyFilters();
       }
     });
   }

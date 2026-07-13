@@ -136,10 +136,10 @@ export function renderRegisterOrgPage(container) {
                             <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="chipContainer">
                                 <button type="button" class="org-chip">Quần áo</button>
                                 <button type="button" class="org-chip">Giày dép</button>
-                                <button type="button" class="org-chip">Sách vở</button>
-                                <button type="button" class="org-chip">Đồ dùng học tập</button>
-                                <button type="button" class="org-chip">Thực phẩm khô</button>
-                                <button type="button" class="org-chip">Khác</button>
+                                <button type="button" class="org-chip">Váy đầm</button>
+                                <button type="button" class="org-chip">Áo khoác</button>
+                                <button type="button" class="org-chip">Túi xách</button>
+                                <button type="button" class="org-chip">Phụ kiện thời trang</button>
                             </div>
                         </div>
 

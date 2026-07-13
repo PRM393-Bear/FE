@@ -50,37 +50,41 @@ export async function renderHomePage(container) {
       <!-- Category Row -->
       <section class="home-container">
         <div class="home-categories">
-          <button class="category-btn is-active">
+          <button class="category-btn is-active" data-cat="">
             <div class="category-icon-box"><span class="material-symbols-outlined">grid_view</span></div>
             <span class="category-label">Tất cả</span>
           </button>
-          <button class="category-btn">
+          <button class="category-btn" data-cat="Quần áo">
             <div class="category-icon-box"><span class="material-symbols-outlined">apparel</span></div>
             <span class="category-label">Quần áo</span>
           </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">steps</span></div>
-            <span class="category-label">Giày</span>
+          <button class="category-btn" data-cat="Áo (Tops)">
+            <div class="category-icon-box"><span class="material-symbols-outlined">checkroom</span></div>
+            <span class="category-label">Áo (Tops)</span>
           </button>
-          <button class="category-btn">
+          <button class="category-btn" data-cat="Quần (Bottoms)">
+            <div class="category-icon-box"><span class="material-symbols-outlined">dry_cleaning</span></div>
+            <span class="category-label">Quần (Bottoms)</span>
+          </button>
+          <button class="category-btn" data-cat="Váy & Đầm">
+            <div class="category-icon-box"><span class="material-symbols-outlined">styler</span></div>
+            <span class="category-label">Váy & Đầm</span>
+          </button>
+          <button class="category-btn" data-cat="Áo khoác">
+            <div class="category-icon-box"><span class="material-symbols-outlined">ac_unit</span></div>
+            <span class="category-label">Áo khoác</span>
+          </button>
+          <button class="category-btn" data-cat="Giày">
+            <div class="category-icon-box"><span class="material-symbols-outlined">steps</span></div>
+            <span class="category-label">Giày dép</span>
+          </button>
+          <button class="category-btn" data-cat="Túi xách">
             <div class="category-icon-box"><span class="material-symbols-outlined">handyman</span></div>
             <span class="category-label">Túi xách</span>
           </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">devices</span></div>
-            <span class="category-label">Điện tử</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">home_app_logo</span></div>
-            <span class="category-label">Đồ nhà</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">book</span></div>
-            <span class="category-label">Sách</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">more_horiz</span></div>
-            <span class="category-label">Khác</span>
+          <button class="category-btn" data-cat="Phụ kiện">
+            <div class="category-icon-box"><span class="material-symbols-outlined">watch</span></div>
+            <span class="category-label">Phụ kiện</span>
           </button>
         </div>
       </section>
@@ -266,6 +270,19 @@ export async function renderHomePage(container) {
     currentSlide = (currentSlide + 1) % totalSlides;
     moveCarousel(currentSlide);
   }, 5000);
+
+  // Category buttons click handler
+  const catBtns = container.querySelectorAll(".category-btn");
+  catBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const cat = btn.getAttribute("data-cat") || "";
+      if (cat) {
+        window.location.hash = `#/products?category=${encodeURIComponent(cat)}`;
+      } else {
+        window.location.hash = `#/products`;
+      }
+    });
+  });
 
   // Helper for formatting prices
   function formatPrice(price) {

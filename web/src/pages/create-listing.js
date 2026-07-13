@@ -87,16 +87,17 @@ export function renderCreateListingPage(container) {
                 </div>
 
                 <div class="cl-group">
-                  <label class="cl-label" for="cl-category">Danh mục</label>
+                  <label class="cl-label" for="cl-category">Danh mục thời trang</label>
                   <select class="cl-select" id="cl-category" required>
-                    <option value="" disabled selected>Chọn danh mục</option>
-                    <option value="Quần áo">Quần áo</option>
-                    <option value="Giày">Giày</option>
-                    <option value="Túi xách">Túi xách</option>
-                    <option value="Điện tử">Điện tử</option>
-                    <option value="Đồ nhà">Đồ nhà</option>
-                    <option value="Sách">Sách</option>
-                    <option value="Khác">Khác</option>
+                    <option value="" disabled selected>Chọn danh mục thời trang</option>
+                    <option value="Quần áo">Quần áo (Apparel)</option>
+                    <option value="Áo (Tops)">Áo (Tops / Shirts)</option>
+                    <option value="Quần (Bottoms)">Quần (Bottoms / Pants)</option>
+                    <option value="Váy & Đầm">Váy & Đầm (Dresses / Skirts)</option>
+                    <option value="Áo khoác">Áo khoác (Blazers / Jackets)</option>
+                    <option value="Giày">Giày dép (Footwear)</option>
+                    <option value="Túi xách">Túi xách (Bags)</option>
+                    <option value="Phụ kiện">Phụ kiện thời trang (Accessories)</option>
                   </select>
                 </div>
               </div>
@@ -410,6 +411,18 @@ export function renderCreateListingPage(container) {
       // Draft mode: Require title at minimum to save draft
       if (!title) {
         alert("Vui lòng nhập Tên sản phẩm trước khi lưu bản nháp.");
+        return false;
+      }
+    }
+
+    // Verify only fashion products are allowed
+    const nonFashionKeywords = ["điện tử", "sách", "máy tính", "điện thoại", "laptop", "tủ lạnh", "máy giặt", "xe máy", "ô tô", "đồ gia dụng", "tivi", "ti vi", "đồ chơi"];
+    const lowerTitle = (title || "").toLowerCase();
+    const lowerDesc = (description || "").toLowerCase();
+    const lowerCat = (category || "").toLowerCase();
+    for (const kw of nonFashionKeywords) {
+      if (lowerTitle.includes(kw) || lowerDesc.includes(kw) || lowerCat.includes(kw)) {
+        alert("Hệ thống EcoCycle chỉ hỗ trợ đăng bán, mua bán các sản phẩm về thời trang (Quần áo, Giày dép, Túi xách, Phụ kiện...). Vui lòng kiểm tra lại thông tin sản phẩm.");
         return false;
       }
     }
