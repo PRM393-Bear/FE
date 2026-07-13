@@ -14,6 +14,7 @@ import {
   uploadProductImage,
 } from "../services/product.service.js";
 import { isAuthenticated } from "../services/auth.service.js";
+import { getAllCategories } from "../services/staff.service.js";
 import { compressImage } from "../utils/image.js";
 
 export function renderCreateListingPage(container) {
@@ -80,25 +81,25 @@ export function renderCreateListingPage(container) {
               <div class="cl-row-2col">
                 <div class="cl-group">
                   <label class="cl-label" for="cl-type">Phân loại đăng bán</label>
-                  <select class="cl-select" id="cl-type">
-                    <option value="ITEM">Sản phẩm đơn lẻ (Item)</option>
-                    <option value="BUNDLE">Gói sản phẩm (Bundle)</option>
+                  <select class="cl-select bg-surface-variant/40 cursor-not-allowed" id="cl-type" disabled>
+                    <option value="ITEM" selected>Sản phẩm đơn lẻ (Item)</option>
                   </select>
+                  <span class="text-xs text-on-surface-variant mt-1.5 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm text-primary">info</span>
+                    Hệ thống chỉ hỗ trợ đăng bán sản phẩm đơn lẻ
+                  </span>
                 </div>
 
                 <div class="cl-group">
-                  <label class="cl-label" for="cl-category">Danh mục thời trang</label>
-                  <select class="cl-select" id="cl-category" required>
-                    <option value="" disabled selected>Chọn danh mục thời trang</option>
-                    <option value="Quần áo">Quần áo (Apparel)</option>
-                    <option value="Áo (Tops)">Áo (Tops / Shirts)</option>
-                    <option value="Quần (Bottoms)">Quần (Bottoms / Pants)</option>
-                    <option value="Váy & Đầm">Váy & Đầm (Dresses / Skirts)</option>
-                    <option value="Áo khoác">Áo khoác (Blazers / Jackets)</option>
-                    <option value="Giày">Giày dép (Footwear)</option>
-                    <option value="Túi xách">Túi xách (Bags)</option>
-                    <option value="Phụ kiện">Phụ kiện thời trang (Accessories)</option>
-                  </select>
+                  <label class="cl-label">Danh mục <span class="text-xs font-normal text-on-surface-variant">(chọn từ danh mục do Staff tạo)</span></label>
+                  <input type="hidden" id="cl-category" required />
+                  <input type="hidden" id="cl-category-id" />
+                  <div id="cl-category-bubbles" class="cl-bubble-container">
+                    <span class="text-xs text-on-surface-variant flex items-center gap-1.5 py-2">
+                      <span class="material-symbols-outlined text-sm animate-spin text-primary">progress_activity</span>
+                      Đang tải danh mục từ hệ thống...
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -128,8 +129,19 @@ export function renderCreateListingPage(container) {
                 </div>
 
                 <div class="cl-group">
-                  <label class="cl-label" for="cl-size">Kích cỡ (Size)</label>
-                  <input type="text" class="cl-input" id="cl-size" placeholder="Ví dụ: M, L, XL, 39, 40..." required />
+                  <label class="cl-label">Kích cỡ (Size)</label>
+                  <input type="hidden" id="cl-size" required />
+                  <div id="cl-size-bubbles" class="cl-bubble-container">
+                    <button type="button" class="cl-bubble-chip" data-size="XS">XS</button>
+                    <button type="button" class="cl-bubble-chip" data-size="S">S</button>
+                    <button type="button" class="cl-bubble-chip" data-size="M">M</button>
+                    <button type="button" class="cl-bubble-chip" data-size="L">L</button>
+                    <button type="button" class="cl-bubble-chip" data-size="XL">XL</button>
+                    <button type="button" class="cl-bubble-chip" data-size="Khác">khác</button>
+                  </div>
+                  <div id="cl-size-custom-container" class="hidden mt-3 animate-fade-in">
+                    <input type="text" class="cl-input" id="cl-size-custom-input" placeholder="Nhập kích cỡ mong muốn (ví dụ: XXL, 39, 40, Free Size...)" />
+                  </div>
                 </div>
               </div>
 
@@ -150,6 +162,7 @@ export function renderCreateListingPage(container) {
                 <div class="cl-group">
                   <label class="cl-label" for="cl-price">Giá bán (VNĐ)</label>
                   <input type="number" class="cl-input" id="cl-price" min="0" placeholder="Ví dụ: 150000" required />
+                  <div id="cl-price-preview" class="text-primary font-bold text-sm mt-1.5 min-h-[20px] transition-all"></div>
                 </div>
 
                 <div class="cl-group">
@@ -216,6 +229,154 @@ export function renderCreateListingPage(container) {
   const btnPreview = container.querySelector("#cl-btn-preview");
   const btnDraft = container.querySelector("#cl-btn-draft");
   const btnCloseModal = container.querySelector("#cl-modal-close-btn");
+
+  // Dynamic Categories from Staff Service & Bubble Selection
+  const categoryBubblesContainer = container.querySelector("#cl-category-bubbles");
+  const hiddenCategoryInput = container.querySelector("#cl-category");
+  const hiddenCategoryIdInput = container.querySelector("#cl-category-id");
+
+  async function initCategories(initialCatName = "", initialCatId = "") {
+    if (!categoryBubblesContainer) return;
+    try {
+      let categories = await getAllCategories();
+      if (!Array.isArray(categories) || categories.length === 0) {
+        categories = [
+          { id: "c1", name: "Quần áo" },
+          { id: "c2", name: "Áo (Tops)" },
+          { id: "c3", name: "Quần (Bottoms)" },
+          { id: "c4", name: "Váy & Đầm" },
+          { id: "c5", name: "Áo khoác" },
+          { id: "c6", name: "Giày dép" },
+          { id: "c7", name: "Túi xách" },
+          { id: "c8", name: "Phụ kiện" },
+        ];
+      }
+      categoryBubblesContainer.innerHTML = categories.map((cat) => {
+        const catName = cat.name || "Không tên";
+        const isSelected = initialCatName && (
+          catName.toLowerCase() === initialCatName.toLowerCase() ||
+          (initialCatId && String(cat.id) === String(initialCatId))
+        );
+        if (isSelected && hiddenCategoryInput) {
+          hiddenCategoryInput.value = catName;
+          if (hiddenCategoryIdInput) hiddenCategoryIdInput.value = cat.id || "";
+        }
+        return `
+          <button type="button" class="cl-bubble-chip ${isSelected ? 'active' : ''}" data-id="${cat.id || ''}" data-name="${catName}">
+            <span class="material-symbols-outlined text-sm">${isSelected ? 'check_circle' : 'circle'}</span>
+            ${catName}
+          </button>
+        `;
+      }).join("");
+
+      categoryBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          categoryBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach(c => {
+            c.classList.remove("active");
+            const icon = c.querySelector(".material-symbols-outlined");
+            if (icon) icon.textContent = "circle";
+          });
+          chip.classList.add("active");
+          const icon = chip.querySelector(".material-symbols-outlined");
+          if (icon) icon.textContent = "check_circle";
+
+          const name = chip.getAttribute("data-name") || "";
+          const id = chip.getAttribute("data-id") || "";
+          if (hiddenCategoryInput) {
+            hiddenCategoryInput.value = name;
+            hiddenCategoryInput.dispatchEvent(new Event("change"));
+          }
+          if (hiddenCategoryIdInput) hiddenCategoryIdInput.value = id;
+          isDirty = true;
+        });
+      });
+    } catch (err) {
+      console.warn("Failed to load staff categories for bubble selection:", err);
+    }
+  }
+  initCategories();
+
+  // Size Bubble Selection Logic
+  const sizeBubblesContainer = container.querySelector("#cl-size-bubbles");
+  const hiddenSizeInput = container.querySelector("#cl-size");
+  const sizeCustomContainer = container.querySelector("#cl-size-custom-container");
+  const sizeCustomInput = container.querySelector("#cl-size-custom-input");
+
+  function setSizeValue(val) {
+    if (!hiddenSizeInput) return;
+    hiddenSizeInput.value = val;
+    isDirty = true;
+  }
+
+  function initSizeSelection(initialSize = "") {
+    if (!sizeBubblesContainer || !hiddenSizeInput) return;
+    const standardSizes = ["XS", "S", "M", "L", "XL"];
+    const isStandard = standardSizes.includes(initialSize.toUpperCase());
+    const isOther = initialSize && !isStandard;
+
+    sizeBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach((chip) => {
+      const chipSize = chip.getAttribute("data-size");
+      const isActive = (chipSize && initialSize && chipSize.toUpperCase() === initialSize.toUpperCase()) || (chipSize === "Khác" && isOther);
+      if (isActive) {
+        chip.classList.add("active");
+      } else {
+        chip.classList.remove("active");
+      }
+    });
+
+    if (isOther) {
+      if (sizeCustomContainer) sizeCustomContainer.classList.remove("hidden");
+      if (sizeCustomInput) sizeCustomInput.value = initialSize;
+      setSizeValue(initialSize);
+    } else if (isStandard) {
+      if (sizeCustomContainer) sizeCustomContainer.classList.add("hidden");
+      setSizeValue(initialSize.toUpperCase());
+    } else {
+      if (sizeCustomContainer) sizeCustomContainer.classList.add("hidden");
+    }
+
+    sizeBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        sizeBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        const selected = chip.getAttribute("data-size");
+        if (selected === "Khác") {
+          if (sizeCustomContainer) sizeCustomContainer.classList.remove("hidden");
+          if (sizeCustomInput) {
+            sizeCustomInput.focus();
+            setSizeValue(sizeCustomInput.value.trim() || "khác");
+          }
+        } else {
+          if (sizeCustomContainer) sizeCustomContainer.classList.add("hidden");
+          setSizeValue(selected);
+        }
+      });
+    });
+
+    if (sizeCustomInput) {
+      sizeCustomInput.addEventListener("input", () => {
+        setSizeValue(sizeCustomInput.value.trim());
+      });
+    }
+  }
+  initSizeSelection();
+
+  // Price Review Below Input
+  const priceInput = container.querySelector("#cl-price");
+  const pricePreview = container.querySelector("#cl-price-preview");
+  function updatePricePreview() {
+    if (!priceInput || !pricePreview) return;
+    const val = priceInput.value ? Number(priceInput.value) : NaN;
+    if (!isNaN(val) && val >= 0) {
+      pricePreview.textContent = val.toLocaleString("vi-VN") + " VND";
+    } else {
+      pricePreview.textContent = "";
+    }
+  }
+  if (priceInput) {
+    priceInput.addEventListener("input", updatePricePreview);
+    priceInput.addEventListener("change", updatePricePreview);
+  }
 
   // 5. Image Event Handlers & Upload Progress Render
   dropzone.addEventListener("click", () => fileInput.click());
@@ -335,10 +496,13 @@ export function renderCreateListingPage(container) {
       if (form.querySelector("#cl-title-input")) form.querySelector("#cl-title-input").value = product.title || "";
       if (form.querySelector("#cl-description")) form.querySelector("#cl-description").value = product.description || "";
       if (form.querySelector("#cl-type")) form.querySelector("#cl-type").value = product.type || "ITEM";
-      if (form.querySelector("#cl-category")) form.querySelector("#cl-category").value = product.category || "";
+      initCategories(product.category || "", product.categoryId || "");
       if (form.querySelector("#cl-brand")) form.querySelector("#cl-brand").value = product.brand || "";
-      if (form.querySelector("#cl-price")) form.querySelector("#cl-price").value = product.price || "";
-      if (form.querySelector("#cl-size")) form.querySelector("#cl-size").value = product.size || "";
+      if (form.querySelector("#cl-price")) {
+        form.querySelector("#cl-price").value = product.price || "";
+        updatePricePreview();
+      }
+      initSizeSelection(product.size || "");
       if (form.querySelector("#cl-color")) form.querySelector("#cl-color").value = product.color || "";
       if (form.querySelector("#cl-condition")) form.querySelector("#cl-condition").value = product.condition || "3";
       if (product.aiTags && Array.isArray(product.aiTags)) {
@@ -387,6 +551,7 @@ export function renderCreateListingPage(container) {
   async function saveProduct(status) {
     // Basic Form validation
     const category = form.querySelector("#cl-category").value;
+    const categoryId = form.querySelector("#cl-category-id")?.value || "";
     const brand = form.querySelector("#cl-brand").value;
     const condition = form.querySelector("#cl-condition").value;
     const color = form.querySelector("#cl-color").value;
@@ -394,7 +559,7 @@ export function renderCreateListingPage(container) {
     const priceVal = form.querySelector("#cl-price").value;
     const title = form.querySelector("#cl-title-input").value;
     const description = form.querySelector("#cl-description").value;
-    const type = form.querySelector("#cl-type").value;
+    const type = "ITEM";
     const rawTags = form.querySelector("#cl-tags").value;
 
     if (status === "AVAILABLE") {
@@ -442,7 +607,8 @@ export function renderCreateListingPage(container) {
         title,
         description,
         category,
-        type,
+        categoryId,
+        type: "ITEM",
         condition: condition ? parseInt(condition, 10) : 3,
         price: priceVal ? parseInt(priceVal, 10) : 0,
         size,
@@ -499,15 +665,15 @@ export function renderCreateListingPage(container) {
 
   // 10. Preview Modal Logic
   btnPreview.addEventListener("click", () => {
-    const category = form.querySelector("#cl-category").value;
+    const category = form.querySelector("#cl-category").value || "Chưa chọn danh mục";
     const brand = form.querySelector("#cl-brand").value;
     const conditionText = form.querySelector("#cl-condition").options[form.querySelector("#cl-condition").selectedIndex]?.text || "Chưa chọn";
     const color = form.querySelector("#cl-color").value || "Chưa nhập";
-    const size = form.querySelector("#cl-size").value || "Chưa nhập";
+    const size = form.querySelector("#cl-size").value || "Chưa chọn size";
     const priceVal = form.querySelector("#cl-price").value;
     const title = form.querySelector("#cl-title-input").value || "Tên sản phẩm xem trước";
     const description = form.querySelector("#cl-description").value || "Mô tả sản phẩm...";
-    const typeText = form.querySelector("#cl-type").options[form.querySelector("#cl-type").selectedIndex]?.text;
+    const typeText = "Sản phẩm đơn lẻ (Item)";
     const rawTags = form.querySelector("#cl-tags").value;
     const delivery = form.querySelector("#cl-delivery").value;
 

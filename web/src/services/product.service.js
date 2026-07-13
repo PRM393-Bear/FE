@@ -5,12 +5,45 @@
 
 import { getToken } from "./auth.service.js";
 import { apiFetch } from "../utils/api.js";
+import { getAllCategories } from "./staff.service.js";
 
 const DRAFT_PRODUCT_IDS_STORAGE_KEY = "ecocycle_draft_product_ids";
 
 let productsCache = null;
 let productsCacheTime = 0;
 const CACHE_TTL = 3 * 60 * 1000; // 3 phút
+
+async function enrichProductsWithLiveCategory(products) {
+  if (!products) return products;
+  try {
+    const categories = await getAllCategories();
+    if (!Array.isArray(categories) || categories.length === 0) return products;
+    const catMapById = new Map();
+    const catMapByName = new Map();
+    categories.forEach(c => {
+      if (c.id) catMapById.set(String(c.id), c.name);
+      if (c.name) catMapByName.set(c.name.toLowerCase(), c.name);
+    });
+
+    const enrichOne = (p) => {
+      if (!p || typeof p !== "object") return p;
+      if (p.categoryId && catMapById.has(String(p.categoryId))) {
+        p.category = catMapById.get(String(p.categoryId));
+      } else if (p.category && catMapByName.has(p.category.toLowerCase())) {
+        p.category = catMapByName.get(p.category.toLowerCase());
+      }
+      return p;
+    };
+
+    if (Array.isArray(products)) {
+      return products.map(enrichOne);
+    } else {
+      return enrichOne(products);
+    }
+  } catch (err) {
+    return products;
+  }
+}
 
 export function invalidateProductCache() {
   productsCache = null;
@@ -43,27 +76,21 @@ export function getDraftProductIds() {
 function writeDraftProductIds(ids) {
   localStorage.setItem(
     DRAFT_PRODUCT_IDS_STORAGE_KEY,
-    JSON.stringify([...ids])
+    JSON.stringify(Array.from(ids))
   );
 }
 
-export function markDraftProductId(productId) {
-  if (!productId) {
-    return;
-  }
-
+export function markDraftProductId(id) {
+  if (!id) return;
   const ids = getDraftProductIds();
-  ids.add(String(productId));
+  ids.add(String(id));
   writeDraftProductIds(ids);
 }
 
-export function unmarkDraftProductId(productId) {
-  if (!productId) {
-    return;
-  }
-
+export function unmarkDraftProductId(id) {
+  if (!id) return;
   const ids = getDraftProductIds();
-  ids.delete(String(productId));
+  ids.delete(String(id));
   writeDraftProductIds(ids);
 }
 
@@ -87,13 +114,13 @@ export function isDraftProduct(product) {
 export async function getAllProducts() {
   const now = Date.now();
   if (productsCache && now - productsCacheTime < CACHE_TTL) {
-    return productsCache;
+    return await enrichProductsWithLiveCategory(productsCache);
   }
   try {
     const data = await apiFetch("/api/products");
     productsCache = data;
     productsCacheTime = now;
-    return data;
+    return await enrichProductsWithLiveCategory(data);
   } catch (error) {
     console.error("getAllProducts failed:", error);
     throw error;
@@ -107,7 +134,8 @@ export async function getAllProducts() {
  */
 export async function getProductById(id) {
   try {
-    return await apiFetch(`/api/products/${id}`);
+    const prod = await apiFetch(`/api/products/${id}`);
+    return await enrichProductsWithLiveCategory(prod);
   } catch (error) {
     console.error("getProductById failed:", error);
     throw error;
