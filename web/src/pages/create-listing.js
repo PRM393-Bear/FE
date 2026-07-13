@@ -10,6 +10,7 @@ import {
   getProductById,
   markDraftProductId,
   unmarkDraftProductId,
+  isDraftProduct,
   uploadProductImage,
 } from "../services/product.service.js";
 import { isAuthenticated } from "../services/auth.service.js";
@@ -324,6 +325,12 @@ export function renderCreateListingPage(container) {
     getProductById(editId).then(product => {
       hideLoading();
       if (!product) return;
+      const isDraft = (String(product.status || '').trim().toUpperCase() === 'DRAFT') || isDraftProduct(product);
+      if (!isDraft) {
+        alert("Chỉ những sản phẩm với trạng thái Bản nháp (DRAFT) mới có nút chỉnh sửa bài đăng và có thể chỉnh sửa.");
+        window.location.hash = "#/profile?tab=panel-shop";
+        return;
+      }
       if (form.querySelector("#cl-title-input")) form.querySelector("#cl-title-input").value = product.title || "";
       if (form.querySelector("#cl-description")) form.querySelector("#cl-description").value = product.description || "";
       if (form.querySelector("#cl-type")) form.querySelector("#cl-type").value = product.type || "ITEM";

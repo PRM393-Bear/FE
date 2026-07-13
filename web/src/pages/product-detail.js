@@ -1,8 +1,9 @@
 import "../styles/product-detail.css";
-import { getProductById, getAllProducts } from "../services/product.service.js";
+import { getProductById, getAllProducts, isDraftProduct } from "../services/product.service.js";
 import { getConditionLabel, getConditionPercentage } from "../utils/conditionMapping.js";
 import { createOrder } from "../services/order.service.js";
 import { addToCart } from "../services/cart.service.js";
+import { getUser, getUserIdFromToken } from "../services/auth.service.js";
 import { showToast } from "../utils/ui.js";
 
 /**
@@ -101,6 +102,91 @@ export async function renderProductDetailPage(container, productId) {
       ${aiTagsList ? `<br/><br/><strong>Nhãn AI nhận diện:</strong><br/>${aiTagsList}` : ""}
     `;
 
+    const localUser = getUser() || {};
+    const tokenUserId = getUserIdFromToken();
+    const myUsername = localUser.username || localUser.userName;
+    const myUserId = tokenUserId || localUser.id || localUser.userId;
+
+    const isOwner = Boolean(
+      (myUserId && (
+        String(product.sellerId) === String(myUserId) ||
+        String(product.sellerUserId) === String(myUserId) ||
+        String(product.userId) === String(myUserId) ||
+        String(product.ownerId) === String(myUserId)
+      )) ||
+      (myUsername && (
+        String(product.sellerName || "").toLowerCase() === String(myUsername).toLowerCase() ||
+        String(product.sellerUsername || "").toLowerCase() === String(myUsername).toLowerCase() ||
+        String(product.seller || "").toLowerCase() === String(myUsername).toLowerCase() ||
+        String(product.username || "").toLowerCase() === String(myUsername).toLowerCase() ||
+        String(product.userName || "").toLowerCase() === String(myUsername).toLowerCase() ||
+        String(product.createdBy || "").toLowerCase() === String(myUsername).toLowerCase()
+      ))
+    );
+
+    const isDraft = (String(product.status || '').trim().toUpperCase() === 'DRAFT') || isDraftProduct(product);
+
+    let actionsHtml = `
+      <div class="flex flex-col sm:flex-row gap-3 w-full">
+        <button class="pd-btn-buy flex-1 !bg-surface-variant !text-primary border border-primary/40 hover:!bg-primary/10 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm" id="btn-add-to-cart">
+          <span class="material-symbols-outlined">add_shopping_cart</span>
+          Thêm vào giỏ
+        </button>
+        <button class="pd-btn-buy flex-1 !bg-primary !text-on-primary hover:!bg-primary/90 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm" id="btn-buy-now">
+          <span class="material-symbols-outlined">shopping_bag</span>
+          Đặt hàng ngay
+        </button>
+      </div>
+      <div class="pd-secondary-actions mt-3">
+        <button class="pd-btn-chat" onclick="alert('Tính năng Nhắn tin sẽ sớm ra mắt!')">
+          <span class="material-symbols-outlined">chat</span>
+          Chat với seller
+        </button>
+        <button class="pd-btn-fav" aria-label="Add to favorites">
+          <span class="material-symbols-outlined">favorite</span>
+        </button>
+      </div>
+    `;
+
+    if (isOwner) {
+      if (isDraft) {
+        actionsHtml = `
+          <div class="flex flex-col gap-3 w-full">
+            <div class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm font-medium flex items-center gap-2">
+              <span class="material-symbols-outlined text-amber-600">drafts</span>
+              <span>Sản phẩm này đang ở trạng thái Bản nháp (DRAFT).</span>
+            </div>
+            <a href="#/edit-listing?id=${product.id}" class="pd-btn-buy w-full !bg-primary !text-on-primary hover:!bg-primary/90 transition-colors flex items-center justify-center gap-2 font-bold py-3.5 px-4 rounded-xl shadow-sm text-center">
+              <span class="material-symbols-outlined">edit</span>
+              Chỉnh sửa bài đăng
+            </a>
+          </div>
+          <div class="pd-secondary-actions mt-3 justify-end">
+            <button class="pd-btn-fav" aria-label="Add to favorites">
+              <span class="material-symbols-outlined">favorite</span>
+            </button>
+          </div>
+        `;
+      } else {
+        actionsHtml = `
+          <div class="flex flex-col gap-3 w-full">
+            <div class="p-4 bg-surface-variant/40 border border-outline-variant/60 rounded-xl text-on-surface text-sm flex items-center gap-3.5">
+              <span class="material-symbols-outlined text-primary text-2xl shrink-0">checkroom</span>
+              <div>
+                <p class="font-bold text-base">Sản phẩm của bạn</p>
+                <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Bạn là người đăng bán sản phẩm này nên không thể đặt mua hay thêm vào giỏ hàng.</p>
+              </div>
+            </div>
+          </div>
+          <div class="pd-secondary-actions mt-3 justify-end">
+            <button class="pd-btn-fav" aria-label="Add to favorites">
+              <span class="material-symbols-outlined">favorite</span>
+            </button>
+          </div>
+        `;
+      }
+    }
+
     // Populate Page Structure
     container.innerHTML = `
       <div class="pd-container">
@@ -195,25 +281,7 @@ export async function renderProductDetailPage(container, productId) {
 
               <!-- Actions -->
               <div class="pd-actions-wrapper">
-                <div class="flex flex-col sm:flex-row gap-3 w-full">
-                  <button class="pd-btn-buy flex-1 !bg-surface-variant !text-primary border border-primary/40 hover:!bg-primary/10 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm" id="btn-add-to-cart">
-                    <span class="material-symbols-outlined">add_shopping_cart</span>
-                    Thêm vào giỏ
-                  </button>
-                  <button class="pd-btn-buy flex-1 !bg-primary !text-on-primary hover:!bg-primary/90 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm" id="btn-buy-now">
-                    <span class="material-symbols-outlined">shopping_bag</span>
-                    Đặt hàng ngay
-                  </button>
-                </div>
-                <div class="pd-secondary-actions mt-3">
-                  <button class="pd-btn-chat" onclick="alert('Tính năng Nhắn tin sẽ sớm ra mắt!')">
-                    <span class="material-symbols-outlined">chat</span>
-                    Chat với seller
-                  </button>
-                  <button class="pd-btn-fav" aria-label="Add to favorites">
-                    <span class="material-symbols-outlined">favorite</span>
-                  </button>
-                </div>
+                ${actionsHtml}
               </div>
             </div>
           </div>

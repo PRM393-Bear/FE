@@ -4,7 +4,7 @@
  */
 
 import { confirmOrder, shipOrder } from "../../services/order.service.js";
-import { hideProduct, unhideProduct } from "../../services/product.service.js";
+import { hideProduct, unhideProduct, isDraftProduct } from "../../services/product.service.js";
 import { showToast } from "../../utils/ui.js";
 
 function formatPrice(num) {
@@ -142,6 +142,7 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
     html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
     myProducts.forEach((prod) => {
       const isHidden = (prod.status || '').toUpperCase() === 'HIDDEN';
+      const isDraft = (prod.status || '').toUpperCase() === 'DRAFT' || isDraftProduct(prod);
       const statusBadge = isHidden
         ? `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Đã ẩn</span>`
         : `<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>Đang hiển thị</span>`;
@@ -162,11 +163,15 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
             </div>
           </div>
           <div class="px-4 pb-4 pt-2 border-t border-outline-variant/20 flex items-center justify-between gap-2">
-            <a href="#/edit-listing?id=${prod.id}" class="flex-1 py-2 px-3 text-center rounded-lg border border-outline-variant text-on-surface font-semibold text-xs hover:bg-surface-variant hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5">
-              <span class="material-symbols-outlined text-sm">edit</span>
-              Sửa
-            </a>
-            <button class="btn-toggle-hide flex-1 py-2 px-3 text-center rounded-lg border ${isHidden ? 'border-primary text-primary hover:bg-primary/10' : 'border-error/50 text-error hover:bg-error/10'} font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" data-id="${prod.id}" data-hidden="${isHidden}">
+            ${
+              isDraft
+                ? `<a href="#/edit-listing?id=${prod.id}" class="flex-1 py-2 px-3 text-center rounded-lg border border-outline-variant text-on-surface font-semibold text-xs hover:bg-surface-variant hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">edit</span>
+                    Sửa
+                  </a>`
+                : ""
+            }
+            <button class="btn-toggle-hide ${isDraft ? 'flex-1' : 'w-full'} py-2 px-3 text-center rounded-lg border ${isHidden ? 'border-primary text-primary hover:bg-primary/10' : 'border-error/50 text-error hover:bg-error/10'} font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" data-id="${prod.id}" data-hidden="${isHidden}">
               <span class="material-symbols-outlined text-sm">${isHidden ? 'visibility' : 'visibility_off'}</span>
               ${isHidden ? 'Hiện' : 'Ẩn'}
             </button>
