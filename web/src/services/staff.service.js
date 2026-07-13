@@ -58,3 +58,29 @@ export async function rejectProduct(id, reason) {
     method: "PUT",
   });
 }
+
+// --- Organizations Verification (Staff Role) ---
+export async function getPendingOrganizations() {
+  try {
+    const pendingOrgs = await apiFetch("/api/organization-details/pending");
+    if (Array.isArray(pendingOrgs)) {
+      return pendingOrgs.filter(org => org.status === "PENDING");
+    }
+    return [];
+  } catch (error) {
+    console.error("Failed to fetch pending organizations:", error);
+    return [];
+  }
+}
+
+export async function approveOrganization(id) {
+  return await apiFetch(`/api/organization-details/${id}/approve`, {
+    method: "PATCH",
+  });
+}
+
+export async function rejectOrganization(id) {
+  return await apiFetch(`/api/organization-details/${id}/reject`, {
+    method: "PATCH",
+  });
+}

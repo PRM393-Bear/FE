@@ -6,6 +6,7 @@
 
 import { renderCategoriesTab } from "./CategoriesTab.js";
 import { renderPendingProductsTab } from "./PendingProductsTab.js";
+import { renderOrganizationsTab } from "./OrganizationsTab.js";
 import { getUser, logoutApi } from "../../services/auth.service.js";
 
 export function renderStaffDashboard(container) {
@@ -52,6 +53,10 @@ export function renderStaffDashboard(container) {
               <span class="material-symbols-outlined">category</span>
               Quản lý Danh mục
             </button>
+            <button id="tab-btn-organizations" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-on-surface-variant hover:bg-surface-variant hover:text-on-surface">
+              <span class="material-symbols-outlined">domain_verification</span>
+              Xét duyệt tổ chức
+            </button>
           </nav>
         </div>
 
@@ -97,33 +102,60 @@ export function renderStaffDashboard(container) {
 
   const btnPending = container.querySelector("#tab-btn-pending");
   const btnCategories = container.querySelector("#tab-btn-categories");
+  const btnOrganizations = container.querySelector("#tab-btn-organizations");
   const pageTitle = container.querySelector("#staff-page-title");
   const contentArea = container.querySelector("#staff-content-area");
 
   function switchTab(tab) {
+    const activeClass = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all bg-primary text-on-primary shadow-sm";
+    const inactiveClass = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-on-surface-variant hover:bg-surface-variant hover:text-on-surface";
+
+    if (btnPending) btnPending.className = inactiveClass;
+    if (btnCategories) btnCategories.className = inactiveClass;
+    if (btnOrganizations) btnOrganizations.className = inactiveClass;
+
     if (tab === "pending") {
-      btnPending.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all bg-primary text-on-primary shadow-sm";
-      btnCategories.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-on-surface-variant hover:bg-surface-variant hover:text-on-surface";
-      pageTitle.textContent = "Danh sách sản phẩm chờ kiểm duyệt";
+      if (btnPending) btnPending.className = activeClass;
+      if (pageTitle) pageTitle.textContent = "Danh sách sản phẩm chờ kiểm duyệt";
       renderPendingProductsTab(contentArea);
     } else if (tab === "categories") {
-      btnCategories.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all bg-primary text-on-primary shadow-sm";
-      btnPending.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all text-on-surface-variant hover:bg-surface-variant hover:text-on-surface";
-      pageTitle.textContent = "Quản lý Danh mục Thời trang (Categories)";
+      if (btnCategories) btnCategories.className = activeClass;
+      if (pageTitle) pageTitle.textContent = "Quản lý Danh mục Quần áo (Categories)";
       renderCategoriesTab(contentArea);
+    } else if (tab === "organizations") {
+      if (btnOrganizations) btnOrganizations.className = activeClass;
+      if (pageTitle) pageTitle.textContent = "Xét duyệt tài khoản tổ chức (Organizations)";
+      renderOrganizationsTab(contentArea);
     }
   }
 
-  btnPending?.addEventListener("click", () => switchTab("pending"));
-  btnCategories?.addEventListener("click", () => switchTab("categories"));
+  btnPending?.addEventListener("click", () => {
+    window.location.hash = "#/staff?tab=pending";
+    switchTab("pending");
+  });
+  btnCategories?.addEventListener("click", () => {
+    window.location.hash = "#/staff?tab=categories";
+    switchTab("categories");
+  });
+  btnOrganizations?.addEventListener("click", () => {
+    window.location.hash = "#/staff?tab=organizations";
+    switchTab("organizations");
+  });
 
   container.querySelector("#staff-logout-btn")?.addEventListener("click", async () => {
     await logoutApi();
     window.location.hash = "#/login";
   });
 
-  // Default tab
-  switchTab("pending");
+  // Default / initial tab handling based on URL hash
+  const hash = window.location.hash;
+  if (hash.includes("tab=categories")) {
+    switchTab("categories");
+  } else if (hash.includes("tab=organizations")) {
+    switchTab("organizations");
+  } else {
+    switchTab("pending");
+  }
 
   return () => {};
 }

@@ -1,6 +1,5 @@
 import { renderOverviewTab, attachOverviewListeners } from './OverviewTab.js';
 import { renderUsersTab, attachUsersListeners } from './UsersTab.js';
-import { renderOrganizationsTab, attachOrganizationsListeners } from './OrganizationsTab.js';
 import { renderDonationsTab, attachDonationsListeners } from './DonationsTab.js';
 import { renderAuditLogsTab, attachAuditLogsListeners } from './AuditLogsTab.js';
 
@@ -53,10 +52,6 @@ export async function renderAdminPage(container) {
             <span class="material-symbols-outlined" data-icon="group">group</span>
             <span class="font-label-md">Quản lý User</span>
           </a>
-          <a class="flex items-center gap-stack-md py-3 pl-4 ${organizationsNavClass}" href="#/admin?tab=organizations">
-            <span class="material-symbols-outlined" data-icon="domain">domain</span>
-            <span class="font-label-md">Xét duyệt tài khoản tổ chức</span>
-          </a>
           <a class="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright pl-4 hover:bg-on-surface-variant/10 transition-colors duration-200" href="javascript:alert('Tính năng đang phát triển')">
             <span class="material-symbols-outlined" data-icon="package_2">package_2</span>
             <span class="font-label-md">Giao dịch</span>
@@ -86,13 +81,20 @@ export async function renderAdminPage(container) {
         </div>
       </aside>
 
-      ${isUsersTab ? renderUsersTab() : (isOrganizationsTab ? renderOrganizationsTab() : (isDonationsTab ? renderDonationsTab() : (isAuditTab ? renderAuditLogsTab() : renderOverviewTab())))}
+      ${isUsersTab ? renderUsersTab() : (isOrganizationsTab ? `
+        <main class="ml-64 flex-1 flex flex-col items-center justify-center min-h-screen p-8 bg-surface">
+          <div class="max-w-md bg-surface-container-low p-8 rounded-2xl border border-outline-variant text-center shadow-sm">
+            <span class="material-symbols-outlined text-5xl text-primary mb-3">move_group</span>
+            <h3 class="text-title-lg font-bold text-on-surface mb-2">Chức năng đã chuyển giao</h3>
+            <p class="text-body-md text-on-surface-variant mb-6">Chức năng xác thực và xét duyệt tài khoản tổ chức hiện được thực hiện bởi bộ phận Kiểm duyệt viên (Staff) thay vì Admin.</p>
+            <a href="#/staff?tab=organizations" class="inline-block px-6 py-3 bg-primary text-on-primary font-bold rounded-xl shadow hover:opacity-90 transition-all">Đến trang Staff Dashboard</a>
+          </div>
+        </main>
+      ` : (isDonationsTab ? renderDonationsTab() : (isAuditTab ? renderAuditLogsTab() : renderOverviewTab())))}
     </div>
   `;
 
-  if (isOrganizationsTab) {
-    attachOrganizationsListeners(container);
-  } else if (isDonationsTab) {
+  if (isDonationsTab) {
     attachDonationsListeners(container);
   } else if (isAuditTab) {
     attachAuditLogsListeners(container);
