@@ -21,9 +21,11 @@ export function renderCartPage(container) {
 
   const renderLoading = () => {
     container.innerHTML = `
-      <div class="max-w-4xl mx-auto px-4 py-16 text-center">
-        <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent mb-4"></div>
-        <p class="text-on-surface-variant font-medium">Đang tải giỏ hàng của bạn...</p>
+      <div class="min-h-screen bg-surface pt-[104px] pb-16">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+          <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent mb-4"></div>
+          <p class="text-on-surface-variant font-medium">Đang tải giỏ hàng của bạn...</p>
+        </div>
       </div>
     `;
   };
@@ -37,22 +39,25 @@ export function renderCartPage(container) {
 
       if (items.length === 0) {
         container.innerHTML = `
-          <div class="max-w-4xl mx-auto px-4 py-20 text-center">
-            <div class="w-24 h-24 bg-surface-variant/40 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span class="material-symbols-outlined text-5xl text-outline">shopping_bag</span>
+          <div class="min-h-screen bg-surface pt-[104px] pb-16">
+            <div class="max-w-4xl mx-auto px-4 text-center">
+              <div class="w-24 h-24 bg-surface-variant/40 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span class="material-symbols-outlined text-5xl text-outline">shopping_bag</span>
+              </div>
+              <h2 class="text-headline-sm font-bold text-on-surface mb-2">Giỏ hàng của bạn đang trống</h2>
+              <p class="text-body-lg text-on-surface-variant mb-8">Hãy khám phá các sản phẩm quần áo thời trang tái sinh tuyệt vời ngay hôm nay.</p>
+              <a href="#/products" class="px-8 py-3 bg-primary text-on-primary rounded-xl font-semibold shadow hover:bg-primary/90 transition-all inline-flex items-center gap-2">
+                <span class="material-symbols-outlined">explore</span> Khám phá cửa hàng
+              </a>
             </div>
-            <h2 class="text-headline-sm font-bold text-on-surface mb-2">Giỏ hàng của bạn đang trống</h2>
-            <p class="text-body-lg text-on-surface-variant mb-8">Hãy khám phá các sản phẩm quần áo thời trang tái sinh tuyệt vời ngay hôm nay.</p>
-            <a href="#/products" class="px-8 py-3 bg-primary text-on-primary rounded-xl font-semibold shadow hover:bg-primary/90 transition-all inline-flex items-center gap-2">
-              <span class="material-symbols-outlined">explore</span> Khám phá cửa hàng
-            </a>
           </div>
         `;
         return;
       }
 
       container.innerHTML = `
-        <div class="max-w-5xl mx-auto px-4 py-10">
+        <div class="min-h-screen bg-surface pt-[104px] pb-16">
+          <div class="max-w-5xl mx-auto px-4">
           <div class="flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
             <div>
               <h1 class="text-headline-md font-bold text-on-surface">Giỏ hàng của bạn</h1>
@@ -121,7 +126,8 @@ export function renderCartPage(container) {
             </div>
           </div>
         </div>
-      `;
+      </div>
+    `;
 
       // Attach event listeners
       container.querySelectorAll('.btn-remove-item').forEach(btn => {
@@ -184,10 +190,12 @@ export function renderCartPage(container) {
 
     } catch (err) {
       container.innerHTML = `
-        <div class="max-w-4xl mx-auto px-4 py-20 text-center text-error">
-          <span class="material-symbols-outlined text-5xl mb-3 block mx-auto">error_outline</span>
-          <p class="font-bold text-lg">Lỗi khi tải dữ liệu giỏ hàng</p>
-          <p class="text-sm mt-1 text-on-surface-variant">${err.message || 'Vui lòng kiểm tra lại kết nối'}</p>
+        <div class="min-h-screen bg-surface pt-[104px] pb-16">
+          <div class="max-w-4xl mx-auto px-4 text-center text-error">
+            <span class="material-symbols-outlined text-5xl mb-3 block mx-auto">error_outline</span>
+            <p class="font-bold text-lg">Lỗi khi tải dữ liệu giỏ hàng</p>
+            <p class="text-sm mt-1 text-on-surface-variant">${err.message || 'Vui lòng kiểm tra lại kết nối'}</p>
+          </div>
         </div>
       `;
     }

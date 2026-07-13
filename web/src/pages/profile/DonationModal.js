@@ -13,7 +13,7 @@ export function renderDonationModal(container, { organizations = [], onSuccess, 
   });
 
   const html = `
-    <div id="modal-backdrop" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+    <div id="modal-backdrop" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
       <div class="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-6 shadow-xl border border-outline-variant/30 relative flex flex-col gap-4">
         <div class="flex justify-between items-center pb-3 border-b border-outline-variant/30">
           <h4 class="text-title-lg font-bold text-on-surface">Tạo Yêu cầu Quyên góp</h4>

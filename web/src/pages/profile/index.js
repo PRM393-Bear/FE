@@ -24,7 +24,7 @@ export async function renderProfilePage(container) {
   }
 
   container.innerHTML = `
-    <div class="min-h-screen flex items-center justify-center bg-surface">
+    <div class="min-h-screen flex items-center justify-center bg-surface pt-20">
       <div class="flex flex-col items-center gap-3">
         <span class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></span>
         <p class="font-medium text-on-surface-variant">Đang tải hồ sơ cá nhân...</p>
@@ -38,11 +38,13 @@ export async function renderProfilePage(container) {
   } catch (err) {
     console.error("Failed to load profile:", err);
     container.innerHTML = `
-      <div class="max-w-md mx-auto my-16 p-8 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30">
-        <span class="material-symbols-outlined text-5xl text-error mb-2">error</span>
-        <h3 class="text-title-lg font-bold text-on-surface">Không thể tải hồ sơ</h3>
-        <p class="text-body-sm text-on-surface-variant mt-1">${err.message}</p>
-        <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-primary text-on-primary rounded-xl font-semibold">Thử lại</button>
+      <div class="min-h-screen bg-surface pt-[104px] pb-12 flex items-center justify-center px-4">
+        <div class="max-w-md w-full p-8 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-sm">
+          <span class="material-symbols-outlined text-5xl text-error mb-2">error</span>
+          <h3 class="text-title-lg font-bold text-on-surface">Không thể tải hồ sơ</h3>
+          <p class="text-body-sm text-on-surface-variant mt-1">${err.message}</p>
+          <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-primary text-on-primary rounded-xl font-semibold">Thử lại</button>
+        </div>
       </div>
     `;
     return;
@@ -75,7 +77,7 @@ export async function renderProfilePage(container) {
   const roleName = profile.role === "admin" ? "Quản trị viên" : profile.role === "org" ? "Tổ chức từ thiện" : "Thành viên";
 
   container.innerHTML = `
-    <div class="profile-page min-h-screen bg-surface py-8">
+    <div class="profile-page min-h-screen bg-surface pt-[104px] pb-16">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
         <!-- Sidebar Navigation -->
         <div class="md:col-span-1 flex flex-col gap-6">

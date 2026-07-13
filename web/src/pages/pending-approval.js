@@ -9,7 +9,7 @@ export function renderPendingApprovalPage(container) {
         background: radial-gradient(circle at top right, rgba(0, 107, 44, 0.05), transparent),
                     radial-gradient(circle at bottom left, rgba(245, 158, 11, 0.05), transparent);
         background-color: var(--surface);
-        padding: 24px;
+        padding: 104px 24px 48px;
       }
       .pending-card {
         background: var(--surface-card, #FFFFFF);

@@ -6,6 +6,7 @@
 /* ── Layout Wrapper ── */
 .auth-wrapper {
   min-height: 100vh;
+  padding-top: 80px;
   display: flex;
   align-items: stretch;
   overflow: hidden;
