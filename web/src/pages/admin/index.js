@@ -2,6 +2,7 @@ import { renderOverviewTab, attachOverviewListeners } from './OverviewTab.js';
 import { renderUsersTab, attachUsersListeners } from './UsersTab.js';
 import { renderOrganizationsTab, attachOrganizationsListeners } from './OrganizationsTab.js';
 import { renderDonationsTab, attachDonationsListeners } from './DonationsTab.js';
+import { renderAuditLogsTab, attachAuditLogsListeners } from './AuditLogsTab.js';
 
 window.toggleDrawer = function (open) {
   const drawer = document.getElementById('userDrawer');
@@ -22,7 +23,8 @@ export async function renderAdminPage(container) {
   const isUsersTab = hash.includes("tab=users");
   const isOrganizationsTab = hash.includes("tab=organizations");
   const isDonationsTab = hash.includes("tab=donations");
-  const isOverviewTab = !isUsersTab && !isOrganizationsTab && !isDonationsTab;
+  const isAuditTab = hash.includes("tab=audit");
+  const isOverviewTab = !isUsersTab && !isOrganizationsTab && !isDonationsTab && !isAuditTab;
 
   const getNavClass = (isActive) => isActive
     ? 'text-primary-fixed font-bold border-l-4 border-primary-fixed bg-on-surface-variant/10 transition-all duration-200 opacity-90'
@@ -32,6 +34,7 @@ export async function renderAdminPage(container) {
   const usersNavClass = getNavClass(isUsersTab);
   const organizationsNavClass = getNavClass(isOrganizationsTab);
   const donationsNavClass = getNavClass(isDonationsTab);
+  const auditNavClass = getNavClass(isAuditTab);
 
   container.innerHTML = `
     <div class="font-body-md text-body-md overflow-hidden bg-background w-full h-full relative text-on-surface">
@@ -62,9 +65,9 @@ export async function renderAdminPage(container) {
             <span class="material-symbols-outlined" data-icon="featured_seasonal_and_gifts">featured_seasonal_and_gifts</span>
             <span class="font-label-md">Donation</span>
           </a>
-          <a class="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright pl-4 hover:bg-on-surface-variant/10 transition-colors duration-200" href="javascript:alert('Tính năng đang phát triển')">
+          <a class="flex items-center gap-stack-md py-3 pl-4 ${auditNavClass}" href="#/admin?tab=audit">
             <span class="material-symbols-outlined" data-icon="policy">policy</span>
-            <span class="font-label-md">Kiểm duyệt</span>
+            <span class="font-label-md">Lưu vết hệ thống (Audit Logs)</span>
           </a>
           <a class="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright pl-4 hover:bg-on-surface-variant/10 transition-colors duration-200" href="javascript:alert('Tính năng đang phát triển')">
             <span class="material-symbols-outlined" data-icon="settings">settings</span>
@@ -83,7 +86,7 @@ export async function renderAdminPage(container) {
         </div>
       </aside>
 
-      ${isUsersTab ? renderUsersTab() : (isOrganizationsTab ? renderOrganizationsTab() : (isDonationsTab ? renderDonationsTab() : renderOverviewTab()))}
+      ${isUsersTab ? renderUsersTab() : (isOrganizationsTab ? renderOrganizationsTab() : (isDonationsTab ? renderDonationsTab() : (isAuditTab ? renderAuditLogsTab() : renderOverviewTab())))}
     </div>
   `;
 
@@ -91,6 +94,8 @@ export async function renderAdminPage(container) {
     attachOrganizationsListeners(container);
   } else if (isDonationsTab) {
     attachDonationsListeners(container);
+  } else if (isAuditTab) {
+    attachAuditLogsListeners(container);
   } else if (isOverviewTab) {
     attachOverviewListeners(container);
   } else if (isUsersTab) {

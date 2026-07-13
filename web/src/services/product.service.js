@@ -173,3 +173,60 @@ export async function uploadProductImage(file) {
   }
 }
 
+/**
+ * Hide a product by ID.
+ * @param {string} productId - Product UUID.
+ * @returns {Promise<Object>} Response from hide API.
+ */
+export async function hideProduct(productId) {
+  try {
+    const data = await apiFetch(`/api/products/hide?productId=${productId}`, {
+      method: "PUT",
+    });
+    invalidateProductCache();
+    return data;
+  } catch (error) {
+    console.error("hideProduct failed:", error);
+    throw error;
+  }
+}
+
+/**
+ * Unhide a product by ID.
+ * @param {string} productId - Product UUID.
+ * @returns {Promise<Object>} Response from unhide API.
+ */
+export async function unhideProduct(productId) {
+  try {
+    const data = await apiFetch(`/api/products/unhide?productId=${productId}`, {
+      method: "PUT",
+    });
+    invalidateProductCache();
+    return data;
+  } catch (error) {
+    console.error("unhideProduct failed:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get products by seller userId.
+ * @param {string} userId - User UUID.
+ * @returns {Promise<Array>} List of seller's products.
+ */
+export async function getMyProducts(userId) {
+  try {
+    if (!userId) {
+      const all = await getAllProducts();
+      return all;
+    }
+    return await apiFetch(`/api/products/user/product?userId=${userId}`);
+  } catch (error) {
+    console.warn("getMyProducts endpoint error, falling back to filtering getAllProducts:", error);
+    const all = await getAllProducts();
+    return all.filter(p => p.sellerId === userId || p.sellerUserId === userId);
+  }
+}
+
+
+
