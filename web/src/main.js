@@ -70,6 +70,15 @@ const routes = {
     currentCleanup = renderCreateListingPage(app);
     renderFooter();
   },
+  "#/edit-listing": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
+    renderHeader({ activePage: "" });
+    currentCleanup = renderCreateListingPage(app);
+    renderFooter();
+  },
   "#/admin": () => {
     if (!isAuthenticated()) {
       window.location.hash = "#/login";

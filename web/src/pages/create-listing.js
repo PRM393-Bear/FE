@@ -6,6 +6,8 @@
 import "../styles/create-listing.css";
 import {
   createProduct,
+  updateProduct,
+  getProductById,
   markDraftProductId,
   unmarkDraftProductId,
   uploadProductImage,
@@ -20,10 +22,15 @@ export function renderCreateListingPage(container) {
     return;
   }
 
-  // 2. Page State
+  // 2. Page State & Edit Mode Check
   let selectedImages = []; // Array of objects: { file, compressedFile, previewUrl, uploadUrl }
   let isDirty = false;
   let isSubmitting = false;
+
+  const hashParts = window.location.hash.split("?");
+  const queryParams = new URLSearchParams(hashParts[1] || "");
+  const editId = queryParams.get("id");
+  const isEditMode = Boolean(editId);
 
   // 3. Render HTML Layout
   container.innerHTML = `
@@ -38,8 +45,8 @@ export function renderCreateListingPage(container) {
 
           <!-- Header -->
           <header class="cl-header">
-            <h1 class="cl-title">Tạo Listing Mới</h1>
-            <p class="cl-subtitle">Đăng tải sản phẩm thời trang, phụ kiện cũ của bạn để tái sinh chúng.</p>
+            <h1 class="cl-title">${isEditMode ? 'Cập Nhật Listing' : 'Tạo Listing Mới'}</h1>
+            <p class="cl-subtitle">${isEditMode ? 'Chỉnh sửa thông tin bài đăng bán hoặc bản nháp của bạn.' : 'Đăng tải sản phẩm thời trang, phụ kiện cũ của bạn để tái sinh chúng.'}</p>
           </header>
 
           <form id="cl-form" novalidate>
@@ -172,8 +179,8 @@ export function renderCreateListingPage(container) {
               <button type="button" class="cl-btn cl-btn--secondary" id="cl-btn-draft">
                 <span class="material-symbols-outlined">save</span> Lưu bản nháp
               </button>
-              <button type="submit" class="cl-btn cl-btn--primary" id="cl-btn-submit">
-                <span class="material-symbols-outlined">publish</span> Đăng sản phẩm
+              <button type="submit" class="cl-btn cl-btn-primary" id="cl-submit-btn">
+                ${isEditMode ? 'Lưu Thay Đổi' : 'Đăng Bán Ngay'}
               </button>
             </div>
           </form>
@@ -311,6 +318,46 @@ export function renderCreateListingPage(container) {
     });
   });
 
+  // 7.5 Load Existing Product Data if Edit Mode
+  if (isEditMode && editId) {
+    showLoading("Đang tải thông tin sản phẩm...");
+    getProductById(editId).then(product => {
+      hideLoading();
+      if (!product) return;
+      if (form.querySelector("#cl-title-input")) form.querySelector("#cl-title-input").value = product.title || "";
+      if (form.querySelector("#cl-description")) form.querySelector("#cl-description").value = product.description || "";
+      if (form.querySelector("#cl-type")) form.querySelector("#cl-type").value = product.type || "ITEM";
+      if (form.querySelector("#cl-category")) form.querySelector("#cl-category").value = product.category || "";
+      if (form.querySelector("#cl-brand")) form.querySelector("#cl-brand").value = product.brand || "";
+      if (form.querySelector("#cl-price")) form.querySelector("#cl-price").value = product.price || "";
+      if (form.querySelector("#cl-size")) form.querySelector("#cl-size").value = product.size || "";
+      if (form.querySelector("#cl-color")) form.querySelector("#cl-color").value = product.color || "";
+      if (form.querySelector("#cl-condition")) form.querySelector("#cl-condition").value = product.condition || "3";
+      if (product.aiTags && Array.isArray(product.aiTags)) {
+        if (form.querySelector("#cl-tags")) form.querySelector("#cl-tags").value = product.aiTags.join(", ");
+      }
+      const existingImages = product.images || (product.imageUrl ? [product.imageUrl] : []);
+      if (Array.isArray(existingImages)) {
+        existingImages.forEach(url => {
+          if (typeof url === 'string') {
+            selectedImages.push({
+              file: null,
+              compressedFile: null,
+              previewUrl: url,
+              uploadUrl: url
+            });
+          }
+        });
+        renderImageThumbnails();
+      }
+      isDirty = false;
+    }).catch(err => {
+      hideLoading();
+      console.error("Error loading product for edit:", err);
+      alert("Không thể tải dữ liệu sản phẩm để chỉnh sửa.");
+    });
+  }
+
   // 8. Image Upload Loop to Cloudinary Backend API
   async function uploadAllImages() {
     const urls = [];
@@ -386,9 +433,14 @@ export function renderCreateListingPage(container) {
         status: status // AVAILABLE or DRAFT
       };
 
-      showLoading(status === "AVAILABLE" ? "Đang đăng bán sản phẩm..." : "Đang lưu bản nháp...");
-      const createdProduct = await createProduct(payload);
-      const createdProductId = createdProduct?.id ?? createdProduct?.productId ?? createdProduct?.data?.id;
+      showLoading(isEditMode ? "Đang cập nhật sản phẩm..." : (status === "AVAILABLE" ? "Đang đăng bán sản phẩm..." : "Đang lưu bản nháp..."));
+      let createdProduct;
+      if (isEditMode) {
+        createdProduct = await updateProduct(editId, payload);
+      } else {
+        createdProduct = await createProduct(payload);
+      }
+      const createdProductId = createdProduct?.id ?? createdProduct?.productId ?? createdProduct?.data?.id ?? editId;
 
       if (createdProductId) {
         if (status === "DRAFT") {
@@ -402,7 +454,7 @@ export function renderCreateListingPage(container) {
       isSubmitting = true;
       hideLoading();
 
-      alert(status === "AVAILABLE" ? "Đăng bán sản phẩm thành công!" : "Lưu bản nháp thành công!");
+      alert(isEditMode ? "Cập nhật sản phẩm thành công!" : (status === "AVAILABLE" ? "Đăng bán sản phẩm thành công!" : "Lưu bản nháp thành công!"));
       cleanup();
       window.location.hash = "#/profile";
       return true;

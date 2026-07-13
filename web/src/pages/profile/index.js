@@ -8,7 +8,7 @@ import { isAuthenticated, logout } from "../../services/auth.service.js";
 import { getMyProfile, getAllOrganizationsApi } from "../../services/profile.service.js";
 import { getOrdersByBuyer, getOrdersBySeller } from "../../services/order.service.js";
 import { getMyWardrobe } from "../../services/wardrobe.service.js";
-import { getAllProducts, isDraftProduct } from "../../services/product.service.js";
+import { getAllProducts, isDraftProduct, getMyProducts } from "../../services/product.service.js";
 import { apiFetch } from "../../utils/api.js";
 
 import { renderWardrobePanel } from "./WardrobePanel.js";
@@ -49,15 +49,16 @@ export async function renderProfilePage(container) {
   }
 
   // Fetch parallel data
-  let buyerOrders = [], sellerOrders = [], wardrobe = [], drafts = [], donations = [], orgs = [];
+  let buyerOrders = [], sellerOrders = [], wardrobe = [], drafts = [], donations = [], orgs = [], myProducts = [];
   try {
-    const [bOrders, sOrders, wItems, allProds, orgList, donList] = await Promise.all([
+    const [bOrders, sOrders, wItems, allProds, orgList, donList, myProdsList] = await Promise.all([
       getOrdersByBuyer().catch(() => []),
       getOrdersBySeller().catch(() => []),
       getMyWardrobe().catch(() => []),
       getAllProducts().catch(() => []),
       getAllOrganizationsApi().catch(() => []),
-      apiFetch("/api/donation-requests/lists").catch(() => [])
+      apiFetch("/api/donation-requests/lists").catch(() => []),
+      getMyProducts(profile.id).catch(() => [])
     ]);
 
     buyerOrders = Array.isArray(bOrders) ? bOrders : [];
@@ -66,6 +67,7 @@ export async function renderProfilePage(container) {
     drafts = Array.isArray(allProds) ? allProds.filter(p => isDraftProduct(p)) : [];
     orgs = Array.isArray(orgList) ? orgList : [];
     donations = Array.isArray(donList) ? donList : [];
+    myProducts = Array.isArray(myProdsList) ? myProdsList : [];
   } catch (e) {
     console.warn("Partial data load warning:", e);
   }
@@ -137,7 +139,7 @@ export async function renderProfilePage(container) {
     if (tabKey === "wardrobe") {
       renderWardrobePanel(contentArea, { orders: buyerOrders, wardrobe, profile, onRefresh: refreshPage });
     } else if (tabKey === "shop") {
-      renderShopPanel(contentArea, { sellerOrders, myDrafts: drafts, onRefresh: refreshPage });
+      renderShopPanel(contentArea, { sellerOrders, myDrafts: drafts, myProducts, onRefresh: refreshPage });
     } else if (tabKey === "donations") {
       renderDonationsTab(contentArea, { profile, requests: donations, onRefresh: refreshPage, onOpenModal: openDonationModal });
     } else if (tabKey === "settings") {
