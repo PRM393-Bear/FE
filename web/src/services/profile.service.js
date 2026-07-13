@@ -11,52 +11,28 @@ import { apiFetch } from "../utils/api.js";
    ════════════════════════════════════════════ */
 
 export async function getMyProfile() {
-  let userId = getUserIdFromToken();
   const localUser = getUser();
   const rawRole = localUser?.role || "MEMBER";
-  const username = localUser?.username;
 
   let role = "member";
   if (rawRole.toUpperCase() === "ADMIN") role = "admin";
+  else if (rawRole.toUpperCase() === "STAFF") role = "staff";
   else if (rawRole.toUpperCase() === "ORGANIZATION" || rawRole.toUpperCase() === "ORG") role = "org";
 
-  if (!userId && username) {
-    try {
-      const allProducts = await apiFetch("/api/products");
-      const matchedProduct = allProducts.find((p) => p.sellerName === username);
-      if (matchedProduct) {
-        userId = matchedProduct.sellerId;
-      }
-    } catch (err) {
-      console.error("getMyProfile: Failed to resolve userId from products API:", err);
-    }
-  }
-
-  if (!userId) {
-    try {
-      const allProducts = await apiFetch("/api/products");
-      if (allProducts && allProducts.length > 0) {
-        userId = allProducts[0].sellerId;
-      }
-    } catch (e) {
-      console.error("getMyProfile: Final fallback failed:", e);
-    }
-  }
-
-  if (!userId) {
-    throw new Error("No user ID found in token and failed to resolve from products.");
-  }
-
+  // Fetch user details directly from /api/user/me (no userId needed)
   const userDetails = await apiFetch("/api/user/me");
+
+  // Resolve userId: prefer from API response, then from JWT token
+  const userId = userDetails.userId || userDetails.id || getUserIdFromToken();
 
   return {
     id: userId,
     role: role,
-    username: userDetails.username,
-    name: userDetails.fullName || userDetails.username,
+    username: userDetails.username || userDetails.userName,
+    name: userDetails.fullName || userDetails.username || userDetails.userName,
     email: userDetails.email || "",
     phone: userDetails.phone || "",
-    avatar: userDetails.avatarUrl || userDetails.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userDetails.fullName || userDetails.username || 'U')}&background=006B2C&color=fff`,
+    avatar: userDetails.avatarUrl || userDetails.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userDetails.fullName || userDetails.username || 'U')}&background=006B2C&color=fff`,
     bio: userDetails.bio || "Thành viên tích cực của cộng đồng EcoCycle.",
     location: userDetails.address || userDetails.location || "Việt Nam",
     posts: []
@@ -116,6 +92,15 @@ export async function getProfileDonations(id) {
   } catch {
     return [];
   }
+}
+
+/* ── CHANGE PASSWORD ── */
+
+export async function changePassword(oldPassword, newPassword, confirmPassword) {
+  const params = new URLSearchParams({ oldPassword, newPassword, confirmPassword });
+  return await apiFetch(`/api/user/me/password?${params.toString()}`, {
+    method: "PUT",
+  });
 }
 
 /* ── DONATION FLOW API METHODS ── */
