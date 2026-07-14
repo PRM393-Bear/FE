@@ -20,10 +20,9 @@ window.toggleDrawer = function (open) {
 export async function renderAdminPage(container) {
   const hash = window.location.hash;
   const isUsersTab = hash.includes("tab=users");
-  const isOrganizationsTab = hash.includes("tab=organizations");
   const isDonationsTab = hash.includes("tab=donations");
   const isAuditTab = hash.includes("tab=audit");
-  const isOverviewTab = !isUsersTab && !isOrganizationsTab && !isDonationsTab && !isAuditTab;
+  const isOverviewTab = !isUsersTab && !isDonationsTab && !isAuditTab;
 
   const getNavClass = (isActive) => isActive
     ? 'text-primary-fixed font-bold border-l-4 border-primary-fixed bg-on-surface-variant/10 transition-all duration-200 opacity-90'
@@ -31,7 +30,6 @@ export async function renderAdminPage(container) {
 
   const overviewNavClass = getNavClass(isOverviewTab);
   const usersNavClass = getNavClass(isUsersTab);
-  const organizationsNavClass = getNavClass(isOrganizationsTab);
   const donationsNavClass = getNavClass(isDonationsTab);
   const auditNavClass = getNavClass(isAuditTab);
 
@@ -81,16 +79,7 @@ export async function renderAdminPage(container) {
         </div>
       </aside>
 
-      ${isUsersTab ? renderUsersTab() : (isOrganizationsTab ? `
-        <main class="ml-64 flex-1 flex flex-col items-center justify-center min-h-screen p-8 bg-surface">
-          <div class="max-w-md bg-surface-container-low p-8 rounded-2xl border border-outline-variant text-center shadow-sm">
-            <span class="material-symbols-outlined text-5xl text-primary mb-3">move_group</span>
-            <h3 class="text-title-lg font-bold text-on-surface mb-2">Chức năng đã chuyển giao</h3>
-            <p class="text-body-md text-on-surface-variant mb-6">Chức năng xác thực và xét duyệt tài khoản tổ chức hiện được thực hiện bởi bộ phận Kiểm duyệt viên (Staff) thay vì Admin.</p>
-            <a href="#/staff?tab=organizations" class="inline-block px-6 py-3 bg-primary text-on-primary font-bold rounded-xl shadow hover:opacity-90 transition-all">Đến trang Staff Dashboard</a>
-          </div>
-        </main>
-      ` : (isDonationsTab ? renderDonationsTab() : (isAuditTab ? renderAuditLogsTab() : renderOverviewTab())))}
+      ${isUsersTab ? renderUsersTab() : (isDonationsTab ? renderDonationsTab() : (isAuditTab ? renderAuditLogsTab() : renderOverviewTab()))}
     </div>
   `;
 
