@@ -70,12 +70,36 @@ export async function deleteCategory(id) {
 export async function getPendingProducts() {
   try {
     const data = await apiFetch("/api/products/pending");
-    return Array.isArray(data) ? data : [];
+    const list = Array.isArray(data) ? data : [];
+    if (list.length === 0) return list;
+
+    const categories = await getAllCategories();
+    if (!Array.isArray(categories) || categories.length === 0) return list;
+
+    const catMapById = new Map();
+    const catMapByName = new Map();
+    categories.forEach(c => {
+      if (c.id) catMapById.set(String(c.id), c.name);
+      if (c.name) catMapByName.set(c.name.toLowerCase(), c.name);
+    });
+
+    return list.map(p => {
+      if (!p || typeof p !== "object") return p;
+      if (p.categoryId && catMapById.has(String(p.categoryId))) {
+        p.category = catMapById.get(String(p.categoryId));
+      } else if (p.category && catMapById.has(String(p.category))) {
+        p.category = catMapById.get(String(p.category));
+      } else if (p.category && catMapByName.has(String(p.category).toLowerCase())) {
+        p.category = catMapByName.get(String(p.category).toLowerCase());
+      }
+      return p;
+    });
   } catch (err) {
     console.warn("Failed to fetch pending products:", err);
     return [];
   }
 }
+
 
 export async function approveProduct(id) {
   return await apiFetch(`/api/products/approve?id=${id}`, {

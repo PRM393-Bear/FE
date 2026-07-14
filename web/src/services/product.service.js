@@ -29,8 +29,10 @@ async function enrichProductsWithLiveCategory(products) {
       if (!p || typeof p !== "object") return p;
       if (p.categoryId && catMapById.has(String(p.categoryId))) {
         p.category = catMapById.get(String(p.categoryId));
-      } else if (p.category && catMapByName.has(p.category.toLowerCase())) {
-        p.category = catMapByName.get(p.category.toLowerCase());
+      } else if (p.category && catMapById.has(String(p.category))) {
+        p.category = catMapById.get(String(p.category));
+      } else if (p.category && catMapByName.has(String(p.category).toLowerCase())) {
+        p.category = catMapByName.get(String(p.category).toLowerCase());
       }
       return p;
     };

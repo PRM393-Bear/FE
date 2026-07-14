@@ -1,5 +1,6 @@
 import "../styles/products.css";
 import { getAllProducts, filterProductsApi, searchProductsByKeywordApi } from "../services/product.service.js";
+import { getAllCategories } from "../services/staff.service.js";
 
 /**
  * Render the Product List page
@@ -20,19 +21,12 @@ export async function renderProductsPage(container) {
 
         <!-- Category Tree -->
         <div class="filter-section">
-          <span class="filter-title">Danh mục Quần áo</span>
-          <ul class="category-list">
-            <li class="category-item category-parent active" data-category="Quần áo">
-              <span>Danh mục Quần Áo</span>
+          <span class="filter-title">Danh mục Sản phẩm</span>
+          <ul class="category-list" id="sidebar-category-list">
+            <li class="category-item category-parent active" data-category="">
+              <span>Tất cả danh mục</span>
               <span class="material-symbols-outlined icon-sm">expand_more</span>
             </li>
-            <li class="category-item category-child" data-category="Quần áo">Quần áo (Apparel)</li>
-            <li class="category-item category-child" data-category="Áo thun / Sơ mi">Áo thun / Sơ mi (Tops / Shirts)</li>
-            <li class="category-item category-child" data-category="Quần dài / Short">Quần dài / Short (Bottoms / Pants)</li>
-            <li class="category-item category-child" data-category="Váy & Đầm">Váy & Đầm (Dresses / Skirts)</li>
-            <li class="category-item category-child" data-category="Áo khoác / Blazer">Áo khoác / Blazer (Outwear)</li>
-            <li class="category-item category-child" data-category="Đồ thể thao">Đồ thể thao (Sportswear)</li>
-            <li class="category-item category-child" data-category="Đồ ngủ / Mặc nhà">Đồ ngủ / Mặc nhà (Loungewear)</li>
           </ul>
         </div>
 
@@ -219,11 +213,38 @@ export async function renderProductsPage(container) {
   const activeFiltersContainer = document.getElementById("active-filters-container");
   const resultsCount = container.querySelector(".results-count");
 
+  // Load dynamic categories from Staff service
+  const sidebarCategoryList = container.querySelector("#sidebar-category-list");
+  let categoriesData = [];
+  try {
+    categoriesData = await getAllCategories();
+    if (sidebarCategoryList) {
+      if (Array.isArray(categoriesData) && categoriesData.length > 0) {
+        sidebarCategoryList.innerHTML = `
+          <li class="category-item category-parent active" data-category="">
+            <span>Tất cả danh mục</span>
+            <span class="material-symbols-outlined icon-sm">expand_more</span>
+          </li>
+          ${categoriesData.map(cat => `
+            <li class="category-item category-child" data-category="${cat.name || ''}" data-category-id="${cat.id || ''}">${cat.name || 'Không tên'}</li>
+          `).join("")}
+        `;
+      } else {
+        sidebarCategoryList.innerHTML = `
+          <li class="category-item category-parent active" data-category="">
+            <span>Tất cả danh mục</span>
+            <span class="material-symbols-outlined icon-sm">expand_more</span>
+          </li>
+        `;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to load staff categories for sidebar:", err);
+  }
+
   // Load data
   try {
     const data = await getAllProducts();
-    // Assuming status logic should only show 'available', if we had strict status. For now we just use all data.
-    // allProducts = data.filter(p => p.status !== 'sold');
     allProducts = data || [];
     filteredProducts = [...allProducts];
 
@@ -237,7 +258,8 @@ export async function renderProductsPage(container) {
       if (catParam) {
         container.querySelectorAll(".category-child").forEach(el => {
           const dsCat = el.dataset.category || "";
-          if (dsCat.toLowerCase() === catParam.toLowerCase() || dsCat.toLowerCase().includes(catParam.toLowerCase()) || catParam.toLowerCase().includes(dsCat.toLowerCase())) {
+          const dsId = el.dataset.categoryId || "";
+          if (dsCat.toLowerCase() === catParam.toLowerCase() || dsCat.toLowerCase().includes(catParam.toLowerCase()) || catParam.toLowerCase().includes(dsCat.toLowerCase()) || (dsId && dsId === catParam)) {
             el.style.fontWeight = '600';
             el.style.color = 'var(--primary)';
             initialFilter = true;
@@ -359,10 +381,14 @@ export async function renderProductsPage(container) {
     filteredProducts = baseList.filter(p => {
       // Category
       if (filters.categories.length > 0) {
-        if (!p.category) return false;
-        const matchCat = filters.categories.some(fc => 
-          p.category.toLowerCase().includes(fc.toLowerCase()) || fc.toLowerCase().includes(p.category.toLowerCase())
-        );
+        if (!p.category && !p.categoryId) return false;
+        const matchCat = filters.categories.some(fc => {
+          if (!fc) return false;
+          const lowerFc = fc.toLowerCase();
+          const lowerCat = (p.category || "").toLowerCase();
+          const catIdStr = String(p.categoryId || "");
+          return lowerCat.includes(lowerFc) || lowerFc.includes(lowerCat) || catIdStr === fc;
+        });
         if (!matchCat) return false;
       }
 
@@ -524,6 +550,15 @@ export async function renderProductsPage(container) {
   const categoryList = container.querySelector('.category-list');
   if (categoryList) {
     categoryList.addEventListener('click', (e) => {
+      const parent = e.target.closest('.category-parent');
+      if (parent) {
+        categoryList.querySelectorAll('.category-child').forEach(c => {
+          c.style.fontWeight = 'normal';
+          c.style.color = 'var(--on-surface-variant)';
+        });
+        applyFilters();
+        return;
+      }
       const item = e.target.closest('.category-child');
       if (item) {
         // Toggle category

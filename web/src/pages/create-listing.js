@@ -249,11 +249,6 @@ export function renderCreateListingPage(container) {
           { id: "c6", name: "Đồ thể thao" },
           { id: "c7", name: "Đồ ngủ / Mặc nhà" },
         ];
-      } else {
-        categories = categories.filter((c) => {
-          const n = (c.name || "").toLowerCase();
-          return !n.includes("giày") && !n.includes("dép") && !n.includes("túi") && !n.includes("phụ kiện") && !n.includes("balo") && !n.includes("ví") && !n.includes("đồng hồ");
-        });
       }
       categoryBubblesContainer.innerHTML = categories.map((cat) => {
         const catName = cat.name || "Không tên";
@@ -584,17 +579,15 @@ export function renderCreateListingPage(container) {
       }
     }
 
-    // Verify only clothing products are allowed
-    const nonClothingKeywords = [
-      "giày", "dép", "túi xách", "túi đeo", "balo", "ba lô", "phụ kiện", "đồng hồ", "mắt kính", "kính mát", "nhẫn", "dây chuyền", "vòng tay", "thắt lưng", "ví",
-      "điện tử", "sách", "máy tính", "điện thoại", "laptop", "tủ lạnh", "máy giặt", "xe máy", "ô tô", "đồ gia dụng", "tivi", "ti vi", "đồ chơi"
+    // Verify no unrelated non-fashion/electronic products are listed
+    const nonFashionKeywords = [
+      "điện tử", "máy tính", "điện thoại", "laptop", "tủ lạnh", "máy giặt", "xe máy", "ô tô", "đồ gia dụng", "tivi", "ti vi"
     ];
     const lowerTitle = (title || "").toLowerCase();
     const lowerDesc = (description || "").toLowerCase();
-    const lowerCat = (category || "").toLowerCase();
-    for (const kw of nonClothingKeywords) {
-      if (lowerTitle.includes(kw) || lowerDesc.includes(kw) || lowerCat.includes(kw)) {
-        alert("Hệ thống EcoCycle chỉ hỗ trợ đăng bán, mua bán các sản phẩm Quần áo (Áo, Quần, Váy đầm, Áo khoác...). Các mặt hàng khác như giày dép, túi xách, phụ kiện hay điện tử không thuộc phạm vi hỗ trợ.");
+    for (const kw of nonFashionKeywords) {
+      if (lowerTitle.includes(kw) || lowerDesc.includes(kw)) {
+        alert("Hệ thống EcoCycle chỉ hỗ trợ đăng bán các sản phẩm Thời trang (Quần áo, phụ kiện theo danh mục quy định). Các mặt hàng điện tử, xe cộ, gia dụng không thuộc phạm vi hỗ trợ.");
         return false;
       }
     }
