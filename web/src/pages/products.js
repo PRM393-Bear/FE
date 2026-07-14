@@ -9,6 +9,7 @@ import { getAllCategories } from "../services/staff.service.js";
 export async function renderProductsPage(container) {
   let allProducts = [];
   let filteredProducts = [];
+  let currentSearchKeyword = "";
 
   container.innerHTML = `
     <div class="products-layout">
@@ -267,14 +268,8 @@ export async function renderProductsPage(container) {
         });
       }
       if (searchParam) {
-        try {
-          filteredProducts = await searchProductsByKeywordApi(searchParam);
-          updateGrid();
-          if (resultsCount) resultsCount.textContent = `Tìm kiếm cho "${searchParam}": ${filteredProducts.length} sản phẩm`;
-          return;
-        } catch (e) {
-          console.warn("Search keyword error:", e);
-        }
+        currentSearchKeyword = searchParam.trim();
+        initialFilter = true;
       }
     }
 
@@ -311,7 +306,10 @@ export async function renderProductsPage(container) {
 
     // Category
     container.querySelectorAll('.category-child[style*="font-weight: 600"]').forEach(el => {
-      filters.categories.push(el.dataset.category);
+      filters.categories.push({
+        name: el.dataset.category || "",
+        id: el.dataset.categoryId || ""
+      });
     });
 
     // Price
@@ -361,9 +359,13 @@ export async function renderProductsPage(container) {
 
     let baseList = allProducts;
     try {
-      if (filters.categories.length > 0 || filters.minPrice !== null || filters.maxPrice !== null || filters.conditions.length > 0 || filters.sizes.length > 0 || filters.colors.length > 0 || (filters.sortBy && filters.sortBy !== "relevant")) {
+      const firstCat = filters.categories[0];
+      const catParamVal = firstCat ? (firstCat.id || firstCat.name || "") : "";
+      const hasSidebarFilter = filters.categories.length > 0 || filters.minPrice !== null || filters.maxPrice !== null || filters.conditions.length > 0 || filters.sizes.length > 0 || filters.colors.length > 0 || (filters.sortBy && filters.sortBy !== "relevant");
+
+      if (hasSidebarFilter) {
         const queryParams = {
-          category: filters.categories[0] || "",
+          category: catParamVal,
           minPrice: filters.minPrice !== null ? filters.minPrice : undefined,
           maxPrice: filters.maxPrice !== null ? filters.maxPrice : undefined,
           condition: filters.conditions[0] !== undefined ? filters.conditions[0] : undefined,
@@ -372,6 +374,8 @@ export async function renderProductsPage(container) {
           sortBy: filters.sortBy && filters.sortBy !== "relevant" ? filters.sortBy : "newest"
         };
         baseList = await filterProductsApi(queryParams);
+      } else if (currentSearchKeyword) {
+        baseList = await searchProductsByKeywordApi(currentSearchKeyword);
       }
     } catch (err) {
       console.warn("Backend filter API fallback to local:", err);
@@ -379,17 +383,28 @@ export async function renderProductsPage(container) {
     }
 
     filteredProducts = baseList.filter(p => {
-      // Category
+      // Category (Staff dynamic ID & Name matching)
       if (filters.categories.length > 0) {
         if (!p.category && !p.categoryId) return false;
-        const matchCat = filters.categories.some(fc => {
-          if (!fc) return false;
-          const lowerFc = fc.toLowerCase();
-          const lowerCat = (p.category || "").toLowerCase();
-          const catIdStr = String(p.categoryId || "");
-          return lowerCat.includes(lowerFc) || lowerFc.includes(lowerCat) || catIdStr === fc;
+        const matchCat = filters.categories.some(selected => {
+          if (!selected) return false;
+          const pCatId = String(p.categoryId || "").trim();
+          const pCatName = (p.category || "").toLowerCase().trim();
+          const selId = String(selected.id || "").trim();
+          const selName = (selected.name || "").toLowerCase().trim();
+          return (selId && pCatId && selId === pCatId) || 
+                 (selName && pCatName && (pCatName.includes(selName) || selName.includes(pCatName)));
         });
         if (!matchCat) return false;
+      }
+
+      // Keyword search combination
+      if (currentSearchKeyword) {
+        const q = currentSearchKeyword.toLowerCase().trim();
+        const matchKeyword = (p.title || "").toLowerCase().includes(q) ||
+                             (p.description || "").toLowerCase().includes(q) ||
+                             (p.brand || "").toLowerCase().includes(q);
+        if (!matchKeyword) return false;
       }
 
       // Price
@@ -443,8 +458,13 @@ export async function renderProductsPage(container) {
   function renderActiveFilterTags(filters) {
     let html = "";
 
+    if (currentSearchKeyword) {
+      html += `<div class="filter-tag" data-type="keyword" data-val="${currentSearchKeyword}">Từ khóa: "${currentSearchKeyword}" <span class="material-symbols-outlined tag-close">close</span></div>`;
+    }
     filters.categories.forEach(c => {
-      html += `<div class="filter-tag" data-type="category" data-val="${c}">Danh mục: ${c} <span class="material-symbols-outlined tag-close">close</span></div>`;
+      const catLabel = typeof c === 'object' ? (c.name || c.id || "Danh mục") : c;
+      const catVal = typeof c === 'object' ? (c.id || c.name || "") : c;
+      html += `<div class="filter-tag" data-type="category" data-val="${catVal}">Danh mục: ${catLabel} <span class="material-symbols-outlined tag-close">close</span></div>`;
     });
     if (filters.minPrice !== null || filters.maxPrice !== null) {
       const min = filters.minPrice || 0;
@@ -471,10 +491,17 @@ export async function renderProductsPage(container) {
   }
 
   function removeFilter(type, val) {
-    if (type === 'category') {
-      container.querySelectorAll(`.category-child[data-category="${val}"]`).forEach(el => {
-        el.style.fontWeight = 'normal';
-        el.style.color = 'var(--on-surface-variant)';
+    if (type === 'keyword') {
+      currentSearchKeyword = "";
+      if (window.location.hash.includes("search=")) {
+        window.history.replaceState(null, "", window.location.pathname + "#/products");
+      }
+    } else if (type === 'category') {
+      container.querySelectorAll(`.category-child`).forEach(el => {
+        if (el.dataset.category === val || el.dataset.categoryId === val) {
+          el.style.fontWeight = 'normal';
+          el.style.color = 'var(--on-surface-variant)';
+        }
       });
     } else if (type === 'price') {
       container.querySelector('.input-price-min').value = "";
@@ -518,6 +545,10 @@ export async function renderProductsPage(container) {
         c.style.fontWeight = 'normal';
         c.style.color = 'var(--on-surface-variant)';
       });
+      currentSearchKeyword = "";
+      if (window.location.hash.includes("search=")) {
+        window.history.replaceState(null, "", window.location.pathname + "#/products");
+      }
       applyFilters();
     });
   });
