@@ -17,6 +17,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   String _role = 'GUEST';
+  String? _orgStatus;
   bool _loaded = false;
 
   @override
@@ -43,13 +44,21 @@ class _MainScreenState extends State<MainScreen> {
     if (!loggedIn) {
       setState(() {
         _role = 'GUEST';
+        _orgStatus = null;
         _loaded = true;
       });
       return;
     }
     final role = await AuthStorage.getRole();
+    final status = await AuthStorage.getOrganizationStatus();
     setState(() {
-      _role = role ?? 'MEMBER';
+      // Nếu là Tổ chức mà chưa được duyệt -> Ép Role về GUEST để hiện giao diện khách
+      if (role == 'ORGANIZATION' && status != 'APPROVED') {
+        _role = 'GUEST';
+      } else {
+        _role = role ?? 'MEMBER';
+      }
+      _orgStatus = status;
       _loaded = true;
     });
   }
@@ -151,6 +160,7 @@ class _MainScreenState extends State<MainScreen> {
         body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
+
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: BottomNavigationBar(

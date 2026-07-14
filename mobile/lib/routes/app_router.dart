@@ -18,6 +18,7 @@ import '../features/wardrobe/presentation/pages/wardrobe_page.dart';
 import '../features/organization/presentation/pages/org_dashboard_page.dart';
 import '../features/chat/presentation/pages/chat_list_page.dart';
 import '../features/donation/presentation/pages/donation_event_list_page.dart';
+import '../core/auth/auth_storage.dart';
 
 final appRouter = GoRouter(
   initialLocation: RouteNames.productList,

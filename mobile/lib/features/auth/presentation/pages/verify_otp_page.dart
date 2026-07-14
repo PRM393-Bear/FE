@@ -63,7 +63,7 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
       if (!mounted) return;
       _showSnack('Xác thực thành công! Đang đăng nhập...');
 
-      // 2. Login để lấy token (bọc try-catch riêng để debug lỗi 500)
+      // 2. Login để lấy token
       try {
         final loginRes = await ApiClient.dio.post('/api/auth/login', data: {
           'username': widget.username,
@@ -72,26 +72,25 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
 
         final token = loginRes.data['accessToken'] as String;
         await _storage.write(key: 'auth_token', value: token);
-        await AuthStorage.saveRole(widget.roleName); // roleName đã biết sẵn từ SelectRolePage
+        
+        // Lưu status ban đầu (thường là null cho acc mới)
+        final orgStatus = loginRes.data['organizationStatus'] as String?;
+        await AuthStorage.saveOrganizationStatus(orgStatus);
+        await AuthStorage.saveRole(widget.roleName);
         AuthState.notifyChanged();
 
         if (!mounted) return;
 
-        // 3. Điều hướng theo role — Tổ chức phải hoàn tất hồ sơ (tên,
-        // địa chỉ, giấy tờ xác minh) và CHỜ DUYỆT trước khi được vào
-        // dashboard, không được vào thẳng ngay sau khi đăng ký như trước.
+        // 3. Điều hướng dứt khoát
         if (widget.roleName == 'ORGANIZATION') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const OrgRegisterPage()),
-          );
+          context.go(RouteNames.registerOrg);
         } else {
           context.go(RouteNames.productList);
         }
       } on DioException catch (e) {
-        debugPrint('🔴 Auto-login failed after verify: ${e.response?.data}');
+        debugPrint('🔴 Auto-login failed: ${e.response?.data}');
         if (!mounted) return;
-        _showSnack('Đã xác thực nhưng không thể tự động đăng nhập (Lỗi 500). Vui lòng thử đăng nhập thủ công bằng Email.');
+        _showSnack('Xác thực xong nhưng không thể tự động đăng nhập (Lỗi 500). Vui lòng đăng nhập thủ công.', isError: true);
         context.go(RouteNames.login);
       }
     } on DioException catch (e) {

@@ -71,5 +71,15 @@ class AuthStorage {
     await _storage.delete(key: 'auth_token');
     await _storage.delete(key: 'user_role');
     await _storage.delete(key: 'organization_status');
+    // Không xoá 'has_seen_approved' ở đây để ghi nhớ vĩnh viễn việc đã xem thông báo
+  }
+
+  static Future<void> markSeenApproved() async {
+    await _storage.write(key: 'has_seen_approved', value: 'true');
+  }
+
+  static Future<bool> hasSeenApproved() async {
+    final val = await _storage.read(key: 'has_seen_approved');
+    return val == 'true';
   }
 }

@@ -39,7 +39,27 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
     super.initState();
     if (widget.initialStatus != null) {
       _viewStatus = widget.initialStatus;
-      _currentStep = 3; // bỏ qua form nhập liệu, vào thẳng màn trạng thái
+      _currentStep = 3;
+    } else {
+      // Nếu không có status truyền vào, thử fetch từ server xem đã nộp chưa
+      _checkExistingStatus();
+    }
+  }
+
+  Future<void> _checkExistingStatus() async {
+    setState(() => _isLoading = true);
+    try {
+      final orgStatus = await AuthStorage.getOrganizationStatus();
+      if (orgStatus != null) {
+        setState(() {
+          _viewStatus = orgStatus;
+          _currentStep = 3;
+        });
+      }
+    } catch (e) {
+      debugPrint('ℹ️ Error reading cached status: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -151,6 +171,13 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
       if (_officeImage != null) _officeUrl = await _uploadImage(_officeImage!);
       if (_activityImage != null) _activityUrl = await _uploadImage(_activityImage!);
 
+      if (_idCardUrl == null || _licenseUrl == null) {
+        _showSnack('Tải ảnh giấy tờ lên thất bại, vui lòng thử lại',
+            isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+
       // 2. Tạo tổ chức
       final verificationDocs = <String>[];
       if (_idCardUrl != null) verificationDocs.add(_idCardUrl!);
@@ -162,6 +189,10 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
         'orgName': _orgNameController.text.trim(),
         'description': _descriptionController.text.trim(),
         'address': _addressController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'orgType': _selectedOrgType,
+        'website': _websiteController.text.trim(),
         'latitude': 10.7769,
         'longitude': 106.7009,
         'acceptedTypes': _selectedAcceptedTypes,
@@ -173,6 +204,7 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
       setState(() {
          _viewStatus = 'PENDING';
          _currentStep = 3;
+         _isLoading = false; // Đảm bảo tắt loading ngay lập tức
       });
     } on DioException catch (e) {
       debugPrint('🔴 Org register error: ${e.response?.data}');
@@ -207,8 +239,12 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
           onPressed: () {
             if (_currentStep > 0 && _currentStep < 3) {
               setState(() => _currentStep--);
-            } else {
+            } else if (Navigator.of(context).canPop()) {
               Navigator.pop(context);
+            } else {
+              // Không còn trang nào để pop (vào thẳng từ GoRouter redirect lúc mở
+              // app) — điều hướng an toàn về màn đăng nhập thay vì để app crash.
+              context.go(RouteNames.login);
             }
           },
         ),
@@ -1025,18 +1061,37 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
           ),
           const SizedBox(height: 24),
 
-          AppButton(
-            label: 'Về màn đăng nhập',
-            onPressed: () async {
-              // BE hiện chưa có API để tự kiểm tra trạng thái duyệt theo
-              // thời gian thực, nên đăng xuất tại đây là an toàn nhất —
-              // tránh để tài khoản "lơ lửng" trong app mà không biết đã
-              // được duyệt hay chưa. Đăng nhập lại sau sẽ biết ngay.
-              await AuthStorage.clear();
-              AuthState.notifyChanged();
-              if (!mounted) return;
-              context.go(RouteNames.login);
-            },
+          // Dùng Material + InkWell để đảm bảo bắt sự kiện chạm nhạy nhất
+          Material(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () async {
+                debugPrint('>>> NUT BAM DA NHAN: Ve man dang nhap');
+                FocusManager.instance.primaryFocus?.unfocus();
+                
+                // Đăng xuất và điều hướng
+                await AuthStorage.clear();
+                AuthState.notifyChanged();
+                
+                if (mounted) {
+                  context.go(RouteNames.login);
+                }
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: double.infinity,
+                height: 50,
+                alignment: Alignment.center,
+                child: Text(
+                  'Về màn đăng nhập',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           OutlinedButton(
@@ -1065,6 +1120,9 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
   // thêm — thay vì bị đưa thẳng vào Dashboard một cách âm thầm).
   // ════════════════════════════════════════════
   Widget _buildApprovedScreen() {
+    // Đánh dấu đã xem màn hình Approved để lần sau login vào thẳng Dashboard
+    AuthStorage.markSeenApproved();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
@@ -1099,23 +1157,45 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Tài khoản của bạn đã được duyệt!',
+          Text('Hồ sơ đã được phê duyệt!',
               textAlign: TextAlign.center, style: AppTextStyles.headline3),
           const SizedBox(height: 12),
           Text(
-            'Chúc mừng! Hồ sơ tổ chức của bạn đã được Admin/Staff xét duyệt '
-            'thành công. Hãy tiến hành đăng nhập để bắt đầu sử dụng đầy đủ '
-            'tính năng dành cho Tổ chức.',
+            'Chúc mừng! Hồ sơ tổ chức của bạn đã được kiểm duyệt thành công. '
+            'Vui lòng quay lại màn hình đăng nhập để cập nhật quyền truy cập '
+            'và bắt đầu sử dụng Dashboard.',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMedium
                 .copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 32),
-          AppButton(
-            label: 'Tiến hành đăng nhập',
-            onPressed: () {
-              context.go(RouteNames.orgDashboard);
-            },
+          Material(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () async {
+                debugPrint('>>> NUT BAM DA NHAN: Ve man dang nhap (Approved)');
+                FocusManager.instance.primaryFocus?.unfocus();
+                await AuthStorage.clear();
+                AuthState.notifyChanged();
+                if (mounted) {
+                  context.go(RouteNames.login);
+                }
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: double.infinity,
+                height: 50,
+                alignment: Alignment.center,
+                child: Text(
+                  'Về màn đăng nhập',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 24),
         ],

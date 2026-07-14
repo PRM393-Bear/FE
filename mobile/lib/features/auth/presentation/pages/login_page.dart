@@ -27,6 +27,14 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Bỏ tự động check status tại đây để tránh việc vừa bấm "Đăng nhập" 
+    // đã bị nhảy ngay sang màn hình đăng ký tổ chức, gây cảm giác lag/lỗi.
+    // Người dùng sẽ chủ động đăng nhập để vào đúng luồng.
+  }
+
   final _storage = const FlutterSecureStorage();
 
   @override
@@ -70,17 +78,16 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       if (roleName == 'ORGANIZATION') {
-        // Tài khoản Tổ chức KHÔNG được vào thẳng Dashboard chỉ vì role là
-        // ORGANIZATION — phải dừng đúng ở màn trạng thái hồ sơ trước.
-        // PENDING / REJECTED / chưa nộp hồ sơ -> màn trạng thái tương ứng.
-        // APPROVED -> vẫn dừng lại 1 nhịp ở màn "đã được duyệt" để thông
-        // báo cho người dùng, thay vì âm thầm vào thẳng Dashboard.
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => OrgRegisterPage(initialStatus: orgStatus),
-          ),
-        );
+        // Kiểm tra xem đã từng xem màn hình Approved chưa
+        final hasSeenApproved = await AuthStorage.hasSeenApproved();
+        
+        if (orgStatus == 'APPROVED' && hasSeenApproved) {
+          // Nếu đã Approved VÀ đã xem thông báo rồi -> Vào thẳng Dashboard
+          context.go(RouteNames.orgDashboard);
+        } else {
+          // Trường hợp còn lại (mới nộp, đang chờ, hoặc Approved lần đầu) -> Vào OrgRegisterPage
+          context.go(RouteNames.registerOrg, extra: orgStatus);
+        }
       } else {
         context.go(RouteNames.productList);
       }
