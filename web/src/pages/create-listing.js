@@ -252,9 +252,9 @@ export function renderCreateListingPage(container) {
       }
       categoryBubblesContainer.innerHTML = categories.map((cat) => {
         const catName = cat.name || "Không tên";
-        const isSelected = initialCatName && (
-          catName.toLowerCase() === initialCatName.toLowerCase() ||
-          (initialCatId && String(cat.id) === String(initialCatId))
+        const isSelected = Boolean(
+          (initialCatName && catName.toLowerCase() === initialCatName.toLowerCase()) ||
+          (initialCatId && cat.id && String(cat.id).trim() === String(initialCatId).trim())
         );
         if (isSelected && hiddenCategoryInput) {
           hiddenCategoryInput.value = catName;
@@ -603,11 +603,16 @@ export function renderCreateListingPage(container) {
         ? rawTags.split(",").map((t) => t.trim()).filter((t) => t.length > 0)
         : [];
 
+      // UUID Guard: Backend ProductReq.java requires java.util.UUID categoryId.
+      // If categoryId is non-UUID (e.g. "c1", "c2" from fallback or empty string ""), send null to prevent HTTP 400 Bad Request.
+      const isValidUUID = (idStr) => idStr && typeof idStr === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idStr.trim());
+      const cleanCategoryId = isValidUUID(categoryId) ? categoryId.trim() : null;
+
       const payload = {
         title,
         description,
         category,
-        categoryId,
+        categoryId: cleanCategoryId,
         type: "ITEM",
         condition: condition ? parseInt(condition, 10) : 3,
         price: priceVal ? parseInt(priceVal, 10) : 0,
