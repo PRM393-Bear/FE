@@ -21,7 +21,7 @@ import { renderCartPage } from "./pages/cart.js";
 import { renderStaffDashboard } from "./pages/staff/index.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
-import { logoutApi, isAuthenticated, getUser } from "./services/auth.service.js";
+import { logoutApi, isAuthenticated, getUser, refreshUserOrgStatus } from "./services/auth.service.js";
 
 const app = document.getElementById("app");
 
@@ -139,6 +139,10 @@ function handleHome() {
     window.location.hash = "#/staff";
     return;
   }
+  if (isAuthenticated() && (u?.role === "organization" || u?.role === "org") && (u?.status === "pending" || u?.status === "rejected")) {
+    window.location.hash = "#/pending-approval";
+    return;
+  }
   renderHeader({ activePage: "home" });
   currentCleanup = renderHomePage(app);
   renderFooter();
@@ -197,12 +201,34 @@ function navigate() {
     currentCleanup = null;
   }
 
-  // Check Admin redirection away from Home
+  // Check Admin / Staff / Organization redirection away from unauthorized pages
   if (isAuthenticated()) {
     const user = getUser();
     if (user?.role === "admin" && (route === "#/" || route === "" || route === "#/home")) {
       window.location.hash = "#/admin";
       return;
+    }
+    if (user?.role === "staff" && (route === "#/" || route === "" || route === "#/home")) {
+      window.location.hash = "#/staff";
+      return;
+    }
+    // Check Organization pending status restriction
+    if ((user?.role === "organization" || user?.role === "org") && user?.status === "pending") {
+      if (route !== "#/pending-approval" && route !== "#/logout" && route !== "#/register-organization") {
+        window.location.hash = "#/pending-approval";
+        return;
+      }
+    }
+    // Check Organization rejected status restriction
+    if ((user?.role === "organization" || user?.role === "org") && user?.status === "rejected") {
+      if (route !== "#/pending-approval" && route !== "#/logout") {
+        window.location.hash = "#/pending-approval";
+        return;
+      }
+    }
+    // Asynchronously refresh org status if sitting on pending-approval
+    if ((user?.role === "organization" || user?.role === "org") && route === "#/pending-approval") {
+      refreshUserOrgStatus().catch(() => {});
     }
   }
 

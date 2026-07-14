@@ -3,7 +3,9 @@ import {
   loginApi, 
   verifyRegisterOtp, 
   uploadImageApi, 
-  createOrganizationDetailApi 
+  createOrganizationDetailApi,
+  getUser,
+  saveUser
 } from "../services/auth.service.js";
 import "../styles/register-org.css";
 
@@ -586,6 +588,12 @@ export function renderRegisterOrgPage(container) {
 
           await createOrganizationDetailApi(orgPayload);
           
+          const u = getUser();
+          if (u) {
+            u.status = "pending";
+            saveUser(u);
+          }
+
           showToast("Đăng ký hồ sơ Tổ chức thành công!", "success");
           setTimeout(() => {
               window.location.hash = "#/pending-approval";

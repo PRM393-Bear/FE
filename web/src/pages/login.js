@@ -208,6 +208,11 @@ export function renderLoginPage(container) {
         setTimeout(() => { window.location.hash = '#/admin'; }, 800);
       } else if (user && user.role === 'staff') {
         setTimeout(() => { window.location.hash = '#/staff'; }, 800);
+      } else if (user && (user.role === 'organization' || user.role === 'org') && user.status === 'pending') {
+        setTimeout(() => { window.location.hash = '#/pending-approval'; }, 800);
+      } else if (user && (user.role === 'organization' || user.role === 'org') && user.status === 'rejected') {
+        showToast('Hồ sơ tổ chức của bạn đã bị từ chối xét duyệt.', 'error');
+        setTimeout(() => { window.location.hash = '#/pending-approval'; }, 1200);
       } else {
         setTimeout(() => { window.location.hash = '#/'; }, 800);
       }
