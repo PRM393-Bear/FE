@@ -156,11 +156,13 @@ export async function attachOrganizationsListeners(container) {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const id = btn.getAttribute('data-id');
+          const reason = prompt("Nhập lý do từ chối hồ sơ tổ chức (sẽ gửi đến email người dùng):", "Hồ sơ không đáp ứng đủ điều kiện xác thực hoặc minh chứng chưa hợp lệ");
+          if (reason === null) return;
           if (confirm('Bạn có chắc chắn muốn TỪ CHỐI tài khoản tổ chức này?')) {
             try {
               btn.disabled = true;
               btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">sync</span>`;
-              await rejectOrganization(id);
+              await rejectOrganization(id, reason.trim() || "Hồ sơ không hợp lệ");
               // Reload tab
               attachOrganizationsListeners(container);
             } catch (err) {

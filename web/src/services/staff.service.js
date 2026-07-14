@@ -133,8 +133,8 @@ export async function approveOrganization(id) {
   });
 }
 
-export async function rejectOrganization(id) {
-  return await apiFetch(`/api/organization-details/${id}/reject`, {
+export async function rejectOrganization(id, reason = "Hồ sơ không đáp ứng đủ điều kiện xác thực") {
+  return await apiFetch(`/api/organization-details/${id}/reject?reason=${encodeURIComponent(reason)}`, {
     method: "PATCH",
   });
 }

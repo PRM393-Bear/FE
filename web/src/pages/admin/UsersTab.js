@@ -110,7 +110,11 @@ export function renderUsersTab() {
             <span id="modal-ban-icon" class="material-symbols-outlined text-3xl text-error">gavel</span>
             <h3 id="modal-ban-title" class="text-headline-sm font-bold text-on-surface">Xác nhận thao tác</h3>
           </div>
-          <p id="modal-ban-message" class="text-body-md text-on-surface-variant mb-6"></p>
+          <p id="modal-ban-message" class="text-body-md text-on-surface-variant mb-4"></p>
+          <div id="modal-ban-reason-container" class="mb-6">
+            <label class="block text-label-md font-semibold text-on-surface mb-1.5">Lý do * (Sẽ gửi đến email của User)</label>
+            <input type="text" id="modal-ban-reason-input" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Nhập lý do..." />
+          </div>
           <div class="flex justify-end gap-3">
             <button id="btn-ban-cancel" class="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-variant transition-colors">Hủy</button>
             <button id="btn-ban-confirm" class="px-5 py-2.5 rounded-xl bg-error text-on-error font-semibold hover:bg-error/90 transition-colors">Xác nhận</button>
@@ -337,6 +341,7 @@ function attachBanButtons() {
       const message = document.getElementById('modal-ban-message');
       const icon = document.getElementById('modal-ban-icon');
       const confirmBtn = document.getElementById('btn-ban-confirm');
+      const reasonInput = document.getElementById('modal-ban-reason-input');
 
       if (isCurrentlyBlocked) {
         title.textContent = 'Mở khóa tài khoản';
@@ -345,6 +350,7 @@ function attachBanButtons() {
         icon.className = 'material-symbols-outlined text-3xl text-primary';
         confirmBtn.className = 'px-5 py-2.5 rounded-xl bg-primary text-on-primary font-semibold hover:bg-primary/90 transition-colors';
         confirmBtn.textContent = 'Mở khóa';
+        if (reasonInput) reasonInput.value = 'Mở khóa tài khoản theo quyết định của Quản trị viên';
       } else {
         title.textContent = 'Khóa tài khoản';
         message.textContent = `Bạn có chắc muốn khóa tài khoản "${user.fullName || user.userName}"? Người dùng sẽ không thể đăng nhập vào hệ thống.`;
@@ -352,6 +358,7 @@ function attachBanButtons() {
         icon.className = 'material-symbols-outlined text-3xl text-error';
         confirmBtn.className = 'px-5 py-2.5 rounded-xl bg-error text-on-error font-semibold hover:bg-error/90 transition-colors';
         confirmBtn.textContent = 'Khóa tài khoản';
+        if (reasonInput) reasonInput.value = 'Vi phạm chính sách và điều khoản sử dụng cộng đồng EcoCycle';
       }
 
       modal.classList.remove('hidden');
@@ -361,19 +368,22 @@ function attachBanButtons() {
       confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
       newConfirmBtn.addEventListener('click', async () => {
+        const reason = reasonInput?.value?.trim() || (isCurrentlyBlocked ? 'Mở khóa tài khoản' : 'Vi phạm điều khoản cộng đồng EcoCycle');
         newConfirmBtn.disabled = true;
         newConfirmBtn.textContent = 'Đang xử lý...';
         try {
-          await banUser(userId, isCurrentlyBlocked);
+          // Backend isBlocked parameter: true = ban (when !isCurrentlyBlocked), false = unban (when isCurrentlyBlocked)
+          const targetIsBanned = !isCurrentlyBlocked;
+          await banUser(userId, targetIsBanned, reason);
           recordLocalAuditLog({
-            action: isCurrentlyBlocked ? 'UNBAN_USER' : 'BAN_USER',
+            action: targetIsBanned ? 'BAN_USER' : 'UNBAN_USER',
             username: 'Admin',
             entity: 'User',
             entityId: userId,
-            detail: `${isCurrentlyBlocked ? 'Mở khóa' : 'Khóa'} tài khoản "${user.fullName || user.userName}" từ Admin Console | ip=127.0.0.1`,
+            detail: `${targetIsBanned ? 'Khóa' : 'Mở khóa'} tài khoản "${user.fullName || user.userName}" từ Admin Console | lý do: ${reason} | ip=127.0.0.1`,
             status: 'SUCCESS'
           });
-          showToast(isCurrentlyBlocked ? 'Đã mở khóa tài khoản!' : 'Đã khóa tài khoản!', 'success');
+          showToast(targetIsBanned ? 'Đã khóa tài khoản!' : 'Đã mở khóa tài khoản!', 'success');
           modal.classList.add('hidden');
           // Refresh data
           allUsersCache = await getAllUsers();

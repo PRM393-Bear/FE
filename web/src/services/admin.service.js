@@ -14,8 +14,8 @@ export async function getAllUsers() {
   }
 }
 
-export async function banUser(userId, isBanned) {
-  return await apiFetch(`/api/user/banned?userId=${userId}&isBanned=${isBanned}`, {
+export async function banUser(userId, isBanned, reason = "Vi phạm điều khoản sử dụng cộng đồng EcoCycle") {
+  return await apiFetch(`/api/user/banned?userId=${userId}&isBanned=${isBanned}&reason=${encodeURIComponent(reason)}`, {
     method: "PUT",
   });
 }
@@ -59,8 +59,8 @@ export async function approveOrganization(id) {
   });
 }
 
-export async function rejectOrganization(id) {
-  return await apiFetch(`/api/organization-details/${id}/reject`, {
+export async function rejectOrganization(id, reason = "Hồ sơ không đáp ứng đủ điều kiện xác thực") {
+  return await apiFetch(`/api/organization-details/${id}/reject?reason=${encodeURIComponent(reason)}`, {
     method: "PATCH",
   });
 }
