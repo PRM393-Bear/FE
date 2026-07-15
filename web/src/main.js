@@ -16,46 +16,60 @@ import { renderProductsPage } from "./pages/products.js";
 import { renderProductDetailPage } from "./pages/product-detail.js";
 import { renderAdminPage } from "./pages/admin/index.js";
 import { renderCreateListingPage } from "./pages/create-listing.js";
+import { renderPendingApprovalPage } from "./pages/pending-approval.js";
+import { renderCartPage } from "./pages/cart.js";
+import { renderStaffDashboard } from "./pages/staff/index.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
-import { logoutApi, isAuthenticated } from "./services/auth.service.js";
+import { logoutApi, isAuthenticated, getUser, refreshUserOrgStatus } from "./services/auth.service.js";
 
 const app = document.getElementById("app");
+
+let currentCleanup = null;
 
 const routes = {
   "#/login": () => {
     renderHeader({ activePage: "login" });
-    renderLoginPage(app);
+    currentCleanup = renderLoginPage(app);
     removeFooter();
   },
   "#/register": () => {
     renderHeader({ activePage: "register" });
-    renderRegisterSelectionPage(app);
+    currentCleanup = renderRegisterSelectionPage(app);
     removeFooter();
   },
   "#/register-member": () => {
     renderHeader({ activePage: "register" });
-    renderRegisterPage(app);
+    currentCleanup = renderRegisterPage(app);
     removeFooter();
   },
   "#/register-organization": () => {
     renderHeader({ activePage: "register" });
-    renderRegisterOrgPage(app);
+    currentCleanup = renderRegisterOrgPage(app);
     removeFooter();
   },
   "#/forgot-password": () => {
     renderHeader({ activePage: "login" });
-    renderForgotPasswordPage(app);
+    currentCleanup = renderForgotPasswordPage(app);
     removeFooter();
   },
   "#/profile": () => {
     renderHeader({ activePage: "profile" });
-    renderProfilePage(app);
+    currentCleanup = renderProfilePage(app);
     renderFooter();
   },
   "#/products": () => {
     renderHeader({ activePage: "products" });
-    renderProductsPage(app);
+    currentCleanup = renderProductsPage(app);
+    renderFooter();
+  },
+  "#/cart": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
+    renderHeader({ activePage: "cart" });
+    currentCleanup = renderCartPage(app);
     renderFooter();
   },
   "#/create-listing": () => {
@@ -64,7 +78,16 @@ const routes = {
       return;
     }
     renderHeader({ activePage: "" });
-    renderCreateListingPage(app);
+    currentCleanup = renderCreateListingPage(app);
+    renderFooter();
+  },
+  "#/edit-listing": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
+    renderHeader({ activePage: "" });
+    currentCleanup = renderCreateListingPage(app);
     renderFooter();
   },
   "#/admin": () => {
@@ -72,13 +95,32 @@ const routes = {
       window.location.hash = "#/login";
       return;
     }
+    const u = getUser();
+    if (!u || u.role !== "admin") {
+      window.location.hash = u?.role === "staff" ? "#/staff" : "#/";
+      return;
+    }
     removeHeader();
-    renderAdminPage(app);
+    currentCleanup = renderAdminPage(app);
+    removeFooter();
+  },
+  "#/staff": () => {
+    if (!isAuthenticated()) {
+      window.location.hash = "#/login";
+      return;
+    }
+    const u = getUser();
+    if (!u || (u.role !== "staff" && u.role !== "admin")) {
+      window.location.hash = "#/";
+      return;
+    }
+    removeHeader();
+    currentCleanup = renderStaffDashboard(app);
     removeFooter();
   },
   "#/pending-approval": () => {
     renderHeader({ activePage: "" });
-    renderPendingApprovalPage(app);
+    currentCleanup = renderPendingApprovalPage(app);
     renderFooter();
   },
   "#/logout": handleLogout,
@@ -88,8 +130,21 @@ const routes = {
 
 /* ── Home handler ── */
 function handleHome() {
+  const u = getUser();
+  if (isAuthenticated() && u?.role === "admin") {
+    window.location.hash = "#/admin";
+    return;
+  }
+  if (isAuthenticated() && u?.role === "staff") {
+    window.location.hash = "#/staff";
+    return;
+  }
+  if (isAuthenticated() && (u?.role === "organization" || u?.role === "org") && (u?.status === "pending" || u?.status === "rejected")) {
+    window.location.hash = "#/pending-approval";
+    return;
+  }
   renderHeader({ activePage: "home" });
-  renderHomePage(app);
+  currentCleanup = renderHomePage(app);
   renderFooter();
 }
 
@@ -136,6 +191,47 @@ function navigate() {
   // strip query params from hash if any
   const route = hash.split("?")[0];
 
+  // Run cleanup of previous page if any
+  if (currentCleanup && typeof currentCleanup === "function") {
+    try {
+      currentCleanup();
+    } catch (e) {
+      console.warn("Error during page cleanup:", e);
+    }
+    currentCleanup = null;
+  }
+
+  // Check Admin / Staff / Organization redirection away from unauthorized pages
+  if (isAuthenticated()) {
+    const user = getUser();
+    if (user?.role === "admin" && (route === "#/" || route === "" || route === "#/home")) {
+      window.location.hash = "#/admin";
+      return;
+    }
+    if (user?.role === "staff" && (route === "#/" || route === "" || route === "#/home")) {
+      window.location.hash = "#/staff";
+      return;
+    }
+    // Check Organization pending status restriction
+    if ((user?.role === "organization" || user?.role === "org") && user?.status === "pending") {
+      if (route !== "#/pending-approval" && route !== "#/logout" && route !== "#/register-organization") {
+        window.location.hash = "#/pending-approval";
+        return;
+      }
+    }
+    // Check Organization rejected status restriction
+    if ((user?.role === "organization" || user?.role === "org") && user?.status === "rejected") {
+      if (route !== "#/pending-approval" && route !== "#/logout") {
+        window.location.hash = "#/pending-approval";
+        return;
+      }
+    }
+    // Asynchronously refresh org status if sitting on pending-approval
+    if ((user?.role === "organization" || user?.role === "org") && route === "#/pending-approval") {
+      refreshUserOrgStatus().catch(() => {});
+    }
+  }
+
   // Scroll to top on navigation
   window.scrollTo(0, 0);
 
@@ -144,14 +240,13 @@ function navigate() {
     const productId = route.replace("#/product/", "");
     if (productId) {
       renderHeader({ activePage: "products" });
-      renderProductDetailPage(app, productId);
+      currentCleanup = renderProductDetailPage(app, productId);
       renderFooter();
       return;
     }
   }
 
   const handler = routes[route] ?? routes["#/"];
-  console.log("NAVIGATE - Hash:", hash, "Route:", route, "Handler matches routes['#/register-organization']?", handler === routes["#/register-organization"]);
   handler();
 }
 

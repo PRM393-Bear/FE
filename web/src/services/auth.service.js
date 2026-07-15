@@ -47,9 +47,37 @@ export function getUserIdFromToken() {
 export function removeToken() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem("ecocycle_refresh_token");
 }
+export const logout = removeToken;
 export function isAuthenticated() {
   return !!getToken();
+}
+
+export function saveRefreshToken(token) {
+  if (token) localStorage.setItem("ecocycle_refresh_token", token);
+}
+export function getRefreshToken() {
+  return localStorage.getItem("ecocycle_refresh_token");
+}
+
+export async function refreshTokenApi() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return null;
+  try {
+    const data = await apiFetch("/api/auth/refresh-token", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (data?.accessToken) {
+      saveToken(data.accessToken);
+      if (data?.refreshToken) saveRefreshToken(data.refreshToken);
+      return data.accessToken;
+    }
+  } catch (err) {
+    console.warn("Failed to refresh token:", err);
+  }
+  return null;
 }
 
 export function saveUser(user) {
@@ -74,21 +102,52 @@ export async function loginApi({ username, password, rememberMe = false }) {
 
   if (data?.accessToken) {
     saveToken(data.accessToken);
+    if (data?.refreshToken) {
+      saveRefreshToken(data.refreshToken);
+    }
 
     try {
       const allUsers = await apiFetch("/api/user/all");
-      const currentUser = allUsers.find((u) => u.userName === username);
+      const currentUser = allUsers.find((u) => u.userName === username || u.username === username);
       const roleName = currentUser?.role?.roleName || "member";
+      const finalRole = roleName.toLowerCase().replace("role_", "");
+
+      let status = "active";
+      if (finalRole === "organization" || finalRole === "org") {
+        try {
+          const allOrgs = await apiFetch("/api/organization-details");
+          const userOrg = Array.isArray(allOrgs) ? allOrgs.find(org => 
+            (currentUser?.userId && org.userId === currentUser.userId) || 
+            (currentUser?.email && org.userEmail === currentUser.email) ||
+            (org.userFullName && org.userFullName === (currentUser?.fullName || username))
+          ) : null;
+          if (userOrg) {
+            status = userOrg.status ? userOrg.status.toLowerCase() : "pending";
+          } else {
+            status = "pending";
+          }
+        } catch (e) {
+          console.warn("Could not fetch organization status during login:", e);
+          status = "pending";
+        }
+      }
+
+      // Admin mặc định tự động ghi nhớ đăng nhập
+      const isRemember = finalRole === "admin" ? true : rememberMe;
 
       saveUser({
         username: username,
-        role: roleName.toLowerCase().replace("role_", ""),
+        role: finalRole,
+        status: status,
+        rememberMe: isRemember,
       });
     } catch (err) {
       console.warn("Could not fetch user role, defaulting to member", err);
       saveUser({
         username: username,
         role: "member",
+        status: "active",
+        rememberMe: rememberMe,
       });
     }
   }
@@ -196,4 +255,28 @@ export async function createOrganizationDetailApi(detail) {
     method: "POST",
     body: JSON.stringify(detail),
   });
+}
+
+/* ── Refresh User Organization Status ── */
+export async function refreshUserOrgStatus() {
+  const user = getUser();
+  if (!user || (user.role !== "organization" && user.role !== "org")) return user?.status || "active";
+  try {
+    const allUsers = await apiFetch("/api/user/all");
+    const currentUser = Array.isArray(allUsers) ? allUsers.find((u) => u.userName === user.username || u.username === user.username) : null;
+    const allOrgs = await apiFetch("/api/organization-details");
+    const userOrg = Array.isArray(allOrgs) ? allOrgs.find(org => 
+      (currentUser?.userId && org.userId === currentUser.userId) || 
+      (currentUser?.email && org.userEmail === currentUser.email) ||
+      (org.userFullName && org.userFullName === (currentUser?.fullName || user.username))
+    ) : null;
+    if (userOrg && userOrg.status) {
+      user.status = userOrg.status.toLowerCase();
+      saveUser(user);
+    }
+    return user.status;
+  } catch (err) {
+    console.warn("Failed to refresh user organization status:", err);
+    return user.status;
+  }
 }

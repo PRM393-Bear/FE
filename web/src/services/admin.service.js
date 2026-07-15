@@ -3,42 +3,7 @@
  * Handles API calls for the admin dashboard.
  */
 
-import { getToken } from "./auth.service.js";
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
-
-async function apiFetch(path, options = {}) {
-  const token = getToken();
-  const headers = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
-  };
-
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  let body = null;
-  const ct = res.headers.get("content-type") ?? "";
-  if (ct.includes("application/json")) {
-    body = await res.json();
-  } else {
-    body = await res.text();
-  }
-
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem("ecocycle_token");
-      localStorage.removeItem("ecocycle_user");
-      window.location.hash = "#/login";
-    }
-    throw new Error(body?.message || `HTTP ${res.status}`);
-  }
-
-  return body;
-}
+import { apiFetch } from "../utils/api.js";
 
 export async function getAllUsers() {
   try {
@@ -47,6 +12,23 @@ export async function getAllUsers() {
     console.error("Failed to fetch users:", error);
     return [];
   }
+}
+
+export async function banUser(userId, isBanned, reason = "Vi phạm điều khoản sử dụng cộng đồng EcoCycle") {
+  return await apiFetch(`/api/user/banned?userId=${userId}&isBanned=${isBanned}&reason=${encodeURIComponent(reason)}`, {
+    method: "PUT",
+  });
+}
+
+export async function getListBanned(isBanned) {
+  return await apiFetch(`/api/user/list-banned?isBanned=${isBanned}`);
+}
+
+export async function createStaff(userData) {
+  return await apiFetch("/api/user/staff", {
+    method: "POST",
+    body: JSON.stringify(userData),
+  });
 }
 
 export async function getAllDonationRequests() {
@@ -77,9 +59,8 @@ export async function approveOrganization(id) {
   });
 }
 
-export async function rejectOrganization(id) {
-  return await apiFetch(`/api/organization-details/${id}/reject`, {
+export async function rejectOrganization(id, reason = "Hồ sơ không đáp ứng đủ điều kiện xác thực") {
+  return await apiFetch(`/api/organization-details/${id}/reject?reason=${encodeURIComponent(reason)}`, {
     method: "PATCH",
   });
 }
-

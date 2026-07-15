@@ -3,7 +3,9 @@ import {
   loginApi, 
   verifyRegisterOtp, 
   uploadImageApi, 
-  createOrganizationDetailApi 
+  createOrganizationDetailApi,
+  getUser,
+  saveUser
 } from "../services/auth.service.js";
 import "../styles/register-org.css";
 
@@ -134,12 +136,11 @@ export function renderRegisterOrgPage(container) {
                         <div style="margin-bottom: 16px;">
                             <label class="org-label" style="display:block; margin-bottom: 8px;">Loại đồ dùng cần nhận</label>
                             <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="chipContainer">
-                                <button type="button" class="org-chip">Quần áo</button>
-                                <button type="button" class="org-chip">Giày dép</button>
-                                <button type="button" class="org-chip">Sách vở</button>
-                                <button type="button" class="org-chip">Đồ dùng học tập</button>
-                                <button type="button" class="org-chip">Thực phẩm khô</button>
-                                <button type="button" class="org-chip">Khác</button>
+                                <button type="button" class="org-chip">Quần áo người lớn</button>
+                                <button type="button" class="org-chip">Quần áo trẻ em</button>
+                                <button type="button" class="org-chip">Áo khoác / Áo ấm</button>
+                                <button type="button" class="org-chip">Váy đầm</button>
+                                <button type="button" class="org-chip">Đồ đồng phục</button>
                             </div>
                         </div>
 
@@ -587,6 +588,12 @@ export function renderRegisterOrgPage(container) {
 
           await createOrganizationDetailApi(orgPayload);
           
+          const u = getUser();
+          if (u) {
+            u.status = "pending";
+            saveUser(u);
+          }
+
           showToast("Đăng ký hồ sơ Tổ chức thành công!", "success");
           setTimeout(() => {
               window.location.hash = "#/pending-approval";

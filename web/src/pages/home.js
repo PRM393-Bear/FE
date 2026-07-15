@@ -5,6 +5,7 @@
 
 import "../styles/home.css";
 import { getAllProducts } from "../services/product.service.js";
+import { getAllCategories } from "../services/staff.service.js";
 
 export async function renderHomePage(container) {
   container.innerHTML = `
@@ -49,38 +50,10 @@ export async function renderHomePage(container) {
 
       <!-- Category Row -->
       <section class="home-container">
-        <div class="home-categories">
-          <button class="category-btn is-active">
+        <div class="home-categories" id="home-categories-container">
+          <button class="category-btn is-active" data-cat="">
             <div class="category-icon-box"><span class="material-symbols-outlined">grid_view</span></div>
             <span class="category-label">Tất cả</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">apparel</span></div>
-            <span class="category-label">Quần áo</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">steps</span></div>
-            <span class="category-label">Giày</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">handyman</span></div>
-            <span class="category-label">Túi xách</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">devices</span></div>
-            <span class="category-label">Điện tử</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">home_app_logo</span></div>
-            <span class="category-label">Đồ nhà</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">book</span></div>
-            <span class="category-label">Sách</span>
-          </button>
-          <button class="category-btn">
-            <div class="category-icon-box"><span class="material-symbols-outlined">more_horiz</span></div>
-            <span class="category-label">Khác</span>
           </button>
         </div>
       </section>
@@ -267,6 +240,64 @@ export async function renderHomePage(container) {
     moveCarousel(currentSlide);
   }, 5000);
 
+  // Dynamic categories loader & click handler setup
+  function getFashionIconForCategory(name = "") {
+    const lower = name.toLowerCase();
+    if (lower.includes("áo thun") || lower.includes("sơ mi")) return "checkroom";
+    if (lower.includes("áo khoác") || lower.includes("blazer") || lower.includes("áo ấm") || lower.includes("len")) return "ac_unit";
+    if (lower.includes("áo")) return "apparel";
+    if (lower.includes("quần")) return "dry_cleaning";
+    if (lower.includes("váy") || lower.includes("đầm")) return "styler";
+    if (lower.includes("thể thao") || lower.includes("tập") || lower.includes("gym")) return "fitness_center";
+    if (lower.includes("ngủ") || lower.includes("mặc nhà")) return "bed";
+    if (lower.includes("túi") || lower.includes("phụ kiện") || lower.includes("mũ") || lower.includes("khăn")) return "shopping_bag";
+    if (lower.includes("giày") || lower.includes("dép")) return "steps";
+    return "style";
+  }
+
+  function attachCategoryClickHandlers() {
+    const catBtns = container.querySelectorAll(".category-btn");
+    catBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const cat = btn.getAttribute("data-cat") || "";
+        if (cat) {
+          window.location.hash = `#/products?category=${encodeURIComponent(cat)}`;
+        } else {
+          window.location.hash = `#/products`;
+        }
+      });
+    });
+  }
+
+  const catContainer = container.querySelector("#home-categories-container");
+  if (catContainer) {
+    getAllCategories().then(categories => {
+      if (Array.isArray(categories) && categories.length > 0) {
+        catContainer.innerHTML = `
+          <button class="category-btn is-active" data-cat="">
+            <div class="category-icon-box"><span class="material-symbols-outlined">grid_view</span></div>
+            <span class="category-label">Tất cả</span>
+          </button>
+          ${categories.map(cat => {
+            const icon = getFashionIconForCategory(cat.name || "");
+            return `
+              <button class="category-btn" data-cat="${cat.name || ""}">
+                <div class="category-icon-box"><span class="material-symbols-outlined">${icon}</span></div>
+                <span class="category-label">${cat.name || "Không tên"}</span>
+              </button>
+            `;
+          }).join("")}
+        `;
+      }
+      attachCategoryClickHandlers();
+    }).catch(err => {
+      console.warn("Failed to load home categories:", err);
+      attachCategoryClickHandlers();
+    });
+  } else {
+    attachCategoryClickHandlers();
+  }
+
   // Helper for formatting prices
   function formatPrice(price) {
     if (!price && price !== 0) return "Liên hệ";
@@ -378,6 +409,7 @@ export async function renderHomePage(container) {
   }
 
   // Hook scroll listeners and hover slide timers
+  let hoverScrollInterval = null;
   if (arrivalsContainer && arrivalsPrevBtn && arrivalsNextBtn) {
     arrivalsContainer.addEventListener("scroll", updateArrowState);
     window.addEventListener("resize", updateArrowState);
@@ -400,7 +432,6 @@ export async function renderHomePage(container) {
     });
 
     // Hover (trỏ chuột) slow continuous scroll
-    let hoverScrollInterval = null;
     const startHoverScroll = (direction) => {
       if (hoverScrollInterval) clearInterval(hoverScrollInterval);
       hoverScrollInterval = setInterval(() => {
@@ -426,4 +457,12 @@ export async function renderHomePage(container) {
     arrivalsNextBtn.addEventListener("mouseenter", () => startHoverScroll(1));
     arrivalsNextBtn.addEventListener("mouseleave", stopHoverScroll);
   }
+
+  return () => {
+    window.removeEventListener("resize", updateArrowState);
+    if (hoverScrollInterval) {
+      clearInterval(hoverScrollInterval);
+      hoverScrollInterval = null;
+    }
+  };
 }

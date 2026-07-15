@@ -3,7 +3,8 @@
    ============================================================ */
 
 /* Page Foundations */
-.profile-page-wrapper {
+.profile-page-wrapper,
+.profile-page {
   max-width: var(--container-max, 1280px);
   margin: 0 auto;
   padding: 104px 40px 48px;
@@ -12,7 +13,8 @@
 }
 
 @media (max-width: 900px) {
-  .profile-page-wrapper {
+  .profile-page-wrapper,
+  .profile-page {
     padding: 88px 16px 24px;
   }
 }
