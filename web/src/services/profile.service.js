@@ -137,9 +137,14 @@ export async function shippedDonationRequest(id) {
   });
 }
 
-export async function receivedDonationRequest(id) {
+export async function receivedDonationRequest(id, receiptProofFile) {
+  const formData = new FormData();
+  if (receiptProofFile) {
+    formData.append("receiptProofFile", receiptProofFile);
+  }
   return await apiFetch(`/api/donation-requests/${id}/received`, {
     method: "PATCH",
+    body: formData,
   });
 }
 
@@ -162,12 +167,68 @@ export async function assignOrganizationApi(donationId, organizationId) {
   });
 }
 
+export async function getOrgDonationRequestsApi(orgId) {
+  try {
+    return await apiFetch(`/api/donation-requests/my-organization/${orgId}`);
+  } catch {
+    return [];
+  }
+}
+
 export async function getAllOrganizationsApi() {
   return await apiFetch("/api/organization-details");
 }
 
+/* ── DONATION EVENTS API METHODS ── */
+
 export async function getAllDonationEventsApi() {
   return await apiFetch("/api/donation-events");
+}
+
+export async function getDonationEventsByOrgIdApi(orgId) {
+  try {
+    return await apiFetch(`/api/donation-events/${orgId}`);
+  } catch {
+    return [];
+  }
+}
+
+export async function createDonationEventApi(payload, orgId) {
+  return await apiFetch(`/api/donation-events?orgId=${orgId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateDonationEventApi(eventId, payload) {
+  return await apiFetch(`/api/donation-events/${eventId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteDonationEventApi(eventId) {
+  return await apiFetch(`/api/donation-events?donationEventId=${eventId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function cancelDonationEventApi(eventId) {
+  return await apiFetch(`/api/donation-events/${eventId}/cancel`, {
+    method: "PATCH",
+  });
+}
+
+export async function completeDonationEventApi(eventId) {
+  return await apiFetch(`/api/donation-events/${eventId}/complete`, {
+    method: "PATCH",
+  });
+}
+
+export async function ongoingDonationEventApi(eventId) {
+  return await apiFetch(`/api/donation-events/${eventId}/ongoing`, {
+    method: "PATCH",
+  });
 }
 
 /* ── ORGANIZATION DETAILS API METHODS ── */
@@ -191,4 +252,5 @@ export async function updateOrganizationDetailApi(orgDetailId, payload) {
     body: JSON.stringify(payload),
   });
 }
+
 

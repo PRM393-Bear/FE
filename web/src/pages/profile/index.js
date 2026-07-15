@@ -5,7 +5,13 @@
 
 import "../../styles/profile.css";
 import { isAuthenticated, logout } from "../../services/auth.service.js";
-import { getMyProfile, getAllOrganizationsApi } from "../../services/profile.service.js";
+import { 
+  getMyProfile, 
+  getAllOrganizationsApi, 
+  getMyOrganizationDetailApi, 
+  getDonationEventsByOrgIdApi, 
+  getOrgDonationRequestsApi 
+} from "../../services/profile.service.js";
 import { getOrdersByBuyer, getOrdersBySeller } from "../../services/order.service.js";
 import { getMyWardrobe } from "../../services/wardrobe.service.js";
 import { getAllProducts, isDraftProduct, getMyProducts } from "../../services/product.service.js";
@@ -50,17 +56,29 @@ export async function renderProfilePage(container) {
     return;
   }
 
-  // Fetch parallel data
+  // Fetch parallel data based on role
   let buyerOrders = [], sellerOrders = [], wardrobe = [], drafts = [], donations = [], orgs = [], myProducts = [];
+  let orgDetail = null, myEvents = [];
+
   try {
-    const [bOrders, sOrders, wItems, allProds, orgList, donList, myProdsList] = await Promise.all([
+    const isOrgRole = profile.role === "org";
+    if (isOrgRole) {
+      orgDetail = await getMyOrganizationDetailApi();
+    }
+
+    const [bOrders, sOrders, wItems, allProds, orgList, donList, myProdsList, eventsList] = await Promise.all([
       getOrdersByBuyer().catch(() => []),
       getOrdersBySeller().catch(() => []),
       getMyWardrobe().catch(() => []),
       getAllProducts().catch(() => []),
       getAllOrganizationsApi().catch(() => []),
-      apiFetch("/api/donation-requests/lists").catch(() => []),
-      getMyProducts(profile.id).catch(() => [])
+      isOrgRole && orgDetail?.id
+        ? getOrgDonationRequestsApi(orgDetail.id).catch(() => [])
+        : apiFetch("/api/donation-requests/my-member").catch(() => apiFetch("/api/donation-requests/lists").catch(() => [])),
+      getMyProducts(profile.id).catch(() => []),
+      isOrgRole && orgDetail?.id
+        ? getDonationEventsByOrgIdApi(orgDetail.id).catch(() => [])
+        : Promise.resolve([])
     ]);
 
     buyerOrders = Array.isArray(bOrders) ? bOrders : [];
@@ -70,6 +88,7 @@ export async function renderProfilePage(container) {
     orgs = Array.isArray(orgList) ? orgList : [];
     donations = Array.isArray(donList) ? donList : [];
     myProducts = Array.isArray(myProdsList) ? myProdsList : [];
+    myEvents = Array.isArray(eventsList) ? eventsList : [];
   } catch (e) {
     console.warn("Partial data load warning:", e);
   }
@@ -90,12 +109,16 @@ export async function renderProfilePage(container) {
 
           <!-- Tabs menu -->
           <nav class="bg-surface-container-lowest rounded-2xl p-3 border border-outline-variant/30 shadow-sm flex flex-col gap-1">
+            ${
+              profile.role !== "org" ? `
             <button class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="wardrobe">
               <span class="material-symbols-outlined text-xl">checkroom</span> Tủ đồ & Đơn mua
             </button>
             <button class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="shop">
               <span class="material-symbols-outlined text-xl">storefront</span> Quản lý bán hàng
             </button>
+            ` : ""
+            }
             <button class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="donations">
               <span class="material-symbols-outlined text-xl">volunteer_activism</span> Quản lý Quyên góp
             </button>
@@ -143,9 +166,16 @@ export async function renderProfilePage(container) {
     } else if (tabKey === "shop") {
       renderShopPanel(contentArea, { sellerOrders, myDrafts: drafts, myProducts, onRefresh: refreshPage });
     } else if (tabKey === "donations") {
-      renderDonationsTab(contentArea, { profile, requests: donations, onRefresh: refreshPage, onOpenModal: openDonationModal });
+      renderDonationsTab(contentArea, { 
+        profile, 
+        orgDetail, 
+        events: myEvents, 
+        requests: donations, 
+        onRefresh: refreshPage, 
+        onOpenModal: openDonationModal 
+      });
     } else if (tabKey === "settings") {
-      renderSettingsTab(contentArea, { profile, onRefresh: refreshPage });
+      renderSettingsTab(contentArea, { profile, orgDetail, onRefresh: refreshPage });
     }
   };
 
@@ -158,5 +188,6 @@ export async function renderProfilePage(container) {
     window.location.hash = "#/login";
   });
 
-  switchTab("wardrobe");
+  switchTab(profile.role === "org" ? "donations" : "wardrobe");
 }
+
