@@ -31,6 +31,22 @@ export async function renderSettingsTab(container, { profile, onRefresh }) {
   if (isOrg) {
     try {
       orgDetail = await getMyOrganizationDetailApi();
+      if (orgDetail && profile?.id) {
+        try {
+          const cached = JSON.parse(localStorage.getItem("org_custom_fields_" + profile.id) || "null");
+          if (cached) {
+            if (!orgDetail.avtOrg && cached.avtOrg) orgDetail.avtOrg = cached.avtOrg;
+            if ((!orgDetail.acceptedTypes || orgDetail.acceptedTypes.length === 0) && cached.acceptedTypes) {
+              orgDetail.acceptedTypes = cached.acceptedTypes;
+            }
+            if ((!orgDetail.verificationDocs || orgDetail.verificationDocs.length === 0) && cached.verificationDocs) {
+              orgDetail.verificationDocs = cached.verificationDocs;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not parse org custom cache:", e);
+        }
+      }
     } catch (e) {
       console.warn("Could not load organization detail:", e);
     }
@@ -391,6 +407,13 @@ export async function renderSettingsTab(container, { profile, onRefresh }) {
 
       try {
         await updateOrganizationDetailApi(orgDetail.id, payload);
+        if (profile?.id) {
+          localStorage.setItem("org_custom_fields_" + profile.id, JSON.stringify({
+            avtOrg: payload.avtOrg,
+            acceptedTypes: payload.acceptedTypes,
+            verificationDocs: payload.verificationDocs
+          }));
+        }
         showToast("Cập nhật hồ sơ tổ chức thành công!", "success");
         if (onRefresh) onRefresh();
       } catch (err) {

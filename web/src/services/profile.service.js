@@ -174,10 +174,14 @@ export async function getAllDonationEventsApi() {
 
 export async function getMyOrganizationDetailApi() {
   try {
-    return await apiFetch("/api/organization-details/my-profile/");
+    return await apiFetch("/api/organization-details/my-profile");
   } catch (err) {
-    console.error("Failed to fetch organization details:", err);
-    return null;
+    try {
+      return await apiFetch("/api/organization-details/my-profile/");
+    } catch (e) {
+      console.error("Failed to fetch organization details:", e);
+      return null;
+    }
   }
 }
 
