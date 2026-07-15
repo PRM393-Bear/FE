@@ -82,4 +82,20 @@ class AuthStorage {
     final val = await _storage.read(key: 'has_seen_approved');
     return val == 'true';
   }
+
+  /// Lấy userId của tài khoản đang đăng nhập, decode trực tiếp từ JWT.
+  static Future<String?> getCurrentUserId() async {
+    final token = await _storage.read(key: 'auth_token');
+    if (token == null) return null;
+    try {
+      final parts = token.split('.');
+      String payload = parts[1];
+      while (payload.length % 4 != 0) payload += '=';
+      final decoded = utf8.decode(base64Url.decode(payload));
+      final claims = jsonDecode(decoded) as Map<String, dynamic>;
+      return claims['userId']?.toString() ?? claims['sub']?.toString();
+    } catch (_) {
+      return null;
+    }
+  }
 }

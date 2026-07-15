@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../data/donation_event_model.dart';
+import 'donation_register_page.dart';
 
 class DonationEventDetailPage extends StatefulWidget {
   final String eventId;
@@ -175,19 +176,19 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        decoration: BoxDecoration(color: AppColors.surface, border: Border(top: BorderSide(color: AppColors.border))),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
         child: AppButton(
           label: 'Đăng ký quyên góp',
-          onPressed: () {
-            // TODO: điều hướng sang form tạo Donation Request thật
-            // (chọn item trong Wardrobe, mô tả, ảnh) — sẽ code ở bước tiếp theo,
-            // vì đây là 1 form riêng, không phải nút RSVP đơn giản.
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Màn hình tạo yêu cầu quyên góp sẽ làm ở bước tiếp theo'),
-            ));
-          },
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DonationRegisterPage(
+                donationEventId: event.id,
+                eventTitle: event.title,
+              ),
+            ),
+          ),
         ),
       ),
     );

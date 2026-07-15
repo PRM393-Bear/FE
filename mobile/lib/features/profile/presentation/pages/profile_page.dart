@@ -81,7 +81,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await AuthStorage.clear();
     AuthState.notifyChanged();
     if (!mounted) return;
-    context.go(RouteNames.login);
+    context.go(RouteNames.productList);
   }
 
   String get _displayName => _fullName.isNotEmpty ? _fullName : _username;
