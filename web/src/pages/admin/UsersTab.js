@@ -1,4 +1,10 @@
-import { getAllUsers } from '../../services/admin.service.js';
+import { getAllUsers, banUser, createStaff } from '../../services/admin.service.js';
+import { recordLocalAuditLog } from '../../services/audit.service.js';
+import { showToast } from '../../utils/ui.js';
+
+// Module-level state
+let allUsersCache = [];
+let currentFilters = { role: '', status: '', search: '' };
 
 export function renderUsersTab() {
   return `
@@ -8,7 +14,7 @@ export function renderUsersTab() {
           <h2 class="text-headline-md font-headline-md text-on-surface">Quản lý User</h2>
           <div class="relative group">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-outline material-symbols-outlined" data-icon="search">search</span>
-            <input class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-xl text-label-md w-80 focus:ring-2 focus:ring-primary transition-all" placeholder="Tìm kiếm theo tên, email..." type="text"/>
+            <input id="users-search-input" class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-xl text-label-md w-80 focus:ring-2 focus:ring-primary transition-all" placeholder="Tìm kiếm theo tên, email..." type="text"/>
           </div>
         </div>
         <div class="flex items-center gap-6">
@@ -18,9 +24,6 @@ export function renderUsersTab() {
             </button>
             <button class="p-2 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-transform active:scale-95">
               <span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
-            </button>
-            <button class="p-2 text-on-surface-variant hover:bg-surface-variant rounded-lg transition-transform active:scale-95">
-              <span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
             </button>
           </div>
           <img alt="Administrator Profile" class="w-10 h-10 rounded-full border-2 border-primary shadow-sm object-cover" src="https://ui-avatars.com/api/?name=Admin&background=random"/>
@@ -34,27 +37,24 @@ export function renderUsersTab() {
           <div class="flex gap-4">
             <div class="flex flex-col gap-1">
               <label class="text-label-sm text-on-surface-variant ml-1">Vai trò</label>
-              <select class="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-label-md min-w-[140px] focus:ring-primary">
-                <option>Tất cả</option>
-                <option>Admin</option>
-                <option>Tổ chức</option>
-                <option>Cá nhân</option>
+              <select id="filter-role" class="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-label-md min-w-[140px] focus:ring-primary">
+                <option value="">Tất cả</option>
+                <option value="ADMIN">Admin</option>
+                <option value="STAFF">Staff</option>
+                <option value="ORGANIZATION">Tổ chức</option>
+                <option value="MEMBER">Cá nhân</option>
               </select>
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-label-sm text-on-surface-variant ml-1">Trạng thái</label>
-              <select class="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-label-md min-w-[140px] focus:ring-primary">
-                <option>Tất cả</option>
-                <option>Hoạt động</option>
-                <option>Bị khóa</option>
+              <select id="filter-status" class="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-label-md min-w-[140px] focus:ring-primary">
+                <option value="">Tất cả</option>
+                <option value="active">Hoạt động</option>
+                <option value="blocked">Bị khóa</option>
               </select>
             </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-label-sm text-on-surface-variant ml-1">Ngày tham gia</label>
-              <input class="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-label-md focus:ring-primary" type="date"/>
-            </div>
           </div>
-          <button class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-xl font-label-md shadow-md hover:opacity-90 transition-all mt-6 active:scale-95">
+          <button id="btn-add-user" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-2.5 rounded-xl font-label-md shadow-md hover:opacity-90 transition-all mt-6 active:scale-95">
             <span class="material-symbols-outlined" data-icon="add">add</span>
             Thêm User mới
           </button>
@@ -75,7 +75,7 @@ export function renderUsersTab() {
               </tr>
             </thead>
             <tbody id="users-table-body" class="divide-y divide-outline-variant">
-              <tr><td colspan="6" class="text-center py-8 text-on-surface-variant">Đang tải dữ liệu...</td></tr>
+              <tr><td colspan="5" class="text-center py-8 text-on-surface-variant">Đang tải dữ liệu...</td></tr>
             </tbody>
           </table>
 
@@ -102,25 +102,108 @@ export function renderUsersTab() {
            <!-- Dynamic content injected here -->
         </div>
       </div>
+
+      <!-- Ban/Unban Confirm Modal -->
+      <div id="modal-ban-confirm" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[80] hidden flex items-center justify-center">
+        <div class="bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant p-8 max-w-md w-full mx-4">
+          <div class="flex items-center gap-3 mb-4">
+            <span id="modal-ban-icon" class="material-symbols-outlined text-3xl text-error">gavel</span>
+            <h3 id="modal-ban-title" class="text-headline-sm font-bold text-on-surface">Xác nhận thao tác</h3>
+          </div>
+          <p id="modal-ban-message" class="text-body-md text-on-surface-variant mb-4"></p>
+          <div id="modal-ban-reason-container" class="mb-6">
+            <label class="block text-label-md font-semibold text-on-surface mb-1.5">Lý do * (Sẽ gửi đến email của User)</label>
+            <input type="text" id="modal-ban-reason-input" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Nhập lý do..." />
+          </div>
+          <div class="flex justify-end gap-3">
+            <button id="btn-ban-cancel" class="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-variant transition-colors">Hủy</button>
+            <button id="btn-ban-confirm" class="px-5 py-2.5 rounded-xl bg-error text-on-error font-semibold hover:bg-error/90 transition-colors">Xác nhận</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Staff Modal -->
+      <div id="modal-create-staff" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[80] hidden flex items-center justify-center">
+        <div class="bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant p-8 max-w-lg w-full mx-4">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-2xl text-primary">person_add</span>
+              <h3 class="text-headline-sm font-bold text-on-surface">Tạo tài khoản Staff</h3>
+            </div>
+            <button id="btn-close-staff-modal" class="p-2 hover:bg-surface-variant rounded-full transition-colors">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <form id="form-create-staff" class="flex flex-col gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1.5">
+                <label class="text-label-md font-semibold text-on-surface">Tên đăng nhập *</label>
+                <input type="text" name="username" class="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50" required />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-label-md font-semibold text-on-surface">Họ và tên *</label>
+                <input type="text" name="fullName" class="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50" required />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-label-md font-semibold text-on-surface">Email *</label>
+                <input type="email" name="email" class="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50" required />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-label-md font-semibold text-on-surface">Số điện thoại</label>
+                <input type="tel" name="phone" class="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50" />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-label-md font-semibold text-on-surface">Mật khẩu *</label>
+                <input type="password" name="password" class="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50" required minlength="6" />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-label-md font-semibold text-on-surface">Vai trò</label>
+                <select name="roleName" class="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50">
+                  <option value="STAFF">Staff</option>
+                </select>
+              </div>
+            </div>
+            <p id="staff-error-msg" class="text-sm text-error hidden"></p>
+            <div class="flex justify-end gap-3 pt-4 border-t border-outline-variant/30">
+              <button type="button" id="btn-cancel-staff" class="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface font-semibold hover:bg-surface-variant transition-colors">Hủy</button>
+              <button type="submit" id="btn-submit-staff" class="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">person_add</span>
+                Tạo tài khoản
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
   `;
 }
 
 function getRoleBadge(roleName) {
   const role = roleName?.toUpperCase() || 'USER';
   if (role === 'ADMIN') return '<span class="px-3 py-1 bg-primary text-on-primary text-label-sm rounded-full">Admin</span>';
+  if (role === 'STAFF' || role === 'ROLE_STAFF') return '<span class="px-3 py-1 bg-tertiary text-on-tertiary text-label-sm rounded-full">Staff</span>';
   if (role === 'ORGANIZATION' || role === 'ROLE_ORGANIZATION') return '<span class="px-3 py-1 bg-secondary-fixed text-on-secondary-fixed text-label-sm rounded-full">Tổ chức</span>';
   return '<span class="px-3 py-1 bg-surface-variant text-on-surface-variant text-label-sm rounded-full">Cá nhân</span>';
 }
 
+function isUserBlocked(user) {
+  if (!user) return false;
+  return Boolean(user.isBlocked || user.blocked || user.isVerified === false || user.verified === false);
+}
+
+function getStatusInfo(user) {
+  if (isUserBlocked(user)) {
+    return { html: '<div class="flex items-center gap-2 text-error font-label-md"><span class="w-2 h-2 rounded-full bg-error"></span>Bị khóa</div>', key: 'blocked' };
+  }
+  return { html: '<div class="flex items-center gap-2 text-primary font-label-md"><span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>Hoạt động</div>', key: 'active' };
+}
+
 function renderUserRow(user) {
   const avatarUrl = user.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.userName || 'U')}&background=random`;
-  // Mock status for now, as UserAdminRes lacks status
-  const statusHtml = `
-    <div class="flex items-center gap-2 text-primary font-label-md">
-      <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-      Hoạt động
-    </div>
-  `;
+  const statusInfo = getStatusInfo(user);
+  const isBlocked = isUserBlocked(user);
+  const blockBtnLabel = isBlocked ? 'Mở khóa' : 'Khóa';
+  const blockBtnIcon = isBlocked ? 'lock_open' : 'block';
+  const blockBtnColor = isBlocked ? 'hover:text-primary' : 'hover:text-error';
 
   return `
     <tr class="hover:bg-surface-container transition-colors cursor-pointer group" data-userid="${user.userId}">
@@ -140,14 +223,11 @@ function renderUserRow(user) {
         ${getRoleBadge(user.role?.roleName)}
       </td>
       <td class="px-6 py-4">
-        ${statusHtml}
+        ${statusInfo.html}
       </td>
       <td class="px-6 py-4 text-right" onclick="event.stopPropagation()">
-        <button class="p-2 text-outline hover:text-primary transition-colors">
-          <span class="material-symbols-outlined" data-icon="edit">edit</span>
-        </button>
-        <button class="p-2 text-outline hover:text-error transition-colors">
-          <span class="material-symbols-outlined" data-icon="block">block</span>
+        <button class="btn-ban-user p-2 text-outline ${blockBtnColor} transition-colors" data-userid="${user.userId}" data-blocked="${isBlocked}" title="${blockBtnLabel}">
+          <span class="material-symbols-outlined">${blockBtnIcon}</span>
         </button>
       </td>
     </tr>
@@ -156,6 +236,8 @@ function renderUserRow(user) {
 
 function renderDrawerContent(user) {
   const avatarUrl = user.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.userName || 'U')}&background=random`;
+  const statusInfo = getStatusInfo(user);
+  const isBlocked = isUserBlocked(user);
 
   return `
     <div class="p-6 border-b border-outline-variant flex items-center justify-between">
@@ -169,13 +251,13 @@ function renderDrawerContent(user) {
       <div class="flex flex-col items-center text-center mb-8">
         <div class="relative mb-4">
           <img alt="${user.fullName} Large Profile" class="w-24 h-24 rounded-full border-4 border-surface-container-low shadow-lg object-cover" src="${avatarUrl}"/>
-          <span class="absolute bottom-1 right-1 w-6 h-6 bg-primary border-2 border-surface-container-lowest rounded-full"></span>
+          <span class="absolute bottom-1 right-1 w-6 h-6 ${isBlocked ? 'bg-error' : 'bg-primary'} border-2 border-surface-container-lowest rounded-full"></span>
         </div>
         <h4 class="text-headline-md font-headline-md text-on-surface">${user.fullName || user.userName || 'Không tên'}</h4>
         <p class="text-on-surface-variant">${user.email || 'N/A'}</p>
         <div class="flex gap-2 mt-4">
           ${getRoleBadge(user.role?.roleName)}
-          <span class="px-4 py-1 bg-primary-container text-on-primary-container text-label-md rounded-full">Active</span>
+          <span class="px-4 py-1 ${isBlocked ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'} text-label-md rounded-full">${isBlocked ? 'Bị khóa' : 'Hoạt động'}</span>
         </div>
       </div>
       <!-- Detailed Info -->
@@ -191,6 +273,10 @@ function renderDrawerContent(user) {
               <span class="text-on-surface-variant">Số điện thoại</span>
               <span class="font-label-md">${user.phone || 'N/A'}</span>
             </div>
+            <div class="flex justify-between">
+              <span class="text-on-surface-variant">Xác thực</span>
+              <span class="font-label-md">${user.isVerified || user.verified ? 'Đã xác thực' : 'Chưa xác thực'}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -198,41 +284,244 @@ function renderDrawerContent(user) {
   `;
 }
 
-export async function attachUsersListeners(container) {
+function applyFilters() {
+  const { role, status, search } = currentFilters;
+  const filtered = allUsersCache.filter(user => {
+    // Role filter
+    if (role && (user.role?.roleName?.toUpperCase() !== role.toUpperCase())) {
+      return false;
+    }
+    // Status filter
+    if (status === 'blocked' && !isUserBlocked(user)) return false;
+    if (status === 'active' && isUserBlocked(user)) return false;
+    // Search filter
+    if (search) {
+      const q = search.toLowerCase();
+      const matchName = (user.fullName || '').toLowerCase().includes(q);
+      const matchUserName = (user.userName || '').toLowerCase().includes(q);
+      const matchEmail = (user.email || '').toLowerCase().includes(q);
+      if (!matchName && !matchUserName && !matchEmail) return false;
+    }
+    return true;
+  });
+  return filtered;
+}
+
+function renderFilteredUsers() {
   const tbody = document.getElementById('users-table-body');
   const countLabel = document.getElementById('users-count-label');
-  const drawerContent = document.getElementById('drawer-content');
-
   if (!tbody) return;
 
-  try {
-    const users = await getAllUsers();
+  const filtered = applyFilters();
+  if (filtered.length > 0) {
+    tbody.innerHTML = filtered.map(renderUserRow).join('');
+    if (countLabel) countLabel.textContent = `Hiển thị ${filtered.length} / ${allUsersCache.length} users`;
+  } else {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-on-surface-variant">Không tìm thấy user phù hợp</td></tr>';
+    if (countLabel) countLabel.textContent = `Hiển thị 0 / ${allUsersCache.length} users`;
+  }
 
-    if (users && users.length > 0) {
-      tbody.innerHTML = users.map(renderUserRow).join('');
-      if (countLabel) {
-        countLabel.textContent = `Hiển thị ${users.length} users`;
+  // Re-attach ban buttons
+  attachBanButtons();
+  // Re-attach row click for drawer
+  attachRowClicks();
+}
+
+function attachBanButtons() {
+  document.querySelectorAll('.btn-ban-user').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const userId = btn.getAttribute('data-userid');
+      const isCurrentlyBlocked = btn.getAttribute('data-blocked') === 'true';
+      const user = allUsersCache.find(u => u.userId === userId);
+      if (!user) return;
+
+      const modal = document.getElementById('modal-ban-confirm');
+      const title = document.getElementById('modal-ban-title');
+      const message = document.getElementById('modal-ban-message');
+      const icon = document.getElementById('modal-ban-icon');
+      const confirmBtn = document.getElementById('btn-ban-confirm');
+      const reasonInput = document.getElementById('modal-ban-reason-input');
+
+      if (isCurrentlyBlocked) {
+        title.textContent = 'Mở khóa tài khoản';
+        message.textContent = `Bạn có chắc muốn mở khóa tài khoản "${user.fullName || user.userName}"? Người dùng sẽ có thể đăng nhập và sử dụng hệ thống bình thường.`;
+        icon.textContent = 'lock_open';
+        icon.className = 'material-symbols-outlined text-3xl text-primary';
+        confirmBtn.className = 'px-5 py-2.5 rounded-xl bg-primary text-on-primary font-semibold hover:bg-primary/90 transition-colors';
+        confirmBtn.textContent = 'Mở khóa';
+        if (reasonInput) reasonInput.value = 'Mở khóa tài khoản theo quyết định của Quản trị viên';
+      } else {
+        title.textContent = 'Khóa tài khoản';
+        message.textContent = `Bạn có chắc muốn khóa tài khoản "${user.fullName || user.userName}"? Người dùng sẽ không thể đăng nhập vào hệ thống.`;
+        icon.textContent = 'gavel';
+        icon.className = 'material-symbols-outlined text-3xl text-error';
+        confirmBtn.className = 'px-5 py-2.5 rounded-xl bg-error text-on-error font-semibold hover:bg-error/90 transition-colors';
+        confirmBtn.textContent = 'Khóa tài khoản';
+        if (reasonInput) reasonInput.value = 'Vi phạm chính sách và điều khoản sử dụng cộng đồng EcoCycle';
       }
 
-      // Add click listeners to rows to show drawer
-      const rows = tbody.querySelectorAll('tr[data-userid]');
-      rows.forEach(row => {
-        row.addEventListener('click', () => {
-          const userId = row.getAttribute('data-userid');
-          const user = users.find(u => u.userId === userId);
-          if (user && drawerContent) {
-            drawerContent.innerHTML = renderDrawerContent(user);
-            if (window.toggleDrawer) {
-              window.toggleDrawer(true);
-            }
-          }
-        });
+      modal.classList.remove('hidden');
+
+      // Remove old listeners by cloning
+      const newConfirmBtn = confirmBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+      newConfirmBtn.addEventListener('click', async () => {
+        const reason = reasonInput?.value?.trim() || (isCurrentlyBlocked ? 'Mở khóa tài khoản' : 'Vi phạm điều khoản cộng đồng EcoCycle');
+        newConfirmBtn.disabled = true;
+        newConfirmBtn.textContent = 'Đang xử lý...';
+        try {
+          // Backend isBlocked parameter: true = ban (when !isCurrentlyBlocked), false = unban (when isCurrentlyBlocked)
+          const targetIsBanned = !isCurrentlyBlocked;
+          await banUser(userId, targetIsBanned, reason);
+          recordLocalAuditLog({
+            action: targetIsBanned ? 'BAN_USER' : 'UNBAN_USER',
+            username: 'Admin',
+            entity: 'User',
+            entityId: userId,
+            detail: `${targetIsBanned ? 'Khóa' : 'Mở khóa'} tài khoản "${user.fullName || user.userName}" từ Admin Console | lý do: ${reason} | ip=127.0.0.1`,
+            status: 'SUCCESS'
+          });
+          showToast(targetIsBanned ? 'Đã khóa tài khoản!' : 'Đã mở khóa tài khoản!', 'success');
+          modal.classList.add('hidden');
+          // Refresh data
+          allUsersCache = await getAllUsers();
+          renderFilteredUsers();
+        } catch (err) {
+          showToast('Lỗi: ' + (err.message || 'Không thể thực hiện thao tác'), 'error');
+          newConfirmBtn.disabled = false;
+          newConfirmBtn.textContent = isCurrentlyBlocked ? 'Mở khóa' : 'Khóa tài khoản';
+        }
       });
-    } else {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-on-surface-variant">Không có dữ liệu</td></tr>';
-    }
+    });
+  });
+}
+
+function attachRowClicks() {
+  const tbody = document.getElementById('users-table-body');
+  const drawerContent = document.getElementById('drawer-content');
+  if (!tbody || !drawerContent) return;
+
+  tbody.querySelectorAll('tr[data-userid]').forEach(row => {
+    row.addEventListener('click', () => {
+      const userId = row.getAttribute('data-userid');
+      const user = allUsersCache.find(u => u.userId === userId);
+      if (user) {
+        drawerContent.innerHTML = renderDrawerContent(user);
+        if (window.toggleDrawer) window.toggleDrawer(true);
+      }
+    });
+  });
+}
+
+export async function attachUsersListeners(container) {
+  const tbody = document.getElementById('users-table-body');
+  if (!tbody) return;
+
+  // Load users
+  try {
+    allUsersCache = await getAllUsers();
+    renderFilteredUsers();
   } catch (error) {
     console.error('Error loading users:', error);
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-error">Lỗi khi tải dữ liệu</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-error">Lỗi khi tải dữ liệu</td></tr>';
   }
+
+  // Search
+  const searchInput = document.getElementById('users-search-input');
+  let searchTimeout;
+  searchInput?.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      currentFilters.search = searchInput.value.trim();
+      renderFilteredUsers();
+    }, 300);
+  });
+
+  // Role filter
+  const filterRole = document.getElementById('filter-role');
+  filterRole?.addEventListener('change', () => {
+    currentFilters.role = filterRole.value;
+    renderFilteredUsers();
+  });
+
+  // Status filter
+  const filterStatus = document.getElementById('filter-status');
+  filterStatus?.addEventListener('change', () => {
+    currentFilters.status = filterStatus.value;
+    renderFilteredUsers();
+  });
+
+  // Ban modal cancel
+  const banCancel = document.getElementById('btn-ban-cancel');
+  banCancel?.addEventListener('click', () => {
+    document.getElementById('modal-ban-confirm')?.classList.add('hidden');
+  });
+
+  // Create Staff modal
+  const btnAddUser = document.getElementById('btn-add-user');
+  const staffModal = document.getElementById('modal-create-staff');
+  const btnCloseStaff = document.getElementById('btn-close-staff-modal');
+  const btnCancelStaff = document.getElementById('btn-cancel-staff');
+  const staffForm = document.getElementById('form-create-staff');
+  const staffErrorMsg = document.getElementById('staff-error-msg');
+
+  const closeStaffModal = () => {
+    staffModal?.classList.add('hidden');
+    staffForm?.reset();
+    if (staffErrorMsg) { staffErrorMsg.classList.add('hidden'); staffErrorMsg.textContent = ''; }
+  };
+
+  btnAddUser?.addEventListener('click', () => staffModal?.classList.remove('hidden'));
+  btnCloseStaff?.addEventListener('click', closeStaffModal);
+  btnCancelStaff?.addEventListener('click', closeStaffModal);
+
+  staffForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    staffErrorMsg?.classList.add('hidden');
+
+    const formData = new FormData(staffForm);
+    const payload = {
+      username: formData.get('username')?.trim(),
+      fullName: formData.get('fullName')?.trim(),
+      email: formData.get('email')?.trim(),
+      phone: formData.get('phone')?.trim() || null,
+      password: formData.get('password'),
+      roleName: formData.get('roleName') || 'STAFF',
+    };
+
+    if (!payload.username || !payload.fullName || !payload.email || !payload.password) {
+      staffErrorMsg.textContent = 'Vui lòng điền đầy đủ các trường bắt buộc.';
+      staffErrorMsg.classList.remove('hidden');
+      return;
+    }
+
+    if (payload.password.length < 6) {
+      staffErrorMsg.textContent = 'Mật khẩu phải có ít nhất 6 ký tự.';
+      staffErrorMsg.classList.remove('hidden');
+      return;
+    }
+
+    const submitBtn = document.getElementById('btn-submit-staff');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> Đang tạo...';
+
+    try {
+      await createStaff(payload);
+      showToast('Tạo tài khoản Staff thành công!', 'success');
+      closeStaffModal();
+      // Refresh users
+      allUsersCache = await getAllUsers();
+      renderFilteredUsers();
+    } catch (err) {
+      const msg = err.message || 'Không thể tạo tài khoản.';
+      staffErrorMsg.textContent = msg;
+      staffErrorMsg.classList.remove('hidden');
+      showToast('Lỗi: ' + msg, 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span class="material-symbols-outlined text-lg">person_add</span> Tạo tài khoản';
+    }
+  });
 }

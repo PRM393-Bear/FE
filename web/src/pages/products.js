@@ -1,15 +1,16 @@
 import "../styles/products.css";
-import { getAllProducts } from "../services/product.service.js";
-
-// Global state
-let allProducts = [];
-let filteredProducts = [];
+import { getAllProducts, filterProductsApi, searchProductsByKeywordApi } from "../services/product.service.js";
+import { getAllCategories } from "../services/staff.service.js";
 
 /**
  * Render the Product List page
  * @param {HTMLElement} container
  */
 export async function renderProductsPage(container) {
+  let allProducts = [];
+  let filteredProducts = [];
+  let currentSearchKeyword = "";
+
   container.innerHTML = `
     <div class="products-layout">
       <!-- Sidebar Filter -->
@@ -21,15 +22,12 @@ export async function renderProductsPage(container) {
 
         <!-- Category Tree -->
         <div class="filter-section">
-          <span class="filter-title">Danh mục</span>
-          <ul class="category-list">
-            <li class="category-item category-parent active" data-category="Thời trang Nam">
-              <span>Thời trang Nam</span>
+          <span class="filter-title">Danh mục Sản phẩm</span>
+          <ul class="category-list" id="sidebar-category-list">
+            <li class="category-item category-parent active" data-category="">
+              <span>Tất cả danh mục</span>
               <span class="material-symbols-outlined icon-sm">expand_more</span>
             </li>
-            <li class="category-item category-child" data-category="Áo khoác">Áo khoác</li>
-            <li class="category-item category-child" data-category="Quần dài">Quần dài</li>
-            <li class="category-item category-child" data-category="Giày dép">Giày dép</li>
           </ul>
         </div>
 
@@ -216,15 +214,70 @@ export async function renderProductsPage(container) {
   const activeFiltersContainer = document.getElementById("active-filters-container");
   const resultsCount = container.querySelector(".results-count");
 
+  // Load dynamic categories from Staff service
+  const sidebarCategoryList = container.querySelector("#sidebar-category-list");
+  let categoriesData = [];
+  try {
+    categoriesData = await getAllCategories();
+    if (sidebarCategoryList) {
+      if (Array.isArray(categoriesData) && categoriesData.length > 0) {
+        sidebarCategoryList.innerHTML = `
+          <li class="category-item category-parent active" data-category="">
+            <span>Tất cả danh mục</span>
+            <span class="material-symbols-outlined icon-sm">expand_more</span>
+          </li>
+          ${categoriesData.map(cat => `
+            <li class="category-item category-child" data-category="${cat.name || ''}" data-category-id="${cat.id || ''}">${cat.name || 'Không tên'}</li>
+          `).join("")}
+        `;
+      } else {
+        sidebarCategoryList.innerHTML = `
+          <li class="category-item category-parent active" data-category="">
+            <span>Tất cả danh mục</span>
+            <span class="material-symbols-outlined icon-sm">expand_more</span>
+          </li>
+        `;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to load staff categories for sidebar:", err);
+  }
+
   // Load data
   try {
     const data = await getAllProducts();
-    // Assuming status logic should only show 'available', if we had strict status. For now we just use all data.
-    // allProducts = data.filter(p => p.status !== 'sold');
     allProducts = data || [];
     filteredProducts = [...allProducts];
 
-    updateGrid();
+    // Check query params for category/search filter from home/header
+    const hashParts = (window.location.hash || "").split("?");
+    let initialFilter = false;
+    if (hashParts.length > 1) {
+      const params = new URLSearchParams(hashParts[1]);
+      const catParam = params.get("category");
+      const searchParam = params.get("search");
+      if (catParam) {
+        container.querySelectorAll(".category-child").forEach(el => {
+          const dsCat = el.dataset.category || "";
+          const dsId = el.dataset.categoryId || "";
+          if (dsCat.toLowerCase() === catParam.toLowerCase() || dsCat.toLowerCase().includes(catParam.toLowerCase()) || catParam.toLowerCase().includes(dsCat.toLowerCase()) || (dsId && dsId === catParam)) {
+            el.style.fontWeight = '600';
+            el.style.color = 'var(--primary)';
+            initialFilter = true;
+          }
+        });
+      }
+      if (searchParam) {
+        currentSearchKeyword = searchParam.trim();
+        initialFilter = true;
+      }
+    }
+
+    if (initialFilter) {
+      applyFilters();
+    } else {
+      updateGrid();
+    }
   } catch (error) {
     gridContainer.innerHTML = `
       <div class="products-error">
@@ -253,7 +306,10 @@ export async function renderProductsPage(container) {
 
     // Category
     container.querySelectorAll('.category-child[style*="font-weight: 600"]').forEach(el => {
-      filters.categories.push(el.dataset.category);
+      filters.categories.push({
+        name: el.dataset.category || "",
+        id: el.dataset.categoryId || ""
+      });
     });
 
     // Price
@@ -288,15 +344,68 @@ export async function renderProductsPage(container) {
       filters.lifecycles.push(Number(cb.dataset.lifecycle));
     });
 
+    const selectSort = container.querySelector('.select-sort');
+    let sortBy = selectSort ? selectSort.value : "";
+    if (sortBy === "price_asc") sortBy = "priceAsc";
+    if (sortBy === "price_desc") sortBy = "priceDesc";
+    filters.sortBy = sortBy;
+
     return filters;
   }
 
-  function applyFilters() {
+  async function applyFilters() {
     const filters = getFiltersFromUI();
+    if (gridContainer) gridContainer.innerHTML = renderSkeletons(8);
 
-    filteredProducts = allProducts.filter(p => {
-      // Category
-      if (filters.categories.length > 0 && (!p.category || !filters.categories.includes(p.category))) return false;
+    let baseList = allProducts;
+    try {
+      const firstCat = filters.categories[0];
+      const catParamVal = firstCat ? (firstCat.id || firstCat.name || "") : "";
+      const hasSidebarFilter = filters.categories.length > 0 || filters.minPrice !== null || filters.maxPrice !== null || filters.conditions.length > 0 || filters.sizes.length > 0 || filters.colors.length > 0 || (filters.sortBy && filters.sortBy !== "relevant");
+
+      if (hasSidebarFilter) {
+        const queryParams = {
+          category: catParamVal,
+          minPrice: filters.minPrice !== null ? filters.minPrice : undefined,
+          maxPrice: filters.maxPrice !== null ? filters.maxPrice : undefined,
+          condition: filters.conditions[0] !== undefined ? filters.conditions[0] : undefined,
+          size: filters.sizes[0] || "",
+          color: filters.colors[0] || "",
+          sortBy: filters.sortBy && filters.sortBy !== "relevant" ? filters.sortBy : "newest"
+        };
+        baseList = await filterProductsApi(queryParams);
+      } else if (currentSearchKeyword) {
+        baseList = await searchProductsByKeywordApi(currentSearchKeyword);
+      }
+    } catch (err) {
+      console.warn("Backend filter API fallback to local:", err);
+      baseList = allProducts;
+    }
+
+    filteredProducts = baseList.filter(p => {
+      // Category (Staff dynamic ID & Name matching)
+      if (filters.categories.length > 0) {
+        if (!p.category && !p.categoryId) return false;
+        const matchCat = filters.categories.some(selected => {
+          if (!selected) return false;
+          const pCatId = String(p.categoryId || "").trim();
+          const pCatName = (p.category || "").toLowerCase().trim();
+          const selId = String(selected.id || "").trim();
+          const selName = (selected.name || "").toLowerCase().trim();
+          return (selId && pCatId && selId === pCatId) || 
+                 (selName && pCatName && (pCatName.includes(selName) || selName.includes(pCatName)));
+        });
+        if (!matchCat) return false;
+      }
+
+      // Keyword search combination
+      if (currentSearchKeyword) {
+        const q = currentSearchKeyword.toLowerCase().trim();
+        const matchKeyword = (p.title || "").toLowerCase().includes(q) ||
+                             (p.description || "").toLowerCase().includes(q) ||
+                             (p.brand || "").toLowerCase().includes(q);
+        if (!matchKeyword) return false;
+      }
 
       // Price
       if (filters.minPrice !== null && (p.price === undefined || p.price < filters.minPrice)) return false;
@@ -320,6 +429,14 @@ export async function renderProductsPage(container) {
       return true;
     });
 
+    if (filters.sortBy === "priceAsc") {
+      filteredProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
+    } else if (filters.sortBy === "priceDesc") {
+      filteredProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
+    } else if (filters.sortBy === "newest") {
+      filteredProducts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }
+
     updateGrid();
     renderActiveFilterTags(filters);
   }
@@ -341,8 +458,13 @@ export async function renderProductsPage(container) {
   function renderActiveFilterTags(filters) {
     let html = "";
 
+    if (currentSearchKeyword) {
+      html += `<div class="filter-tag" data-type="keyword" data-val="${currentSearchKeyword}">Từ khóa: "${currentSearchKeyword}" <span class="material-symbols-outlined tag-close">close</span></div>`;
+    }
     filters.categories.forEach(c => {
-      html += `<div class="filter-tag" data-type="category" data-val="${c}">Danh mục: ${c} <span class="material-symbols-outlined tag-close">close</span></div>`;
+      const catLabel = typeof c === 'object' ? (c.name || c.id || "Danh mục") : c;
+      const catVal = typeof c === 'object' ? (c.id || c.name || "") : c;
+      html += `<div class="filter-tag" data-type="category" data-val="${catVal}">Danh mục: ${catLabel} <span class="material-symbols-outlined tag-close">close</span></div>`;
     });
     if (filters.minPrice !== null || filters.maxPrice !== null) {
       const min = filters.minPrice || 0;
@@ -369,10 +491,17 @@ export async function renderProductsPage(container) {
   }
 
   function removeFilter(type, val) {
-    if (type === 'category') {
-      container.querySelectorAll(`.category-child[data-category="${val}"]`).forEach(el => {
-        el.style.fontWeight = 'normal';
-        el.style.color = 'var(--on-surface-variant)';
+    if (type === 'keyword') {
+      currentSearchKeyword = "";
+      if (window.location.hash.includes("search=")) {
+        window.history.replaceState(null, "", window.location.pathname + "#/products");
+      }
+    } else if (type === 'category') {
+      container.querySelectorAll(`.category-child`).forEach(el => {
+        if (el.dataset.category === val || el.dataset.categoryId === val) {
+          el.style.fontWeight = 'normal';
+          el.style.color = 'var(--on-surface-variant)';
+        }
       });
     } else if (type === 'price') {
       container.querySelector('.input-price-min').value = "";
@@ -416,6 +545,10 @@ export async function renderProductsPage(container) {
         c.style.fontWeight = 'normal';
         c.style.color = 'var(--on-surface-variant)';
       });
+      currentSearchKeyword = "";
+      if (window.location.hash.includes("search=")) {
+        window.history.replaceState(null, "", window.location.pathname + "#/products");
+      }
       applyFilters();
     });
   });
@@ -448,6 +581,15 @@ export async function renderProductsPage(container) {
   const categoryList = container.querySelector('.category-list');
   if (categoryList) {
     categoryList.addEventListener('click', (e) => {
+      const parent = e.target.closest('.category-parent');
+      if (parent) {
+        categoryList.querySelectorAll('.category-child').forEach(c => {
+          c.style.fontWeight = 'normal';
+          c.style.color = 'var(--on-surface-variant)';
+        });
+        applyFilters();
+        return;
+      }
       const item = e.target.closest('.category-child');
       if (item) {
         // Toggle category
@@ -458,6 +600,7 @@ export async function renderProductsPage(container) {
           item.style.fontWeight = '600';
           item.style.color = 'var(--primary)';
         }
+        applyFilters();
       }
     });
   }
@@ -475,6 +618,13 @@ export async function renderProductsPage(container) {
           gridContainer.style.gridTemplateColumns = '';
         }
       }
+    });
+  }
+
+  const selectSortControl = container.querySelector('.select-sort');
+  if (selectSortControl) {
+    selectSortControl.addEventListener('change', () => {
+      applyFilters();
     });
   }
 }

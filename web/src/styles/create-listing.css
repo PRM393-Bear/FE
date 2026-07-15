@@ -3,7 +3,7 @@
 .cl-wrapper {
   background: #F0F5EF;
   min-height: 100vh;
-  padding: 40px 16px;
+  padding: 104px 16px 48px;
   font-family: 'Be Vietnam Pro', sans-serif;
   color: #2E392D;
 }
@@ -396,4 +396,41 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
+}
+
+/* Bubble Selector Styles */
+.cl-bubble-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.cl-bubble-chip {
+  padding: 8px 18px;
+  border-radius: 9999px;
+  background: #F0F5EF;
+  border: 1.5px solid #DDE5DB;
+  color: #2E392D;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cl-bubble-chip:hover {
+  background: #E4EBE4;
+  border-color: #006B2C;
+  transform: translateY(-1px);
+}
+
+.cl-bubble-chip.active {
+  background: #006B2C;
+  border-color: #006B2C;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 107, 44, 0.2);
+  transform: scale(1.02);
 }

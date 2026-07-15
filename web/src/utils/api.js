@@ -1,14 +1,15 @@
 /**
  * EcoCycle - Global API Fetch Utility
  */
-import { getToken } from "../services/auth.service.js";
+import { getToken, refreshTokenApi, removeToken } from "../services/auth.service.js";
 
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
-export async function apiFetch(path, options = {}) {
+export async function apiFetch(path, options = {}, _isRetry = false) {
   const token = getToken();
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -17,6 +18,19 @@ export async function apiFetch(path, options = {}) {
     ...options,
     headers,
   });
+
+  // Tự động làm mới token nếu gặp 401
+  if (res.status === 401 && !_isRetry && !path.includes("/api/auth/")) {
+    const newToken = await refreshTokenApi();
+    if (newToken) {
+      return await apiFetch(path, options, true);
+    } else {
+      removeToken();
+      if (window.location.hash !== "#/login") {
+        window.location.hash = "#/login";
+      }
+    }
+  }
 
   // Parse body regardless of status
   let body = null;

@@ -85,73 +85,16 @@ export function renderOverviewTab() {
           <!-- Bento Charts Section -->
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
             <!-- Line Chart Area -->
-            <div class="lg:col-span-2 bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30">
-              <div class="flex justify-between items-center mb-stack-lg">
-                <h4 class="font-headline-md text-on-surface">Giao dịch 30 ngày</h4>
-                <div class="flex gap-stack-sm">
-                  <button class="px-3 py-1 text-label-sm rounded-lg bg-surface-variant text-on-surface-variant hover:bg-outline-variant transition-colors">Tải báo cáo</button>
-                </div>
-              </div>
-              <!-- Chart Placeholder with custom visual -->
-              <div class="h-64 w-full relative flex items-end justify-between gap-2 pt-4">
-                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
-                  <div class="w-full border-t border-outline"></div>
-                  <div class="w-full border-t border-outline"></div>
-                  <div class="w-full border-t border-outline"></div>
-                  <div class="w-full border-t border-outline"></div>
-                </div>
-                <!-- Mockup Line Chart -->
-                <svg class="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 1000 200">
-                  <path d="M0,180 Q50,150 100,160 T200,100 T300,120 T400,60 T500,80 T600,40 T700,90 T800,50 T900,70 T1000,30" fill="none" stroke="#16A34A" stroke-linecap="round" stroke-width="4"></path>
-                  <path d="M0,180 Q50,150 100,160 T200,100 T300,120 T400,60 T500,80 T600,40 T700,90 T800,50 T900,70 T1000,30 L1000,200 L0,200 Z" fill="url(#grad1)" opacity="0.1"></path>
-                  <defs>
-                    <linearGradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
-                      <stop offset="0%" style="stop-color:#16A34A;stop-opacity:1"></stop>
-                      <stop offset="100%" style="stop-color:#16A34A;stop-opacity:0"></stop>
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div class="z-10 w-full flex justify-between px-2 text-[10px] text-outline font-bold mt-2">
-                  <span>1 Tháng 10</span><span>15 Tháng 10</span><span>Hôm nay</span>
-                </div>
-              </div>
+            <div class="lg:col-span-2 bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-center items-center h-72 text-center">
+              <span class="material-symbols-outlined text-4xl text-outline mb-2 animate-pulse">query_stats</span>
+              <h4 class="font-headline-sm text-on-surface font-semibold">Biểu đồ Giao dịch chưa sẵn sàng</h4>
+              <p class="text-body-sm text-on-surface-variant max-w-md mt-1">Hệ thống đang tích hợp API phân tích dữ liệu thời gian thực từ máy chủ. Vui lòng quay lại sau.</p>
             </div>
             <!-- Donut Chart Area -->
-            <div class="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col">
-              <h4 class="font-headline-md text-on-surface mb-stack-lg">Danh mục sản phẩm</h4>
-              <div class="flex-1 flex flex-col items-center justify-center">
-                <div class="relative w-48 h-48">
-                  <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#dde5d9" stroke-width="3"></circle>
-                    <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#006b2c" stroke-dasharray="40 60" stroke-dashoffset="0" stroke-width="3"></circle>
-                    <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#fea619" stroke-dasharray="25 75" stroke-dashoffset="-40" stroke-width="3"></circle>
-                    <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#a72d51" stroke-dasharray="20 80" stroke-dashoffset="-65" stroke-width="3"></circle>
-                    <circle cx="18" cy="18" fill="transparent" r="15.915" stroke="#bdcaba" stroke-dasharray="15 85" stroke-dashoffset="-85" stroke-width="3"></circle>
-                  </svg>
-                  <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <span class="text-headline-md font-bold text-on-surface">1.1k</span>
-                    <span class="text-[10px] text-outline uppercase font-bold">Tổng mục</span>
-                  </div>
-                </div>
-                <div class="mt-stack-lg grid grid-cols-2 gap-stack-md w-full">
-                  <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-primary"></div>
-                    <span class="text-label-sm text-on-surface-variant">Thời trang</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-secondary-container"></div>
-                    <span class="text-label-sm text-on-surface-variant">Đồ gia dụng</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-tertiary"></div>
-                    <span class="text-label-sm text-on-surface-variant">Phụ kiện</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-outline-variant"></div>
-                    <span class="text-label-sm text-on-surface-variant">Khác</span>
-                  </div>
-                </div>
-              </div>
+            <div class="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-center items-center h-72 text-center">
+              <span class="material-symbols-outlined text-4xl text-outline mb-2 animate-pulse">pie_chart</span>
+              <h4 class="font-headline-sm text-on-surface font-semibold">Danh mục Sản phẩm</h4>
+              <p class="text-body-sm text-on-surface-variant max-w-xs mt-1">Đang tích hợp dữ liệu phân bổ từ kho API.</p>
             </div>
           </div>
 

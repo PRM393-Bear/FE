@@ -6,11 +6,15 @@
 import "../styles/create-listing.css";
 import {
   createProduct,
+  updateProduct,
+  getProductById,
   markDraftProductId,
   unmarkDraftProductId,
+  isDraftProduct,
   uploadProductImage,
 } from "../services/product.service.js";
 import { isAuthenticated } from "../services/auth.service.js";
+import { getAllCategories } from "../services/staff.service.js";
 import { compressImage } from "../utils/image.js";
 
 export function renderCreateListingPage(container) {
@@ -20,10 +24,15 @@ export function renderCreateListingPage(container) {
     return;
   }
 
-  // 2. Page State
+  // 2. Page State & Edit Mode Check
   let selectedImages = []; // Array of objects: { file, compressedFile, previewUrl, uploadUrl }
   let isDirty = false;
   let isSubmitting = false;
+
+  const hashParts = window.location.hash.split("?");
+  const queryParams = new URLSearchParams(hashParts[1] || "");
+  const editId = queryParams.get("id");
+  const isEditMode = Boolean(editId);
 
   // 3. Render HTML Layout
   container.innerHTML = `
@@ -38,8 +47,8 @@ export function renderCreateListingPage(container) {
 
           <!-- Header -->
           <header class="cl-header">
-            <h1 class="cl-title">Tạo Listing Mới</h1>
-            <p class="cl-subtitle">Đăng tải sản phẩm thời trang, phụ kiện cũ của bạn để tái sinh chúng.</p>
+            <h1 class="cl-title">${isEditMode ? 'Cập Nhật Listing' : 'Tạo Listing Mới'}</h1>
+            <p class="cl-subtitle">${isEditMode ? 'Chỉnh sửa thông tin bài đăng bán hoặc bản nháp của bạn.' : 'Đăng tải sản phẩm thời trang, phụ kiện cũ của bạn để tái sinh chúng.'}</p>
           </header>
 
           <form id="cl-form" novalidate>
@@ -72,24 +81,25 @@ export function renderCreateListingPage(container) {
               <div class="cl-row-2col">
                 <div class="cl-group">
                   <label class="cl-label" for="cl-type">Phân loại đăng bán</label>
-                  <select class="cl-select" id="cl-type">
-                    <option value="ITEM">Sản phẩm đơn lẻ (Item)</option>
-                    <option value="BUNDLE">Gói sản phẩm (Bundle)</option>
+                  <select class="cl-select bg-surface-variant/40 cursor-not-allowed" id="cl-type" disabled>
+                    <option value="ITEM" selected>Sản phẩm đơn lẻ (Item)</option>
                   </select>
+                  <span class="text-xs text-on-surface-variant mt-1.5 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm text-primary">info</span>
+                    Hệ thống chỉ hỗ trợ đăng bán sản phẩm đơn lẻ
+                  </span>
                 </div>
 
                 <div class="cl-group">
-                  <label class="cl-label" for="cl-category">Danh mục</label>
-                  <select class="cl-select" id="cl-category" required>
-                    <option value="" disabled selected>Chọn danh mục</option>
-                    <option value="Quần áo">Quần áo</option>
-                    <option value="Giày">Giày</option>
-                    <option value="Túi xách">Túi xách</option>
-                    <option value="Điện tử">Điện tử</option>
-                    <option value="Đồ nhà">Đồ nhà</option>
-                    <option value="Sách">Sách</option>
-                    <option value="Khác">Khác</option>
-                  </select>
+                  <label class="cl-label">Danh mục</label>
+                  <input type="hidden" id="cl-category" required />
+                  <input type="hidden" id="cl-category-id" />
+                  <div id="cl-category-bubbles" class="cl-bubble-container">
+                    <span class="text-xs text-on-surface-variant flex items-center gap-1.5 py-2">
+                      <span class="material-symbols-outlined text-sm animate-spin text-primary">progress_activity</span>
+                      Đang tải danh mục từ hệ thống...
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -119,8 +129,19 @@ export function renderCreateListingPage(container) {
                 </div>
 
                 <div class="cl-group">
-                  <label class="cl-label" for="cl-size">Kích cỡ (Size)</label>
-                  <input type="text" class="cl-input" id="cl-size" placeholder="Ví dụ: M, L, XL, 39, 40..." required />
+                  <label class="cl-label">Kích cỡ (Size)</label>
+                  <input type="hidden" id="cl-size" required />
+                  <div id="cl-size-bubbles" class="cl-bubble-container">
+                    <button type="button" class="cl-bubble-chip" data-size="XS">XS</button>
+                    <button type="button" class="cl-bubble-chip" data-size="S">S</button>
+                    <button type="button" class="cl-bubble-chip" data-size="M">M</button>
+                    <button type="button" class="cl-bubble-chip" data-size="L">L</button>
+                    <button type="button" class="cl-bubble-chip" data-size="XL">XL</button>
+                    <button type="button" class="cl-bubble-chip" data-size="Khác">khác</button>
+                  </div>
+                  <div id="cl-size-custom-container" class="hidden mt-3 animate-fade-in">
+                    <input type="text" class="cl-input" id="cl-size-custom-input" placeholder="Nhập kích cỡ mong muốn (ví dụ: XXL, 39, 40, Free Size...)" />
+                  </div>
                 </div>
               </div>
 
@@ -141,6 +162,7 @@ export function renderCreateListingPage(container) {
                 <div class="cl-group">
                   <label class="cl-label" for="cl-price">Giá bán (VNĐ)</label>
                   <input type="number" class="cl-input" id="cl-price" min="0" placeholder="Ví dụ: 150000" required />
+                  <div id="cl-price-preview" class="text-primary font-bold text-sm mt-1.5 min-h-[20px] transition-all"></div>
                 </div>
 
                 <div class="cl-group">
@@ -172,8 +194,8 @@ export function renderCreateListingPage(container) {
               <button type="button" class="cl-btn cl-btn--secondary" id="cl-btn-draft">
                 <span class="material-symbols-outlined">save</span> Lưu bản nháp
               </button>
-              <button type="submit" class="cl-btn cl-btn--primary" id="cl-btn-submit">
-                <span class="material-symbols-outlined">publish</span> Đăng sản phẩm
+              <button type="submit" class="cl-btn cl-btn-primary" id="cl-submit-btn">
+                ${isEditMode ? 'Lưu Thay Đổi' : 'Đăng Bán Ngay'}
               </button>
             </div>
           </form>
@@ -207,6 +229,153 @@ export function renderCreateListingPage(container) {
   const btnPreview = container.querySelector("#cl-btn-preview");
   const btnDraft = container.querySelector("#cl-btn-draft");
   const btnCloseModal = container.querySelector("#cl-modal-close-btn");
+
+  // Dynamic Categories from Staff Service & Bubble Selection
+  const categoryBubblesContainer = container.querySelector("#cl-category-bubbles");
+  const hiddenCategoryInput = container.querySelector("#cl-category");
+  const hiddenCategoryIdInput = container.querySelector("#cl-category-id");
+
+  async function initCategories(initialCatName = "", initialCatId = "") {
+    if (!categoryBubblesContainer) return;
+    try {
+      let categories = await getAllCategories();
+      if (!Array.isArray(categories) || categories.length === 0) {
+        categories = [
+          { id: "c1", name: "Quần áo" },
+          { id: "c2", name: "Áo thun / Sơ mi" },
+          { id: "c3", name: "Quần dài / Short" },
+          { id: "c4", name: "Váy & Đầm" },
+          { id: "c5", name: "Áo khoác / Blazer" },
+          { id: "c6", name: "Đồ thể thao" },
+          { id: "c7", name: "Đồ ngủ / Mặc nhà" },
+        ];
+      }
+      categoryBubblesContainer.innerHTML = categories.map((cat) => {
+        const catName = cat.name || "Không tên";
+        const isSelected = Boolean(
+          (initialCatName && catName.toLowerCase() === initialCatName.toLowerCase()) ||
+          (initialCatId && cat.id && String(cat.id).trim() === String(initialCatId).trim())
+        );
+        if (isSelected && hiddenCategoryInput) {
+          hiddenCategoryInput.value = catName;
+          if (hiddenCategoryIdInput) hiddenCategoryIdInput.value = cat.id || "";
+        }
+        return `
+          <button type="button" class="cl-bubble-chip ${isSelected ? 'active' : ''}" data-id="${cat.id || ''}" data-name="${catName}">
+            <span class="material-symbols-outlined text-sm">${isSelected ? 'check_circle' : 'circle'}</span>
+            ${catName}
+          </button>
+        `;
+      }).join("");
+
+      categoryBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          categoryBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach(c => {
+            c.classList.remove("active");
+            const icon = c.querySelector(".material-symbols-outlined");
+            if (icon) icon.textContent = "circle";
+          });
+          chip.classList.add("active");
+          const icon = chip.querySelector(".material-symbols-outlined");
+          if (icon) icon.textContent = "check_circle";
+
+          const name = chip.getAttribute("data-name") || "";
+          const id = chip.getAttribute("data-id") || "";
+          if (hiddenCategoryInput) {
+            hiddenCategoryInput.value = name;
+            hiddenCategoryInput.dispatchEvent(new Event("change"));
+          }
+          if (hiddenCategoryIdInput) hiddenCategoryIdInput.value = id;
+          isDirty = true;
+        });
+      });
+    } catch (err) {
+      console.warn("Failed to load staff categories for bubble selection:", err);
+    }
+  }
+  initCategories();
+
+  // Size Bubble Selection Logic
+  const sizeBubblesContainer = container.querySelector("#cl-size-bubbles");
+  const hiddenSizeInput = container.querySelector("#cl-size");
+  const sizeCustomContainer = container.querySelector("#cl-size-custom-container");
+  const sizeCustomInput = container.querySelector("#cl-size-custom-input");
+
+  function setSizeValue(val) {
+    if (!hiddenSizeInput) return;
+    hiddenSizeInput.value = val;
+    isDirty = true;
+  }
+
+  function initSizeSelection(initialSize = "") {
+    if (!sizeBubblesContainer || !hiddenSizeInput) return;
+    const standardSizes = ["XS", "S", "M", "L", "XL"];
+    const isStandard = standardSizes.includes(initialSize.toUpperCase());
+    const isOther = initialSize && !isStandard;
+
+    sizeBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach((chip) => {
+      const chipSize = chip.getAttribute("data-size");
+      const isActive = (chipSize && initialSize && chipSize.toUpperCase() === initialSize.toUpperCase()) || (chipSize === "Khác" && isOther);
+      if (isActive) {
+        chip.classList.add("active");
+      } else {
+        chip.classList.remove("active");
+      }
+    });
+
+    if (isOther) {
+      if (sizeCustomContainer) sizeCustomContainer.classList.remove("hidden");
+      if (sizeCustomInput) sizeCustomInput.value = initialSize;
+      setSizeValue(initialSize);
+    } else if (isStandard) {
+      if (sizeCustomContainer) sizeCustomContainer.classList.add("hidden");
+      setSizeValue(initialSize.toUpperCase());
+    } else {
+      if (sizeCustomContainer) sizeCustomContainer.classList.add("hidden");
+    }
+
+    sizeBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        sizeBubblesContainer.querySelectorAll(".cl-bubble-chip").forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        const selected = chip.getAttribute("data-size");
+        if (selected === "Khác") {
+          if (sizeCustomContainer) sizeCustomContainer.classList.remove("hidden");
+          if (sizeCustomInput) {
+            sizeCustomInput.focus();
+            setSizeValue(sizeCustomInput.value.trim() || "khác");
+          }
+        } else {
+          if (sizeCustomContainer) sizeCustomContainer.classList.add("hidden");
+          setSizeValue(selected);
+        }
+      });
+    });
+
+    if (sizeCustomInput) {
+      sizeCustomInput.addEventListener("input", () => {
+        setSizeValue(sizeCustomInput.value.trim());
+      });
+    }
+  }
+  initSizeSelection();
+
+  // Price Review Below Input
+  const priceInput = container.querySelector("#cl-price");
+  const pricePreview = container.querySelector("#cl-price-preview");
+  function updatePricePreview() {
+    if (!priceInput || !pricePreview) return;
+    const val = priceInput.value ? Number(priceInput.value) : NaN;
+    if (!isNaN(val) && val >= 0) {
+      pricePreview.textContent = val.toLocaleString("vi-VN") + " VND";
+    } else {
+      pricePreview.textContent = "";
+    }
+  }
+  if (priceInput) {
+    priceInput.addEventListener("input", updatePricePreview);
+    priceInput.addEventListener("change", updatePricePreview);
+  }
 
   // 5. Image Event Handlers & Upload Progress Render
   dropzone.addEventListener("click", () => fileInput.click());
@@ -311,6 +480,55 @@ export function renderCreateListingPage(container) {
     });
   });
 
+  // 7.5 Load Existing Product Data if Edit Mode
+  if (isEditMode && editId) {
+    showLoading("Đang tải thông tin sản phẩm...");
+    getProductById(editId).then(product => {
+      hideLoading();
+      if (!product) return;
+      const isDraft = (String(product.status || '').trim().toUpperCase() === 'DRAFT') || isDraftProduct(product);
+      if (!isDraft) {
+        alert("Chỉ những sản phẩm với trạng thái Bản nháp (DRAFT) mới có nút chỉnh sửa bài đăng và có thể chỉnh sửa.");
+        window.location.hash = "#/profile?tab=panel-shop";
+        return;
+      }
+      if (form.querySelector("#cl-title-input")) form.querySelector("#cl-title-input").value = product.title || "";
+      if (form.querySelector("#cl-description")) form.querySelector("#cl-description").value = product.description || "";
+      if (form.querySelector("#cl-type")) form.querySelector("#cl-type").value = product.type || "ITEM";
+      initCategories(product.category || "", product.categoryId || "");
+      if (form.querySelector("#cl-brand")) form.querySelector("#cl-brand").value = product.brand || "";
+      if (form.querySelector("#cl-price")) {
+        form.querySelector("#cl-price").value = product.price || "";
+        updatePricePreview();
+      }
+      initSizeSelection(product.size || "");
+      if (form.querySelector("#cl-color")) form.querySelector("#cl-color").value = product.color || "";
+      if (form.querySelector("#cl-condition")) form.querySelector("#cl-condition").value = product.condition || "3";
+      if (product.aiTags && Array.isArray(product.aiTags)) {
+        if (form.querySelector("#cl-tags")) form.querySelector("#cl-tags").value = product.aiTags.join(", ");
+      }
+      const existingImages = product.images || (product.imageUrl ? [product.imageUrl] : []);
+      if (Array.isArray(existingImages)) {
+        existingImages.forEach(url => {
+          if (typeof url === 'string') {
+            selectedImages.push({
+              file: null,
+              compressedFile: null,
+              previewUrl: url,
+              uploadUrl: url
+            });
+          }
+        });
+        renderImageThumbnails();
+      }
+      isDirty = false;
+    }).catch(err => {
+      hideLoading();
+      console.error("Error loading product for edit:", err);
+      alert("Không thể tải dữ liệu sản phẩm để chỉnh sửa.");
+    });
+  }
+
   // 8. Image Upload Loop to Cloudinary Backend API
   async function uploadAllImages() {
     const urls = [];
@@ -332,6 +550,7 @@ export function renderCreateListingPage(container) {
   async function saveProduct(status) {
     // Basic Form validation
     const category = form.querySelector("#cl-category").value;
+    const categoryId = form.querySelector("#cl-category-id")?.value || "";
     const brand = form.querySelector("#cl-brand").value;
     const condition = form.querySelector("#cl-condition").value;
     const color = form.querySelector("#cl-color").value;
@@ -339,7 +558,7 @@ export function renderCreateListingPage(container) {
     const priceVal = form.querySelector("#cl-price").value;
     const title = form.querySelector("#cl-title-input").value;
     const description = form.querySelector("#cl-description").value;
-    const type = form.querySelector("#cl-type").value;
+    const type = "ITEM";
     const rawTags = form.querySelector("#cl-tags").value;
 
     if (status === "AVAILABLE") {
@@ -360,9 +579,22 @@ export function renderCreateListingPage(container) {
       }
     }
 
+    // Verify no unrelated non-fashion/electronic products are listed
+    const nonFashionKeywords = [
+      "điện tử", "máy tính", "điện thoại", "laptop", "tủ lạnh", "máy giặt", "xe máy", "ô tô", "đồ gia dụng", "tivi", "ti vi"
+    ];
+    const lowerTitle = (title || "").toLowerCase();
+    const lowerDesc = (description || "").toLowerCase();
+    for (const kw of nonFashionKeywords) {
+      if (lowerTitle.includes(kw) || lowerDesc.includes(kw)) {
+        alert("Hệ thống EcoCycle chỉ hỗ trợ đăng bán các sản phẩm Thời trang (Quần áo, phụ kiện theo danh mục quy định). Các mặt hàng điện tử, xe cộ, gia dụng không thuộc phạm vi hỗ trợ.");
+        return false;
+      }
+    }
+
     try {
       showLoading("Đang xử lý dữ liệu...");
-      
+
       // Upload images
       const imageUrls = await uploadAllImages();
 
@@ -371,11 +603,17 @@ export function renderCreateListingPage(container) {
         ? rawTags.split(",").map((t) => t.trim()).filter((t) => t.length > 0)
         : [];
 
+      // UUID Guard: Backend ProductReq.java requires java.util.UUID categoryId.
+      // If categoryId is non-UUID (e.g. "c1", "c2" from fallback or empty string ""), send null to prevent HTTP 400 Bad Request.
+      const isValidUUID = (idStr) => idStr && typeof idStr === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idStr.trim());
+      const cleanCategoryId = isValidUUID(categoryId) ? categoryId.trim() : null;
+
       const payload = {
         title,
         description,
         category,
-        type,
+        categoryId: cleanCategoryId,
+        type: "ITEM",
         condition: condition ? parseInt(condition, 10) : 3,
         price: priceVal ? parseInt(priceVal, 10) : 0,
         size,
@@ -386,9 +624,14 @@ export function renderCreateListingPage(container) {
         status: status // AVAILABLE or DRAFT
       };
 
-      showLoading(status === "AVAILABLE" ? "Đang đăng bán sản phẩm..." : "Đang lưu bản nháp...");
-      const createdProduct = await createProduct(payload);
-      const createdProductId = createdProduct?.id ?? createdProduct?.productId ?? createdProduct?.data?.id;
+      showLoading(isEditMode ? "Đang cập nhật sản phẩm..." : (status === "AVAILABLE" ? "Đang đăng bán sản phẩm..." : "Đang lưu bản nháp..."));
+      let createdProduct;
+      if (isEditMode) {
+        createdProduct = await updateProduct(editId, payload);
+      } else {
+        createdProduct = await createProduct(payload);
+      }
+      const createdProductId = createdProduct?.id ?? createdProduct?.productId ?? createdProduct?.data?.id ?? editId;
 
       if (createdProductId) {
         if (status === "DRAFT") {
@@ -402,7 +645,7 @@ export function renderCreateListingPage(container) {
       isSubmitting = true;
       hideLoading();
 
-      alert(status === "AVAILABLE" ? "Đăng bán sản phẩm thành công!" : "Lưu bản nháp thành công!");
+      alert(isEditMode ? "Cập nhật sản phẩm thành công!" : (status === "AVAILABLE" ? "Đăng bán sản phẩm thành công!" : "Lưu bản nháp thành công!"));
       cleanup();
       window.location.hash = "#/profile";
       return true;
@@ -427,15 +670,15 @@ export function renderCreateListingPage(container) {
 
   // 10. Preview Modal Logic
   btnPreview.addEventListener("click", () => {
-    const category = form.querySelector("#cl-category").value;
+    const category = form.querySelector("#cl-category").value || "Chưa chọn danh mục";
     const brand = form.querySelector("#cl-brand").value;
     const conditionText = form.querySelector("#cl-condition").options[form.querySelector("#cl-condition").selectedIndex]?.text || "Chưa chọn";
     const color = form.querySelector("#cl-color").value || "Chưa nhập";
-    const size = form.querySelector("#cl-size").value || "Chưa nhập";
+    const size = form.querySelector("#cl-size").value || "Chưa chọn size";
     const priceVal = form.querySelector("#cl-price").value;
     const title = form.querySelector("#cl-title-input").value || "Tên sản phẩm xem trước";
     const description = form.querySelector("#cl-description").value || "Mô tả sản phẩm...";
-    const typeText = form.querySelector("#cl-type").options[form.querySelector("#cl-type").selectedIndex]?.text;
+    const typeText = "Sản phẩm đơn lẻ (Item)";
     const rawTags = form.querySelector("#cl-tags").value;
     const delivery = form.querySelector("#cl-delivery").value;
 
@@ -517,7 +760,7 @@ export function renderCreateListingPage(container) {
 
   async function hashGuard() {
     if (!isDirty || isSubmitting) return;
-    
+
     const newHash = window.location.hash;
     if (newHash === originalHash) return;
 
@@ -539,7 +782,7 @@ export function renderCreateListingPage(container) {
         window.addEventListener("hashchange", hashGuard);
         return;
       }
-      
+
       const success = await saveProduct("DRAFT");
       if (success) {
         window.location.hash = newHash;
@@ -574,10 +817,12 @@ export function renderCreateListingPage(container) {
   function cleanup() {
     window.removeEventListener("hashchange", hashGuard);
     window.removeEventListener("beforeunload", beforeUnloadHandler);
-    
+
     // Revoke any created Object URLs
     selectedImages.forEach((img) => {
       URL.revokeObjectURL(img.previewUrl);
     });
   }
+
+  return cleanup;
 }

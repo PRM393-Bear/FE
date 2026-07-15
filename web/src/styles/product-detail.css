@@ -5,7 +5,7 @@
 .pd-container {
   max-width: var(--container-max, 1280px);
   margin: 0 auto;
-  padding: 24px var(--margin-desktop, 40px) var(--stack-xl, 48px) var(--margin-desktop, 40px);
+  padding: 104px var(--margin-desktop, 40px) var(--stack-xl, 48px) var(--margin-desktop, 40px);
   min-height: calc(100vh - 120px);
 }
 
