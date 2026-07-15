@@ -169,3 +169,22 @@ export async function getAllOrganizationsApi() {
 export async function getAllDonationEventsApi() {
   return await apiFetch("/api/donation-events");
 }
+
+/* ── ORGANIZATION DETAILS API METHODS ── */
+
+export async function getMyOrganizationDetailApi() {
+  try {
+    return await apiFetch("/api/organization-details/my-profile/");
+  } catch (err) {
+    console.error("Failed to fetch organization details:", err);
+    return null;
+  }
+}
+
+export async function updateOrganizationDetailApi(orgDetailId, payload) {
+  return await apiFetch(`/api/organization-details/${orgDetailId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
