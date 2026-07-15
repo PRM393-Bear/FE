@@ -5,6 +5,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../organization/data/organization_service.dart';
 import '../../data/donation_event_model.dart';
 import 'donation_event_form_page.dart';
+import '../../../../core/auth/auth_storage.dart';
 
 class MyCampaignsPage extends StatefulWidget {
   const MyCampaignsPage({super.key});
@@ -27,18 +28,18 @@ class _MyCampaignsPageState extends State<MyCampaignsPage> {
     setState(() => _isLoading = true);
     try {
       final myOrg = await OrganizationService.getMine();
+      final myIds = await AuthStorage.getMyCampaignIds();
       final res = await ApiClient.dio.get('/api/donation-events');
       final all = (res.data as List)
           .map((e) => DonationEventModel.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      // TODO(sau khi BE fix mục 0.1): lọc theo event.organizationDetailId ==
-      // myOrg.id thay vì so tên — so tên chỉ là giải pháp tạm vì response
-      // hiện chưa trả organizationDetailId.
       setState(() {
-        _myEvents = myOrg == null
-            ? []
-            : all.where((e) => e.orgName == myOrg.orgName).toList();
+        _myEvents = all.where((e) =>
+            (myOrg != null && e.organizationDetailId == myOrg.id) ||   // ← ưu tiên, giờ đã đáng tin
+            myIds.contains(e.id) ||                                     // fallback: id lưu cục bộ lúc tạo
+            (myOrg != null && e.orgName == myOrg.orgName)                // fallback: so tên (phòng hờ)
+        ).toList();
         _isLoading = false;
       });
     } catch (e) {

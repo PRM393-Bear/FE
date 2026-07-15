@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/auth/auth_storage.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -17,16 +19,19 @@ class DonationEventDetailPage extends StatefulWidget {
 class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
   DonationEventModel? _event;
   bool _isLoading = true;
+  String? _role;
 
   @override
   void initState() {
     super.initState();
     _fetchDetail();
+    AuthStorage.getRole().then((r) {
+      if (mounted) setState(() => _role = r);
+    });
   }
 
   // BE hiện chỉ có GET /api/donation-events (list) — chưa có GET /{id} riêng.
-  // Nên tạm thời lấy từ list rồi lọc theo id. Nếu event nhiều, nên báo BE thêm
-  // GET /api/donation-events/{id} để đỡ tốn băng thông.
+  // Tạm thời lấy từ list rồi lọc theo id. Nên báo BE thêm GET /{id} nếu list lớn dần.
   Future<void> _fetchDetail() async {
     setState(() => _isLoading = true);
     try {
@@ -42,6 +47,14 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
     } catch (e) {
       debugPrint('🔴 Fetch event detail error: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatDate(String iso) {
+    try {
+      return DateFormat('dd/MM/yyyy').format(DateTime.parse(iso).toLocal());
+    } catch (_) {
+      return iso;
     }
   }
 
@@ -76,13 +89,18 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (event.bannerUrl != null && event.bannerUrl!.isNotEmpty)
-                    Image.network(event.bannerUrl!, fit: BoxFit.cover)
+                  if (event.bannerUrl != null && event.bannerUrl!.startsWith('http'))
+                    Image.network(
+                      event.bannerUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(color: AppColors.primary),
+                    )
                   else
                     Container(color: AppColors.primary),
                   if (event.daysLeftText.isNotEmpty)
                     Positioned(
-                      top: 60, right: 16,
+                      top: 60,
+                      right: 16,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -104,10 +122,13 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
                 children: [
                   Row(
                     children: [
-                      const CircleAvatar(radius: 14, backgroundColor: AppColors.primary,
+                      const CircleAvatar(
+                          radius: 14,
+                          backgroundColor: AppColors.primary,
                           child: Icon(Icons.volunteer_activism, size: 16, color: Colors.white)),
                       const SizedBox(width: 8),
-                      Text(event.orgName, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                      Text(event.orgName,
+                          style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -117,7 +138,7 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
                     Row(children: [
                       const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.primary),
                       const SizedBox(width: 8),
-                      Text(event.startDate!, style: AppTextStyles.bodyMedium),
+                      Text(_formatDate(event.startDate!), style: AppTextStyles.bodyMedium),
                     ]),
                     const SizedBox(height: 8),
                   ],
@@ -130,12 +151,15 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
                   Text('Nhu cầu đóng góp', style: AppTextStyles.headline3),
                   const SizedBox(height: 10),
                   Wrap(
-                    spacing: 8, runSpacing: 8,
-                    children: event.acceptedTypes.map((t) => Chip(
-                      label: Text(t),
-                      backgroundColor: AppColors.background,
-                      side: BorderSide(color: AppColors.border),
-                    )).toList(),
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: event.acceptedTypes
+                        .map((t) => Chip(
+                              label: Text(t),
+                              backgroundColor: AppColors.background,
+                              side: BorderSide(color: AppColors.border),
+                            ))
+                        .toList(),
                   ),
                   const SizedBox(height: 20),
                   Container(
@@ -158,9 +182,17 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(20),
                           child: LinearProgressIndicator(
-                            value: event.progress, minHeight: 8,
-                            backgroundColor: AppColors.border, color: AppColors.primary,
+                            value: event.progress,
+                            minHeight: 8,
+                            backgroundColor: AppColors.border,
+                            color: AppColors.primary,
                           ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Đã cam kết hỗ trợ bởi cộng đồng.',
+                          style: AppTextStyles.bodySmall
+                              .copyWith(color: AppColors.textSecondary, fontStyle: FontStyle.italic),
                         ),
                       ],
                     ),
@@ -176,21 +208,28 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
           ),
         ],
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16),
-        child: AppButton(
-          label: 'Đăng ký quyên góp',
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DonationRegisterPage(
-                donationEventId: event.id,
-                eventTitle: event.title,
+      bottomNavigationBar: _role == 'ORGANIZATION'
+          ? null // Org xem chiến dịch (của mình hoặc tổ chức khác) — không có nút đăng ký donate
+          : Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border(top: BorderSide(color: AppColors.border)),
+              ),
+              child: AppButton(
+                label: 'Đăng ký quyên góp',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DonationRegisterPage(
+                      donationEventId: event.id,
+                      eventTitle: event.title,
+                      orgName: event.orgName,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }

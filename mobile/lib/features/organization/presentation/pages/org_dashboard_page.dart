@@ -5,8 +5,13 @@ import '../../../notification/presentation/pages/notification_list_page.dart';
 import '../../data/donation_request_model.dart';
 import '../../data/donation_request_service.dart';
 import '../../data/organization_service.dart';
+import '../../data/organization_detail_model.dart';
 import 'org_donations_page.dart';
 import '../../../donation/presentation/pages/donation_event_form_page.dart';
+import '../../../donation/presentation/pages/my_campaigns_page.dart';
+import '../../../donation/data/donation_event_model.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/auth/auth_storage.dart';
 
 class OrgDashboardPage extends StatefulWidget {
   const OrgDashboardPage({super.key});
@@ -17,6 +22,7 @@ class OrgDashboardPage extends StatefulWidget {
 
 class _OrgDashboardPageState extends State<OrgDashboardPage> {
   List<DonationRequestModel> _requests = [];
+  List<DonationEventModel> _myCampaigns = [];
   String _orgName = 'Tổ chức';
   bool _isLoading = true;
 
@@ -31,6 +37,9 @@ class _OrgDashboardPageState extends State<OrgDashboardPage> {
     try {
       final org = await OrganizationService.getMine();
       final requests = await DonationRequestService.getMyOrganizationRequests();
+      
+      await _fetchMyCampaigns(org);
+
       setState(() {
         _orgName = org?.orgName ?? 'Tổ chức';
         _requests = requests;
@@ -39,6 +48,26 @@ class _OrgDashboardPageState extends State<OrgDashboardPage> {
     } catch (e) {
       debugPrint('🔴 Fetch org dashboard error: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchMyCampaigns(OrganizationDetailModel? myOrg) async {
+    try {
+      final myIds = await AuthStorage.getMyCampaignIds();
+      final res = await ApiClient.dio.get('/api/donation-events');
+      final all = (res.data as List)
+          .map((e) => DonationEventModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      setState(() {
+        _myCampaigns = all.where((e) =>
+            (myOrg != null && e.organizationDetailId == myOrg.id) ||
+            myIds.contains(e.id) ||
+            (myOrg != null && e.orgName == myOrg.orgName)
+        ).toList();
+      });
+    } catch (e) {
+      debugPrint('🔴 Fetch my campaigns on dashboard error: $e');
     }
   }
 
@@ -107,6 +136,14 @@ class _OrgDashboardPageState extends State<OrgDashboardPage> {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.campaign_outlined, color: Colors.white),
+            tooltip: 'Quản lý chiến dịch',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyCampaignsPage()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.white),
             onPressed: () => Navigator.push(
               context,
@@ -124,15 +161,15 @@ class _OrgDashboardPageState extends State<OrgDashboardPage> {
           Colors.orange),
       _StatCardData(
           'Đang vận chuyển', _shippingCount, Icons.local_shipping_outlined, Colors.blue),
-      _StatCardData(
-          'Đã nhận', _receivedCount, Icons.check_circle_outline, AppColors.primary),
+      _StatCardData('Đã nhận', _receivedCount, Icons.check_circle_outline, AppColors.primary),
       _StatCardData('Tổng yêu cầu', _totalCount, Icons.inventory_2_outlined, Colors.purple),
+      _StatCardData('Chiến dịch', _myCampaigns.length, Icons.campaign_outlined, Colors.teal),
     ];
     return SizedBox(
-      height: 130,
+      height: 148,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: cards.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, i) {

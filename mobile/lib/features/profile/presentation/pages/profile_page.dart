@@ -10,6 +10,8 @@ import '../../../../core/auth/auth_state.dart';
 import 'edit_profile_page.dart';
 import 'my_shop_page.dart';
 import 'setting_page.dart';
+import '../../../organization/data/organization_service.dart';
+import '../../../organization/presentation/pages/org_profile_edit_page.dart';
 import '../../../notification/presentation/pages/notification_list_page.dart';
 import '../../../order/presentation/pages/my_orders_page.dart';
 import '../../../order/data/order_model.dart';
@@ -27,7 +29,9 @@ class _ProfilePageState extends State<ProfilePage> {
   String _username = '';
   String _email = '';
   String _phone = '';
+  String _role = 'MEMBER';
   bool _isLoading = true;
+  bool _loadingOrgProfile = false;
   int _pendingOrders = 0;
   int _shippingOrders = 0;
   int _completedOrders = 0;
@@ -35,8 +39,14 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    _loadRole();
     _fetchProfile();
     _fetchOrderCounts();
+  }
+
+  Future<void> _loadRole() async {
+    final role = await AuthStorage.getRole();
+    if (mounted) setState(() => _role = role ?? 'MEMBER');
   }
 
   Future<void> _fetchOrderCounts() async {
@@ -236,85 +246,86 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 const SizedBox(height: 16),
 
-                // ── Stats ────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildStat('0', 'Đã bán'),
-                        _buildStatDivider(),
-                        _buildStat('0', 'Đã mua'),
-                        _buildStatDivider(),
-                        _buildStat('0', 'Đã tặng'),
-                      ],
+                if (_role != 'ORGANIZATION') ...[
+                  // ── Stats ────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          _buildStat('0', 'Đã bán'),
+                          _buildStatDivider(),
+                          _buildStat('0', 'Đã mua'),
+                          _buildStatDivider(),
+                          _buildStat('0', 'Đã tặng'),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                // ── Đơn hàng ─────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildMenuItem(
-                          icon: Icons.shopping_bag_outlined,
-                          title: 'Đơn hàng của tôi',
-                          onTap: () async {
-                            await Navigator.push(
+                  // ── Đơn hàng ─────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildMenuItem(
+                            icon: Icons.shopping_bag_outlined,
+                            title: 'Đơn hàng của tôi',
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const MyOrdersPage()),
+                              );
+                              _fetchOrderCounts();
+                            },
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.storefront_outlined,
+                            title: 'Đơn bán hàng',
+                            onTap: () => Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const MyOrdersPage()),
-                            );
-                            _fetchOrderCounts();
-                          },
-                        ),
-                        _buildMenuItem(
-                          icon: Icons.storefront_outlined,
-                          title: 'Đơn bán hàng',
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const SellerOrdersPage()),
+                              MaterialPageRoute(
+                                  builder: (_) => const SellerOrdersPage()),
+                            ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _buildOrderStatus(
-                                  Icons.access_time_outlined,
-                                  'Chờ xác nhận', '$_pendingOrders'),
-                              _buildOrderStatus(
-                                  Icons.local_shipping_outlined,
-                                  'Đang giao', '$_shippingOrders'),
-                              _buildOrderStatus(
-                                  Icons.check_circle_outline_rounded,
-                                  'Hoàn tất', '$_completedOrders'),
-                            ],
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildOrderStatus(Icons.access_time_outlined,
+                                    'Chờ xác nhận', '$_pendingOrders'),
+                                _buildOrderStatus(Icons.local_shipping_outlined,
+                                    'Đang giao', '$_shippingOrders'),
+                                _buildOrderStatus(
+                                    Icons.check_circle_outline_rounded,
+                                    'Hoàn tất',
+                                    '$_completedOrders'),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                ],
 
                 // ── Menu chính ───────────────────────────────
                 Padding(
@@ -327,51 +338,94 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     child: Column(
                       children: [
-                        _buildMenuItem(
-                          icon: Icons.storefront_outlined,
-                          title: 'Xem shop của tôi',
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MyShopPage(
-                                fullName: _fullName,
-                                username: _username,
+                        // Các mục marketplace — CHỈ hiện khi KHÔNG phải Org
+                        if (_role != 'ORGANIZATION') ...[
+                          _buildMenuItem(
+                            icon: Icons.storefront_outlined,
+                            title: 'Xem shop của tôi',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MyShopPage(
+                                  fullName: _fullName,
+                                  username: _username,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.checkroom_outlined,
-                          title: 'Tủ đồ',
-                          onTap: () => context.push(RouteNames.wardrobe),
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.card_giftcard_outlined,
-                          title: 'Yêu cầu tặng đồ',
-                          onTap: () {},
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.favorite_outline_rounded,
-                          iconColor: Colors.redAccent,
-                          title: 'Sản phẩm đã lưu',
-                          onTap: () {},
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.star_outline_rounded,
-                          iconColor: Colors.amber,
-                          title: 'Đánh giá đã nhận',
-                          onTap: () {},
-                        ),
-                        _buildDivider(),
-                        _buildMenuItem(
-                          icon: Icons.volunteer_activism_outlined,
-                          title: 'Organization Dashboard',
-                          onTap: () => context.push(RouteNames.orgDashboard),
-                        ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.checkroom_outlined,
+                            title: 'Tủ đồ',
+                            onTap: () => context.push(RouteNames.wardrobe),
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.card_giftcard_outlined,
+                            title: 'Yêu cầu tặng đồ',
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.favorite_outline_rounded,
+                            iconColor: Colors.redAccent,
+                            title: 'Sản phẩm đã lưu',
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.star_outline_rounded,
+                            iconColor: Colors.amber,
+                            title: 'Đánh giá đã nhận',
+                            onTap: () {},
+                          ),
+                          _buildDivider(),
+                        ],
+                        // Mục mới — CHỈ hiện khi LÀ Org
+                        if (_role == 'ORGANIZATION') ...[
+                          _buildMenuItem(
+                            icon: Icons.storefront_outlined,
+                            title: 'Hồ sơ tổ chức',
+                            onTap: () async {
+                              if (_loadingOrgProfile) return;
+                              setState(() => _loadingOrgProfile = true);
+                              try {
+                                final org = await OrganizationService.getMine();
+                                if (org == null) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Không tìm thấy hồ sơ tổ chức')),
+                                    );
+                                  }
+                                  return;
+                                }
+                                if (!mounted) return;
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          OrgProfileEditPage(org: org)),
+                                );
+                              } catch (e) {
+                                debugPrint('🔴 Load org profile error: $e');
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Không tải được hồ sơ tổ chức, thử lại nhé')),
+                                  );
+                                }
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _loadingOrgProfile = false);
+                                }
+                              }
+                            },
+                          ),
+                          _buildDivider(),
+                        ],
                       ],
                     ),
                   ),

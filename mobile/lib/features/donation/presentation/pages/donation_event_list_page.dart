@@ -139,8 +139,18 @@ class _DonationEventListPageState extends State<DonationEventListPage> {
           children: [
             Stack(
               children: [
-                if (event.bannerUrl != null && event.bannerUrl!.isNotEmpty)
-                  Image.network(event.bannerUrl!, height: 160, width: double.infinity, fit: BoxFit.cover)
+                if (event.bannerUrl != null && event.bannerUrl!.startsWith('http'))
+                  Image.network(
+                    event.bannerUrl!,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 160,
+                      color: AppColors.background,
+                      child: const Icon(Icons.image_outlined, size: 40, color: AppColors.neutral),
+                    ),
+                  )
                 else
                   Container(height: 160, color: AppColors.background,
                       child: const Icon(Icons.image_outlined, size: 40, color: AppColors.neutral)),

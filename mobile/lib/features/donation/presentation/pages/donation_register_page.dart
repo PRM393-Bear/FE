@@ -10,10 +10,12 @@ import '../../../wardrobe/data/wardrobe_model.dart';
 class DonationRegisterPage extends StatefulWidget {
   final String donationEventId;
   final String eventTitle;
+  final String orgName;
   const DonationRegisterPage({
     super.key,
     required this.donationEventId,
     required this.eventTitle,
+    required this.orgName,
   });
 
   @override
@@ -101,8 +103,12 @@ class _DonationRegisterPageState extends State<DonationRegisterPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Chiến dịch: ${widget.eventTitle}', style: AppTextStyles.bodyLarge),
-            const SizedBox(height: 20),
+            Text('Chiến dịch: ${widget.eventTitle}',
+                style: AppTextStyles.headline3.copyWith(color: AppColors.primary)),
+            const SizedBox(height: 4),
+            Text('Tổ chức: ${widget.orgName}',
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+            const SizedBox(height: 24),
             AppTextField(label: 'Ghi chú (loại đồ, số lượng...)', controller: _descController),
             const SizedBox(height: 20),
             Text('Chọn món đồ từ Tủ đồ của bạn', style: AppTextStyles.label),

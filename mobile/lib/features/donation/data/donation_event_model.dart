@@ -1,5 +1,6 @@
 class DonationEventModel {
   final String id;
+  final String? organizationDetailId;
   final String title;
   final String description;
   final String location;
@@ -9,7 +10,7 @@ class DonationEventModel {
   final String? endDate;
   final List<String> acceptedTypes;
   final int targetQuantity;
-  final int currentQuantity; // sẽ luôn = 0 cho tới khi BE fix
+  final int currentQuantity;
   final String status;
   final String? bannerUrl;
   final String orgName;
@@ -17,6 +18,7 @@ class DonationEventModel {
 
   DonationEventModel({
     required this.id,
+    this.organizationDetailId,
     required this.title,
     required this.description,
     required this.location,
@@ -36,6 +38,7 @@ class DonationEventModel {
   factory DonationEventModel.fromJson(Map<String, dynamic> json) {
     return DonationEventModel(
       id: json['id']?.toString() ?? '',
+      organizationDetailId: json['organizationDetailId']?.toString(),
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       location: json['location'] ?? '',
@@ -45,7 +48,7 @@ class DonationEventModel {
       endDate: json['endDate']?.toString(),
       acceptedTypes: List<String>.from(json['acceptedTypes'] ?? []),
       targetQuantity: json['targetQuantity'] ?? 0,
-      currentQuantity: json['currentQuantity'] ?? 0, // TODO: BE chưa trả field này
+      currentQuantity: json['currentQuantity'] ?? 0,
       status: json['status'] ?? '',
       bannerUrl: json['bannerUrl'],
       orgName: json['orgName'] ?? json['organizationName'] ?? 'Tổ chức',

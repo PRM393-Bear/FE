@@ -9,6 +9,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../organization/data/organization_service.dart';
 import '../../data/donation_event_model.dart';
+import '../../../../core/auth/auth_storage.dart';
 
 class DonationEventFormPage extends StatefulWidget {
   final DonationEventModel? existingEvent; // null = tạo mới
@@ -151,21 +152,32 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
         duration: const Duration(milliseconds: 250), curve: Curves.easeInOut);
   }
 
+  /// DonationEventReq.startDate/endDate là kiểu Java OffsetDateTime — bắt buộc phải có
+  /// offset (vd "Z") trong chuỗi ISO-8601 thì Jackson mới parse được. DateTime.toIso8601String()
+  /// bình thường (không phải UTC) KHÔNG có offset → BE ném HttpMessageNotReadableException.
+  /// Dùng DateTime.utc(y,m,d) để giữ nguyên đúng ngày đã chọn, chỉ thêm "Z" vào cuối chuỗi.
+  String? _toApiDate(DateTime? d) =>
+      d == null ? null : DateTime.utc(d.year, d.month, d.day).toIso8601String();
+
   Future<void> _handleSubmit() async {
     setState(() => _isLoading = true);
     try {
       final bannerUrl = await _uploadBannerIfNeeded();
+      final now = DateTime.now();
       final body = {
         'title': _titleController.text.trim(),
         'description': _descController.text.trim(),
         'location': _locationController.text.trim(),
         'latitude': 10.7769, // TODO: geocoding thật giống org_register_page.dart
         'longitude': 106.7009,
-        'startDate': _startDate?.toIso8601String(),
-        'endDate': _endDate?.toIso8601String(),
+        'startDate': _toApiDate(_startDate),
+        'endDate': _toApiDate(_endDate),
         'acceptedTypes': _selectedTypes,
         'targetQuantity': int.tryParse(_targetController.text.trim()) ?? 0,
-        'status': 'ACTIVE',
+        // EventStatus (BE) chỉ có UPCOMING/ONGOING/COMPLETED/CANCELLED — KHÔNG có 'ACTIVE'.
+        // Gửi 'ACTIVE' làm Jackson không map được enum → chính là lỗi
+        // HttpMessageNotReadableException đang gặp. Suy ra tự động theo ngày bắt đầu:
+        'status': (_startDate != null && !_startDate!.isAfter(now)) ? 'ONGOING' : 'UPCOMING',
         'bannerUrl': bannerUrl,
       };
 
@@ -181,11 +193,14 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
           setState(() => _isLoading = false);
           return;
         }
-        await ApiClient.dio.post(
+        final res = await ApiClient.dio.post(
           '/api/donation-events',
           data: body,
           queryParameters: {'orgId': myOrg.id},
         );
+
+        final newId = res.data['id']?.toString();
+        if (newId != null) await AuthStorage.addMyCampaignId(newId);
       }
 
       if (!mounted) return;
@@ -202,9 +217,11 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
   Future<void> _handleClose() async {
     setState(() => _isLoading = true);
     try {
+      // Cũng vậy — EventStatus không có 'CLOSED'. Trạng thái kết thúc sớm gần nghĩa nhất
+      // trong enum hiện có là 'CANCELLED' (không có trạng thái "đóng thủ công" riêng).
       await ApiClient.dio.put(
         '/api/donation-events/${widget.existingEvent!.id}',
-        data: {'status': 'CLOSED'},
+        data: {'status': 'CANCELLED'},
       );
       if (!mounted) return;
       _showSnack('Đã đóng chiến dịch');

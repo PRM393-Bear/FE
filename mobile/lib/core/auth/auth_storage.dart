@@ -98,4 +98,18 @@ class AuthStorage {
       return null;
     }
   }
+
+  static Future<void> addMyCampaignId(String id) async {
+    final ids = await getMyCampaignIds();
+    if (!ids.contains(id)) {
+      ids.add(id);
+      await _storage.write(key: 'my_campaign_ids', value: ids.join(','));
+    }
+  }
+
+  static Future<List<String>> getMyCampaignIds() async {
+    final raw = await _storage.read(key: 'my_campaign_ids');
+    if (raw == null || raw.isEmpty) return [];
+    return raw.split(',');
+  }
 }
