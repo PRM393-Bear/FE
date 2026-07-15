@@ -15,10 +15,10 @@ const DEFAULT_ACCEPTED_TYPES = [
   "Đồ chơi trẻ em"
 ];
 
-export async function renderSettingsTab(container, { profile, onRefresh }) {
+export async function renderSettingsTab(container, { profile, orgDetail: passedOrgDetail, onRefresh }) {
   const isOrg = profile?.role === "org";
 
-  if (isOrg) {
+  if (isOrg && !passedOrgDetail) {
     container.innerHTML = `
       <div class="flex flex-col items-center justify-center py-12 gap-3 max-w-3xl">
         <span class="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></span>
@@ -27,10 +27,12 @@ export async function renderSettingsTab(container, { profile, onRefresh }) {
     `;
   }
 
-  let orgDetail = null;
+  let orgDetail = passedOrgDetail || null;
   if (isOrg) {
     try {
-      orgDetail = await getMyOrganizationDetailApi();
+      if (!orgDetail) {
+        orgDetail = await getMyOrganizationDetailApi();
+      }
       if (orgDetail && profile?.id) {
         try {
           const cached = JSON.parse(localStorage.getItem("org_custom_fields_" + profile.id) || "null");
