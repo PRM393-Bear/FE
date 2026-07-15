@@ -65,7 +65,7 @@ class _DonationRegisterPageState extends State<DonationRegisterPage> {
       await ApiClient.dio.post('/api/donation-requests', data: {
         'donationEventId': widget.donationEventId,
         'description': _descController.text.trim(),
-        'wardrobeItemId': _selectedItemId,
+        'wardrobeItemIds': [_selectedItemId], // đổi tên field + bọc thành 1 list
       });
       if (!mounted) return;
       _showSnack('Đăng ký quyên góp thành công! Chờ tổ chức xác nhận.');

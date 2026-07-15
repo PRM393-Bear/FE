@@ -38,7 +38,7 @@ class WardrobeModel {
     }
 
     return WardrobeModel(
-      id: json['id']?.toString() ?? '',
+      id: (json['id'] ?? json['itemId'])?.toString() ?? '', // đọc cả 2 tên field, phòng khi BE đặt tên khác
       productId: json['productId']?.toString() ?? '',
       title: (json['title'] ?? json['name'] ?? '') as String,
       brand: json['brand'],

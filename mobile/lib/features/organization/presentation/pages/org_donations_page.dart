@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/donation_request_model.dart';
 import '../../data/donation_request_service.dart';
+import '../../data/organization_service.dart';
 import 'confirm_received_page.dart';
 
 class OrgDonationsPage extends StatefulWidget {
@@ -29,7 +30,10 @@ class _OrgDonationsPageState extends State<OrgDonationsPage> {
   Future<void> _fetch() async {
     setState(() => _isLoading = true);
     try {
-      final list = await DonationRequestService.getMyOrganizationRequests();
+      final org = await OrganizationService.getMine();
+      final list = org != null
+          ? await DonationRequestService.getMyOrganizationRequests(org.id)
+          : <DonationRequestModel>[];
       setState(() {
         _requests = list;
         _isLoading = false;

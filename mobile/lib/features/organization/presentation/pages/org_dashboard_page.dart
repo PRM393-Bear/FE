@@ -36,8 +36,11 @@ class _OrgDashboardPageState extends State<OrgDashboardPage> {
     setState(() => _isLoading = true);
     try {
       final org = await OrganizationService.getMine();
-      final requests = await DonationRequestService.getMyOrganizationRequests();
-      
+      // Trước: DonationRequestService.getMyOrganizationRequests()  — thiếu orgId, luôn 404.
+      final requests = org != null
+          ? await DonationRequestService.getMyOrganizationRequests(org.id)
+          : <DonationRequestModel>[];
+
       await _fetchMyCampaigns(org);
 
       setState(() {

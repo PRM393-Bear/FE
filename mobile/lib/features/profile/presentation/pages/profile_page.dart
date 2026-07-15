@@ -16,6 +16,7 @@ import '../../../notification/presentation/pages/notification_list_page.dart';
 import '../../../order/presentation/pages/my_orders_page.dart';
 import '../../../order/data/order_model.dart';
 import '../../../order/presentation/pages/seller_orders_page.dart';
+import '../../../donation/presentation/pages/my_donations_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -302,6 +303,15 @@ class _ProfilePageState extends State<ProfilePage> {
                               context,
                               MaterialPageRoute(
                                   builder: (_) => const SellerOrdersPage()),
+                            ),
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.volunteer_activism_outlined,
+                            title: 'Đơn quyên góp của tôi',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const MyDonationsPage()),
                             ),
                           ),
                           Padding(

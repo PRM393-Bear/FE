@@ -156,29 +156,40 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
   /// offset (vd "Z") trong chuỗi ISO-8601 thì Jackson mới parse được. DateTime.toIso8601String()
   /// bình thường (không phải UTC) KHÔNG có offset → BE ném HttpMessageNotReadableException.
   /// Dùng DateTime.utc(y,m,d) để giữ nguyên đúng ngày đã chọn, chỉ thêm "Z" vào cuối chuỗi.
-  String? _toApiDate(DateTime? d) =>
-      d == null ? null : DateTime.utc(d.year, d.month, d.day).toIso8601String();
+  /// Loại bỏ milliseconds vì một số BE strict parser có thể lỗi.
+  String? _toApiDate(DateTime? d) {
+    if (d == null) return null;
+    final iso = DateTime.utc(d.year, d.month, d.day).toIso8601String();
+    return iso.split('.').first + 'Z';
+  }
 
   Future<void> _handleSubmit() async {
     setState(() => _isLoading = true);
     try {
       final bannerUrl = await _uploadBannerIfNeeded();
       final now = DateTime.now();
+      
+      final myOrg = await OrganizationService.getMine();
+      if (!_isEditMode && myOrg == null) {
+        _showSnack('Không tìm thấy hồ sơ tổ chức của bạn', isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
+
       final body = {
         'title': _titleController.text.trim(),
         'description': _descController.text.trim(),
         'location': _locationController.text.trim(),
-        'latitude': 10.7769, // TODO: geocoding thật giống org_register_page.dart
+        'latitude': 10.7769, 
         'longitude': 106.7009,
         'startDate': _toApiDate(_startDate),
         'endDate': _toApiDate(_endDate),
         'acceptedTypes': _selectedTypes,
         'targetQuantity': int.tryParse(_targetController.text.trim()) ?? 0,
-        // EventStatus (BE) chỉ có UPCOMING/ONGOING/COMPLETED/CANCELLED — KHÔNG có 'ACTIVE'.
-        // Gửi 'ACTIVE' làm Jackson không map được enum → chính là lỗi
-        // HttpMessageNotReadableException đang gặp. Suy ra tự động theo ngày bắt đầu:
         'status': (_startDate != null && !_startDate!.isAfter(now)) ? 'ONGOING' : 'UPCOMING',
         'bannerUrl': bannerUrl,
+        if (myOrg != null) 'organizationId': myOrg.id,
+        if (myOrg != null) 'organizationDetailId': myOrg.id,
       };
 
       if (_isEditMode) {
@@ -187,19 +198,20 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
           data: body,
         );
       } else {
-        final myOrg = await OrganizationService.getMine();
-        if (myOrg == null) {
-          _showSnack('Không tìm thấy hồ sơ tổ chức của bạn', isError: true);
-          setState(() => _isLoading = false);
-          return;
-        }
         final res = await ApiClient.dio.post(
           '/api/donation-events',
           data: body,
-          queryParameters: {'orgId': myOrg.id},
+          queryParameters: {'orgId': myOrg!.id},
         );
 
-        final newId = res.data['id']?.toString();
+        // Xử lý cả trường hợp trả về Map {id: ...} hoặc trả về trực tiếp ID String
+        String? newId;
+        if (res.data is Map) {
+          newId = res.data['id']?.toString();
+        } else if (res.data != null) {
+          newId = res.data.toString();
+        }
+        
         if (newId != null) await AuthStorage.addMyCampaignId(newId);
       }
 
@@ -208,7 +220,13 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
       Navigator.pop(context, true);
     } on DioException catch (e) {
       debugPrint('🔴 Donation event submit error: ${e.response?.data}');
-      _showSnack(e.response?.data?['message']?.toString() ?? 'Có lỗi xảy ra', isError: true);
+      String msg = 'Có lỗi xảy ra';
+      if (e.response?.data is Map) {
+        msg = e.response?.data['message']?.toString() ?? msg;
+      } else if (e.response?.data is String) {
+        msg = e.response?.data;
+      }
+      _showSnack(msg, isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
