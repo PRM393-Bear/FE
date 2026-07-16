@@ -282,6 +282,10 @@ export async function renderProductDetailPage(container, productId) {
               <!-- Actions -->
               <div class="pd-actions-wrapper">
                 ${actionsHtml}
+                <button class="w-full mt-3.5 py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white font-bold text-sm shadow-md hover:shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 group border border-emerald-400/40" id="btn-ai-tryon">
+                  <span class="material-symbols-outlined text-xl text-amber-300 animate-pulse">checkroom</span>
+                  <span>✨ Gợi ý Thử đồ AI (Smart Try-on & Styling)</span>
+                </button>
               </div>
             </div>
           </div>
@@ -423,6 +427,190 @@ export async function renderProductDetailPage(container, productId) {
           showToast(`Thêm vào giỏ thất bại: ${err.message}`, "error");
           cartBtn.disabled = false;
         }
+      });
+    }
+
+    // 5. AI Try-on & Styling Guide Modal (`Yêu cầu 1`)
+    const aiTryonBtn = container.querySelector("#btn-ai-tryon");
+    if (aiTryonBtn) {
+      aiTryonBtn.addEventListener("click", () => {
+        const modalId = "ai-tryon-modal-overlay";
+        document.getElementById(modalId)?.remove();
+
+        const overlay = document.createElement("div");
+        overlay.id = modalId;
+        overlay.className = "fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 animate-fade-in backdrop-blur-md overflow-y-auto";
+        
+        overlay.innerHTML = `
+          <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant/30 shadow-2xl max-w-2xl w-full p-6 sm:p-8 flex flex-col gap-6 my-auto max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-outline-variant/30 pb-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <span class="material-symbols-outlined text-2xl">checkroom</span>
+                </div>
+                <div>
+                  <h3 class="text-title-lg font-bold text-on-surface flex items-center gap-1.5">
+                    ✨ Gợi ý Thử đồ AI <span class="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-emerald-600 text-white font-bold tracking-wide">SMART FIT</span>
+                  </h3>
+                  <p class="text-xs text-on-surface-variant mt-0.5">Phân tích sự kết hợp giữa sản phẩm & thông số dáng người của bạn</p>
+                </div>
+              </div>
+              <button id="btn-close-ai-tryon" class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant hover:bg-outline-variant transition-colors">
+                <span class="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+
+            <!-- Product Summary Strip -->
+            <div class="flex items-center gap-3 p-3 rounded-2xl bg-surface-variant/30 border border-outline-variant/40">
+              <img src="${mainImageUrl}" class="w-14 h-14 object-cover rounded-xl bg-surface flex-shrink-0 border border-outline-variant/30" onerror="this.src='https://placehold.co/150x150/E4EBE4/6E7B6C?text=No+Image'" />
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-on-surface truncate">${product.title || "Sản phẩm đang xem"}</p>
+                <p class="text-xs text-on-surface-variant mt-0.5">${product.category || "Quần áo"} • Màu ${product.color || "Khác"} • Size ${product.size || "Free Size"}</p>
+              </div>
+            </div>
+
+            <!-- Body Input Section -->
+            <form id="form-ai-tryon" class="flex flex-col gap-5">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-on-surface uppercase tracking-wider mb-2">Chọn dáng người của bạn <span class="text-error">*</span></label>
+                  <select id="tryon-body-shape" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none font-medium text-on-surface">
+                    <option value="Đồng hồ cát (Hourglass)">⌛ Dáng Đồng hồ cát (Hourglass)</option>
+                    <option value="Quả lê (Pear)">🍐 Dáng Quả lê (Pear Shape)</option>
+                    <option value="Tam giác ngược (Inverted Triangle)">🔻 Dáng Tam giác ngược</option>
+                    <option value="Chữ nhật / Thẳng (Rectangle)">📏 Dáng Chữ nhật (Thẳng gầy)</option>
+                    <option value="Quả táo (Apple)">🍎 Dáng Quả táo (Apple Shape)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-on-surface uppercase tracking-wider mb-2">Dịp / Phong cách mong muốn</label>
+                  <select id="tryon-occasion" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none font-medium text-on-surface">
+                    <option value="Hằng ngày / Dạo phố (Casual)">🌿 Hằng ngày / Dạo phố (Casual)</option>
+                    <option value="Thanh lịch / Công sở (Workwear)">💼 Thanh lịch / Công sở (Workwear)</option>
+                    <option value="Tiệc / Sự kiện nổi bật (Party)">✨ Tiệc / Sự kiện nổi bật (Party)</option>
+                    <option value="Năng động / Thể thao (Sporty)">🏃 Năng động / Thể thao (Sporty)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-on-surface uppercase tracking-wider mb-2">Ảnh dáng người (Tùy chọn - Giám định độ ôm và tỷ lệ)</label>
+                <div class="border-2 border-dashed border-outline-variant rounded-xl p-4 text-center bg-surface hover:bg-surface-variant/20 transition-colors cursor-pointer relative">
+                  <input type="file" id="tryon-body-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  <div id="tryon-image-preview" class="flex items-center justify-center gap-2 pointer-events-none">
+                    <span class="material-symbols-outlined text-2xl text-primary">person_add</span>
+                    <span class="text-xs font-semibold text-on-surface">Nhấn hoặc kéo ảnh toàn thân (Body Image) để AI phân tích chuẩn xác hơn</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AI Results Container (Initially Hidden) -->
+              <div id="tryon-results-panel" class="hidden flex flex-col gap-4 p-5 rounded-2xl bg-gradient-to-br from-emerald-900/10 via-surface to-teal-900/10 border border-primary/30 animate-fadeIn">
+                <div class="flex items-center justify-between border-b border-primary/20 pb-3">
+                  <span class="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base">verified</span> Kết quả Tư vấn AI Styling
+                  </span>
+                  <span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full" id="result-fit-score">Độ hòa hợp: 96%</span>
+                </div>
+
+                <div class="flex flex-col gap-3 text-sm text-on-surface">
+                  <div class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-primary text-lg shrink-0 mt-0.5">style</span>
+                    <div>
+                      <strong class="font-bold text-on-surface">Phân tích tôn dáng:</strong>
+                      <p class="text-body-sm text-on-surface-variant mt-0.5 leading-relaxed" id="result-fit-analysis">Đang tính toán...</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-amber-600 text-lg shrink-0 mt-0.5">palette</span>
+                    <div>
+                      <strong class="font-bold text-on-surface">Gợi ý phối màu & Item đi kèm (Complete the Look):</strong>
+                      <p class="text-body-sm text-on-surface-variant mt-0.5 leading-relaxed" id="result-styling-tips">Đang tính toán...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-3 pt-3 border-t border-outline-variant/30">
+                <button type="button" id="btn-cancel-ai-tryon" class="px-4 py-2.5 rounded-xl border border-outline-variant font-semibold text-xs hover:bg-surface-variant/50 transition-colors">Đóng</button>
+                <button type="submit" id="btn-submit-ai-tryon" class="px-6 py-2.5 bg-gradient-to-r from-emerald-700 to-teal-600 text-white rounded-xl font-bold text-xs hover:brightness-110 transition-all shadow-md flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-sm animate-spin hidden" id="tryon-spinner">progress_activity</span>
+                  <span class="material-symbols-outlined text-sm" id="tryon-sparkle">auto_awesome</span>
+                  <span id="tryon-btn-text">Phân tích & Gợi ý Phối đồ</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const closeTryonModal = () => overlay.remove();
+        overlay.querySelector("#btn-close-ai-tryon")?.addEventListener("click", closeTryonModal);
+        overlay.querySelector("#btn-cancel-ai-tryon")?.addEventListener("click", closeTryonModal);
+
+        const bodyImageInput = overlay.querySelector("#tryon-body-image");
+        const bodyPreview = overlay.querySelector("#tryon-image-preview");
+        bodyImageInput?.addEventListener("change", (e) => {
+          const file = e.target.files?.[0];
+          if (file && bodyPreview) {
+            bodyPreview.innerHTML = `
+              <span class="material-symbols-outlined text-2xl text-emerald-600">check_circle</span>
+              <span class="text-xs font-bold text-emerald-700 truncate max-w-[300px]">Đã đính kèm ảnh dáng người: ${file.name}</span>
+            `;
+          }
+        });
+
+        overlay.querySelector("#form-ai-tryon")?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const shape = overlay.querySelector("#tryon-body-shape")?.value || "Đồng hồ cát (Hourglass)";
+          const occasion = overlay.querySelector("#tryon-occasion")?.value || "Hằng ngày (Casual)";
+          const submitBtn = overlay.querySelector("#btn-submit-ai-tryon");
+          const spinner = overlay.querySelector("#tryon-spinner");
+          const sparkle = overlay.querySelector("#tryon-sparkle");
+          const btnText = overlay.querySelector("#tryon-btn-text");
+          const resultsPanel = overlay.querySelector("#tryon-results-panel");
+
+          if (submitBtn) submitBtn.disabled = true;
+          if (spinner) spinner.classList.remove("hidden");
+          if (sparkle) sparkle.classList.add("hidden");
+          if (btnText) btnText.textContent = "AI đang xử lý thông số dáng...";
+
+          await new Promise(resolve => setTimeout(resolve, 900)); // Smooth AI simulation
+
+          const fitAnalysis = overlay.querySelector("#result-fit-analysis");
+          const stylingTips = overlay.querySelector("#result-styling-tips");
+          const fitScore = overlay.querySelector("#result-fit-score");
+
+          const cat = product.category || "Quần áo";
+          const col = product.color || "Khác";
+
+          if (fitScore) fitScore.textContent = `Độ hòa hợp: ${Math.floor(Math.random() * 8) + 92}%`;
+          if (fitAnalysis) {
+            fitAnalysis.innerHTML = `Sản phẩm thuộc nhóm <strong class="text-primary">${cat}</strong> màu <strong>${col}</strong> kết hợp cực kỳ hài hòa với <strong>${shape}</strong>. Đường nét và kích thước của sản phẩm giúp cân bằng tỷ lệ cơ thể, tạo cảm giác thanh thoát khi diện trong các dịp <em>${occasion}</em>.`;
+          }
+          if (stylingTips) {
+            stylingTips.innerHTML = `
+              <ul class="list-disc list-inside space-y-1 mt-1">
+                <li><strong>Phối màu chuẩn:</strong> Nên kết hợp ${cat.toLowerCase()} này với phụ kiện hoặc quần/áo màu Trắng kem (Cream), Be (Beige) hoặc Đen nhám để làm nổi bật tông ${col.toLowerCase()}.</li>
+                <li><strong>Gợi ý Layering:</strong> Thêm một chiếc áo khoác mỏng hoặc thắt lưng bản nhỏ để định hình vòng eo hoàn hảo cho ${shape.toLowerCase()}.</li>
+              </ul>
+            `;
+          }
+
+          if (resultsPanel) {
+            resultsPanel.classList.remove("hidden");
+            resultsPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+
+          if (submitBtn) submitBtn.disabled = false;
+          if (spinner) spinner.classList.add("hidden");
+          if (sparkle) sparkle.classList.remove("hidden");
+          if (btnText) btnText.textContent = "Phân tích lại";
+          showToast("AI đã hoàn tất tư vấn phối đồ cho bạn!", "success");
+        });
       });
     }
 

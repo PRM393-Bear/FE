@@ -6,6 +6,7 @@
 import { 
   acceptDonationRequest, 
   rejectDonationRequest, 
+  shippedDonationRequest,
   receivedDonationRequest, 
   cancelDonationRequest,
   createDonationEventApi,
@@ -98,7 +99,10 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
         events.forEach((ev) => {
           const st = String(ev.status || "UPCOMING").toUpperCase();
           const target = ev.targetQuantity || 100;
-          const current = ev.currentQuantity || 0;
+          const receivedCount = requests
+            .filter(r => r.donationEventId === (ev.id || ev.donationEventId) && ['RECEIVED', 'COMPLETED'].includes(String(r.status || '').toUpperCase()))
+            .reduce((sum, r) => sum + (r.items?.length || 1), 0);
+          const current = Math.max(ev.currentQuantity || 0, receivedCount);
           const percent = Math.min(100, Math.round((current / target) * 100));
           const banner = ev.bannerUrl || ev.imageUrl || 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=600&q=80';
 
@@ -286,6 +290,13 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
                     ? `<button class="btn-cancel-req px-3.5 py-2 bg-surface-variant text-on-surface-variant rounded-lg text-xs font-medium hover:bg-outline-variant transition-colors" data-id="${req.id}">Hủy yêu cầu</button>`
                     : ""
                 }
+                ${
+                  !isOrg && st === "ACCEPTED"
+                    ? `<button class="btn-open-shipping-modal px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
+                         <span class="material-symbols-outlined text-sm">local_shipping</span> Gửi hàng & Nhập tracking
+                       </button>`
+                    : ""
+                }
               </div>
             </div>
           `;
@@ -421,6 +432,14 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
         }
       });
     });
+
+    // Member open shipping modal
+    container.querySelectorAll(".btn-open-shipping-modal").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        if (id) openShippingProofModal({ id });
+      });
+    });
   };
 
   // Modal: Create/Edit Campaign
@@ -542,6 +561,102 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
           await createDonationEventApi(payload, orgDetail.id);
           showToast("Khởi tạo chiến dịch quyên góp mới thành công!", "success");
         }
+        closeModal();
+        if (onRefresh) onRefresh();
+      } catch (err) {
+        showToast("Lỗi: " + err.message, "error");
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  };
+
+  // Modal: Member Upload Shipping Tracking & Proof (`shippedDonationRequest`)
+  const openShippingProofModal = ({ id }) => {
+    const modalId = "shipping-proof-modal-overlay";
+    document.getElementById(modalId)?.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = modalId;
+    overlay.className = "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in backdrop-blur-sm";
+    
+    overlay.innerHTML = `
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/30 shadow-xl max-w-md w-full p-6 flex flex-col gap-6">
+        <div class="flex justify-between items-center border-b border-outline-variant/30 pb-3">
+          <h3 class="text-title-lg font-bold text-on-surface flex items-center gap-2">
+            <span class="material-symbols-outlined text-indigo-600">local_shipping</span> Gửi hàng & Vận đơn
+          </h3>
+          <button id="btn-close-shipping-modal" class="text-on-surface-variant hover:text-on-surface p-1 rounded-full">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <form id="form-shipping-proof" class="flex flex-col gap-4">
+          <div>
+            <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Mã vận đơn (Tracking Code) <span class="text-error">*</span></label>
+            <input type="text" id="input-tracking-code" name="trackingCode" required placeholder="VD: SPXVN123456789, GHN98765432" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none font-mono" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Ảnh chụp phiếu gửi hàng / bưu kiện <span class="text-error">*</span></label>
+            <div class="border-2 border-dashed border-outline-variant rounded-xl p-6 text-center bg-surface hover:bg-surface-variant/20 transition-colors cursor-pointer relative">
+              <input type="file" id="input-shipping-file" name="shippingProofFile" accept="image/*" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+              <div id="shipping-preview-container" class="flex flex-col items-center pointer-events-none">
+                <span class="material-symbols-outlined text-4xl text-indigo-600 mb-1">add_a_photo</span>
+                <p class="text-xs font-semibold text-on-surface">Nhấn hoặc kéo thả file ảnh gửi hàng vào đây</p>
+                <p class="text-[11px] text-on-surface-variant mt-0.5">Hỗ trợ PNG, JPG (Tối đa 5MB)</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-3 border-t border-outline-variant/30">
+            <button type="button" id="btn-cancel-shipping-modal" class="px-4 py-2 rounded-xl border border-outline-variant font-semibold text-xs hover:bg-surface-variant/50 transition-colors">Hủy</button>
+            <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-semibold text-xs hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">send</span> Xác nhận đã gửi hàng
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const fileInput = overlay.querySelector("#input-shipping-file");
+    const previewContainer = overlay.querySelector("#shipping-preview-container");
+
+    fileInput?.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file && previewContainer) {
+        previewContainer.innerHTML = `
+          <span class="material-symbols-outlined text-3xl text-indigo-600 mb-1">check_circle</span>
+          <p class="text-xs font-bold text-on-surface truncate max-w-[200px]">${file.name}</p>
+          <p class="text-[11px] text-indigo-600 font-semibold mt-0.5">Đã đính kèm ảnh bưu kiện</p>
+        `;
+      }
+    });
+
+    const closeModal = () => overlay.remove();
+    overlay.querySelector("#btn-close-shipping-modal")?.addEventListener("click", closeModal);
+    overlay.querySelector("#btn-cancel-shipping-modal")?.addEventListener("click", closeModal);
+
+    overlay.querySelector("#form-shipping-proof")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const trackingCode = overlay.querySelector("#input-tracking-code")?.value?.trim();
+      const file = fileInput?.files?.[0];
+      if (!trackingCode) {
+        showToast("Vui lòng nhập mã vận đơn tracking!", "warning");
+        return;
+      }
+      if (!file) {
+        showToast("Vui lòng chọn ảnh minh chứng gửi hàng!", "warning");
+        return;
+      }
+
+      const submitBtn = e.target.querySelector("button[type='submit']");
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        await shippedDonationRequest(id, trackingCode, file);
+        showToast("Cập nhật trạng thái gửi hàng thành công!", "success");
         closeModal();
         if (onRefresh) onRefresh();
       } catch (err) {
