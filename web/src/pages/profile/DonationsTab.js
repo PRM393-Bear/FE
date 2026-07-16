@@ -606,49 +606,55 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
           </button>
         </div>
 
-        <form id="form-campaign" class="flex flex-col gap-4">
+        <form id="form-campaign" class="flex flex-col gap-4" novalidate>
           <div>
             <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Tiêu đề chiến dịch <span class="text-error">*</span></label>
-            <input type="text" name="title" required value="${eventData.title || ''}" placeholder="VD: Chiến dịch Áo ấm vùng cao 2026" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none" />
+            <input type="text" name="title" value="${eventData.title || ''}" placeholder="VD: Chiến dịch Áo ấm vùng cao 2026" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none transition-colors" />
+            <p class="error-inline text-xs font-semibold text-error mt-1.5 hidden"></p>
           </div>
 
           <div>
             <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Mô tả chi tiết <span class="text-error">*</span></label>
-            <textarea name="description" required rows="3" placeholder="Nội dung, mục đích ý nghĩa của chiến dịch..." class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none">${eventData.description || ''}</textarea>
+            <textarea name="description" rows="3" placeholder="Nội dung, mục đích ý nghĩa của chiến dịch..." class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none transition-colors">${eventData.description || ''}</textarea>
+            <p class="error-inline text-xs font-semibold text-error mt-1.5 hidden"></p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Địa điểm tiếp nhận <span class="text-error">*</span></label>
-              <input type="text" name="location" required value="${eventData.location || ''}" placeholder="VD: 123 Cầu Giấy, Hà Nội" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none" />
+              <input type="text" name="location" value="${eventData.location || ''}" placeholder="VD: 123 Cầu Giấy, Hà Nội" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none transition-colors" />
+              <p class="error-inline text-xs font-semibold text-error mt-1.5 hidden"></p>
             </div>
             <div>
               <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Mục tiêu số lượng vật phẩm <span class="text-error">*</span></label>
-              <input type="number" name="targetQuantity" required min="1" value="${eventData.targetQuantity || 100}" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none" />
+              <input type="number" name="targetQuantity" min="1" value="${eventData.targetQuantity || 100}" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none transition-colors" />
+              <p class="error-inline text-xs font-semibold text-error mt-1.5 hidden"></p>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Ngày bắt đầu <span class="text-error">*</span></label>
-              <input type="date" name="startDate" required value="${eventData.startDate ? eventData.startDate.split('T')[0] : ''}" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none" />
+              <input type="date" name="startDate" value="${eventData.startDate ? eventData.startDate.split('T')[0] : ''}" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none transition-colors" />
+              <p class="error-inline text-xs font-semibold text-error mt-1.5 hidden"></p>
             </div>
             <div>
               <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Ngày kết thúc <span class="text-error">*</span></label>
-              <input type="date" name="endDate" required value="${eventData.endDate ? eventData.endDate.split('T')[0] : ''}" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none" />
+              <input type="date" name="endDate" value="${eventData.endDate ? eventData.endDate.split('T')[0] : ''}" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none transition-colors" />
+              <p class="error-inline text-xs font-semibold text-error mt-1.5 hidden"></p>
             </div>
           </div>
 
           <div>
             <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">URL Ảnh Banner Chiến dịch</label>
-            <input type="url" name="bannerUrl" value="${eventData.bannerUrl || eventData.imageUrl || ''}" placeholder="https://example.com/banner.jpg" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none" />
+            <input type="url" name="bannerUrl" value="${eventData.bannerUrl || eventData.imageUrl || ''}" placeholder="https://example.com/banner.jpg" class="w-full px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-sm focus:border-primary focus:outline-none transition-colors" />
           </div>
 
           <div>
             <label class="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Tọa độ GPS (Tùy chọn)</label>
             <div class="grid grid-cols-2 gap-3">
-              <input type="number" step="any" name="latitude" value="${eventData.latitude || ''}" placeholder="Latitude (Vĩ độ)" class="px-3 py-2 rounded-xl border border-outline-variant bg-surface text-xs focus:border-primary focus:outline-none" />
-              <input type="number" step="any" name="longitude" value="${eventData.longitude || ''}" placeholder="Longitude (Kinh độ)" class="px-3 py-2 rounded-xl border border-outline-variant bg-surface text-xs focus:border-primary focus:outline-none" />
+              <input type="number" step="any" name="latitude" value="${eventData.latitude || ''}" placeholder="Latitude (Vĩ độ)" class="px-3 py-2 rounded-xl border border-outline-variant bg-surface text-xs focus:border-primary focus:outline-none transition-colors" />
+              <input type="number" step="any" name="longitude" value="${eventData.longitude || ''}" placeholder="Longitude (Kinh độ)" class="px-3 py-2 rounded-xl border border-outline-variant bg-surface text-xs focus:border-primary focus:outline-none transition-colors" />
             </div>
           </div>
 
@@ -668,29 +674,127 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
     overlay.querySelector("#btn-close-campaign-modal")?.addEventListener("click", closeModal);
     overlay.querySelector("#btn-cancel-campaign-modal")?.addEventListener("click", closeModal);
 
-    overlay.querySelector("#form-campaign")?.addEventListener("submit", async (e) => {
+    const form = overlay.querySelector("#form-campaign");
+
+    // Live clear inline errors when user inputs data
+    form?.querySelectorAll("input, textarea").forEach(input => {
+      input.addEventListener("input", () => {
+        input.classList.remove("border-error", "bg-error/5");
+        const err = input.parentElement.querySelector(".error-inline");
+        if (err) {
+          err.textContent = "";
+          err.classList.add("hidden");
+        }
+      });
+    });
+
+    form?.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
+      const fd = new FormData(form);
+
+      // Reset all errors before validation
+      form.querySelectorAll(".error-inline").forEach(el => {
+        el.textContent = "";
+        el.classList.add("hidden");
+      });
+      form.querySelectorAll("input, textarea").forEach(el => {
+        el.classList.remove("border-error", "bg-error/5");
+      });
+
+      let firstErrorInput = null;
+      const showError = (name, msg) => {
+        const input = form.querySelector(`[name='${name}']`);
+        if (input) {
+          input.classList.add("border-error", "bg-error/5");
+          if (!firstErrorInput) firstErrorInput = input;
+          const errorEl = input.parentElement.querySelector(".error-inline");
+          if (errorEl) {
+            errorEl.textContent = msg;
+            errorEl.classList.remove("hidden");
+          }
+        }
+      };
+
+      const title = fd.get("title")?.trim() || "";
+      const description = fd.get("description")?.trim() || "";
+      const location = fd.get("location")?.trim() || "";
+      const targetQuantityVal = fd.get("targetQuantity")?.trim() || "";
+      const targetQuantity = parseInt(targetQuantityVal, 10);
+      const startDateVal = fd.get("startDate")?.trim() || "";
+      const endDateVal = fd.get("endDate")?.trim() || "";
+
+      let hasError = false;
+
+      if (!title) {
+        showError("title", "Tiêu đề chiến dịch không được để trống!");
+        hasError = true;
+      } else if (title.length < 5) {
+        showError("title", "Tiêu đề chiến dịch phải có ít nhất 5 ký tự!");
+        hasError = true;
+      }
+
+      if (!description) {
+        showError("description", "Mô tả chi tiết không được để trống!");
+        hasError = true;
+      } else if (description.length < 10) {
+        showError("description", "Mô tả chi tiết phải có ít nhất 10 ký tự!");
+        hasError = true;
+      }
+
+      if (!location) {
+        showError("location", "Địa điểm tiếp nhận không được để trống!");
+        hasError = true;
+      }
+
+      if (!targetQuantityVal || isNaN(targetQuantity) || targetQuantity <= 0) {
+        showError("targetQuantity", "Mục tiêu số lượng phải là số nguyên dương lớn hơn 0!");
+        hasError = true;
+      }
+
+      if (!startDateVal) {
+        showError("startDate", "Vui lòng chọn ngày bắt đầu chiến dịch!");
+        hasError = true;
+      }
+
+      if (!endDateVal) {
+        showError("endDate", "Vui lòng chọn ngày kết thúc chiến dịch!");
+        hasError = true;
+      } else if (startDateVal && endDateVal < startDateVal) {
+        showError("endDate", "Ngày kết thúc không được trước ngày bắt đầu!");
+        hasError = true;
+      }
+
+      if (hasError) {
+        if (firstErrorInput) firstErrorInput.focus();
+        showToast("Vui lòng kiểm tra và sửa các lỗi trên form!", "warning");
+        return;
+      }
+
       const formatToOffsetDateTime = (dateStr) => {
         if (!dateStr) return null;
         return dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00+07:00`;
       };
 
       const payload = {
-        title: fd.get("title")?.trim(),
-        description: fd.get("description")?.trim(),
-        location: fd.get("location")?.trim(),
-        targetQuantity: parseInt(fd.get("targetQuantity") || "100", 10),
-        startDate: formatToOffsetDateTime(fd.get("startDate")),
-        endDate: formatToOffsetDateTime(fd.get("endDate")),
+        title,
+        description,
+        location,
+        targetQuantity,
+        startDate: formatToOffsetDateTime(startDateVal),
+        endDate: formatToOffsetDateTime(endDateVal),
         bannerUrl: fd.get("bannerUrl")?.trim() || null,
         latitude: fd.get("latitude") ? parseFloat(fd.get("latitude")) : null,
         longitude: fd.get("longitude") ? parseFloat(fd.get("longitude")) : null,
         status: isEdit ? (eventData.status || "UPCOMING") : "UPCOMING"
       };
 
-      const submitBtn = e.target.querySelector("button[type='submit']");
-      if (submitBtn) submitBtn.disabled = true;
+      const submitBtn = form.querySelector("button[type='submit']");
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : "";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add("opacity-60", "cursor-not-allowed");
+        submitBtn.innerHTML = `<span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> ${isEdit ? 'Đang cập nhật...' : 'Đang khởi tạo...'}`;
+      }
 
       try {
         if (isEdit) {
@@ -706,11 +810,14 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         }
         closeModal();
         await syncDonationData();
-        if (onRefresh) onRefresh();
-        setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
+        setTimeout(() => syncDonationData(), 800);
       } catch (err) {
         showToast("Lỗi: " + err.message, "error");
-        if (submitBtn) submitBtn.disabled = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("opacity-60", "cursor-not-allowed");
+          submitBtn.innerHTML = originalBtnHtml;
+        }
       }
     });
   };
