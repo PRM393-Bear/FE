@@ -24,7 +24,7 @@ import { renderDonationsTab } from "./DonationsTab.js";
 import { renderSettingsTab } from "./SettingsTab.js";
 import { renderDonationModal } from "./DonationModal.js";
 
-export async function renderProfilePage(container) {
+export async function renderProfilePage(container, initialTab = null) {
   if (!isAuthenticated()) {
     window.location.hash = "#/login";
     return;
@@ -58,79 +58,107 @@ export async function renderProfilePage(container) {
   }
 
   // Fetch parallel data based on role
-  let buyerOrders = [], sellerOrders = [], wardrobe = [], drafts = [], donations = [], orgs = [], myProducts = [];
-  let orgDetail = null, myEvents = [];
+  let orgs = [];
+  let orgDetail = null;
+  let myEvents = [];
+  let donations = [];
+  let buyerOrders = [];
+  let sellerOrders = [];
+  let wardrobe = [];
+  let myProducts = [];
+  let drafts = [];
 
   try {
-    const isOrgRole = profile.role === "org";
-    if (isOrgRole) {
-      orgDetail = await getMyOrganizationDetailApi();
+    const isOrg = profile.role === "org";
+    
+    if (isOrg) {
+      const [detailRes, eventsRes, requestsRes] = await Promise.all([
+        getMyOrganizationDetailApi().catch(() => null),
+        getAllDonationEventsApi().catch(() => []),
+        getOrgDonationRequestsApi().catch(() => [])
+      ]);
+      orgDetail = detailRes;
+      if (orgDetail && orgDetail.id) {
+        myEvents = Array.isArray(eventsRes) 
+          ? eventsRes.filter(ev => String(ev.organizationId || ev.orgId) === String(orgDetail.id)) 
+          : [];
+      }
+      donations = Array.isArray(requestsRes) ? requestsRes : [];
+    } else {
+      const [bOrders, sOrders, wItems, prods, orgsList, allEvents, allReqs] = await Promise.all([
+        getOrdersByBuyer().catch(() => []),
+        getOrdersBySeller().catch(() => []),
+        getMyWardrobe().catch(() => []),
+        getMyProducts().catch(() => []),
+        getAllOrganizationsApi().catch(() => []),
+        getAllDonationEventsApi().catch(() => []),
+        apiFetch("/api/donation-requests/my-requests", { method: "GET" }).catch(() => [])
+      ]);
+      buyerOrders = bOrders;
+      sellerOrders = sOrders;
+      wardrobe = wItems;
+      myProducts = prods.filter(p => !isDraftProduct(p));
+      drafts = prods.filter(p => isDraftProduct(p));
+      orgs = orgsList;
+      myEvents = allEvents;
+      donations = Array.isArray(allReqs) ? allReqs : [];
     }
-
-    const [bOrders, sOrders, wItems, allProds, orgList, donList, myProdsList, eventsList] = await Promise.all([
-      getOrdersByBuyer().catch(() => []),
-      getOrdersBySeller().catch(() => []),
-      getMyWardrobe().catch(() => []),
-      getAllProducts().catch(() => []),
-      getAllOrganizationsApi().catch(() => []),
-      isOrgRole && orgDetail?.id
-        ? getOrgDonationRequestsApi(orgDetail.id).catch(() => [])
-        : apiFetch("/api/donation-requests/my-member").catch(() => apiFetch("/api/donation-requests/lists").catch(() => [])),
-      getMyProducts(profile.id).catch(() => []),
-      isOrgRole && orgDetail?.id
-        ? getDonationEventsByOrgIdApi(orgDetail.id).catch(() => [])
-        : getAllDonationEventsApi().catch(() => [])
-    ]);
-
-    buyerOrders = Array.isArray(bOrders) ? bOrders : [];
-    sellerOrders = Array.isArray(sOrders) ? sOrders : [];
-    wardrobe = Array.isArray(wItems) ? wItems : [];
-    drafts = Array.isArray(allProds) ? allProds.filter(p => isDraftProduct(p)) : [];
-    orgs = Array.isArray(orgList) ? orgList : [];
-    donations = Array.isArray(donList) ? donList : [];
-    myProducts = Array.isArray(myProdsList) ? myProdsList : [];
-    myEvents = Array.isArray(eventsList) ? eventsList : [];
-  } catch (e) {
-    console.warn("Partial data load warning:", e);
+  } catch (err) {
+    console.warn("Failed to load some profile data:", err);
   }
 
-  const roleName = profile.role === "admin" ? "Quản trị viên" : profile.role === "org" ? "Tổ chức từ thiện" : "Thành viên";
+  const isOrg = profile.role === "org";
 
   container.innerHTML = `
-    <div class="profile-page min-h-screen bg-surface pt-[104px] pb-16">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+    <div class="min-h-screen bg-surface pt-[90px] pb-12 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+        
         <!-- Sidebar Navigation -->
         <div class="md:col-span-1 flex flex-col gap-6">
-          <!-- Profile Brief Card -->
-          <div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/30 text-center shadow-sm flex flex-col items-center">
-            <img src="${profile.avatar || 'https://i.pravatar.cc/150'}" class="w-24 h-24 rounded-full object-cover shadow-md border-2 border-primary/20 mb-3" />
-            <h3 class="font-bold text-on-surface text-lg line-clamp-1">${profile.name || profile.username}</h3>
-            <span class="mt-1 px-3 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary uppercase">${roleName}</span>
+          
+          <!-- User Info Card -->
+          <div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/30 shadow-sm flex flex-col items-center text-center">
+            <div class="w-24 h-24 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-3xl mb-3 border-2 border-primary/20 shadow-inner overflow-hidden">
+              ${profile.avatarUrl ? `<img src="${profile.avatarUrl}" class="w-full h-full object-cover" />` : (profile.fullName || profile.username || "U").substring(0,2).toUpperCase()}
+            </div>
+            <h2 class="text-title-md font-bold text-on-surface">${profile.fullName || profile.username}</h2>
+            <p class="text-body-sm text-on-surface-variant mt-0.5">${profile.email || "Thành viên EcoCycle"}</p>
+            
+            <div class="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${isOrg ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+              <span class="material-symbols-outlined text-sm">${isOrg ? 'corporate_fare' : 'checkroom'}</span>
+              ${isOrg ? 'Tổ chức Quyên góp' : 'Thành viên Cá nhân'}
+            </div>
           </div>
 
-          <!-- Tabs menu -->
-          <nav class="bg-surface-container-lowest rounded-2xl p-3 border border-outline-variant/30 shadow-sm flex flex-col gap-1">
+          <!-- Tab Buttons Menu -->
+          <div class="bg-surface-container-lowest rounded-2xl p-3 border border-outline-variant/30 shadow-sm flex flex-col gap-1">
             ${
-              profile.role !== "org" ? `
-            <button class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="wardrobe">
-              <span class="material-symbols-outlined text-xl">checkroom</span> Tủ đồ & Đơn mua
-            </button>
-            <button class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="shop">
-              <span class="material-symbols-outlined text-xl">storefront</span> Quản lý bán hàng
-            </button>
-            ` : ""
+              !isOrg ? `
+              <button class="tab-btn w-full px-4 py-3 rounded-xl text-left font-semibold text-sm flex items-center gap-3 transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="wardrobe">
+                <span class="material-symbols-outlined">checkroom</span>
+                <span>Tủ đồ của tôi</span>
+              </button>
+              <button class="tab-btn w-full px-4 py-3 rounded-xl text-left font-semibold text-sm flex items-center gap-3 transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="shop">
+                <span class="material-symbols-outlined">storefront</span>
+                <span>Cửa hàng / Đơn hàng</span>
+              </button>
+              ` : ''
             }
-            <button class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="donations">
-              <span class="material-symbols-outlined text-xl">volunteer_activism</span> Quản lý Quyên góp
+            <button class="tab-btn w-full px-4 py-3 rounded-xl text-left font-semibold text-sm flex items-center gap-3 transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="donations">
+              <span class="material-symbols-outlined">volunteer_activism</span>
+              <span>${isOrg ? 'Quản lý Quyên góp' : 'Lịch sử Quyên góp'}</span>
             </button>
-            <button class="tab-btn flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="settings">
-              <span class="material-symbols-outlined text-xl">settings</span> Cài đặt Tài khoản
+            <button class="tab-btn w-full px-4 py-3 rounded-xl text-left font-semibold text-sm flex items-center gap-3 transition-colors text-on-surface-variant hover:bg-surface-variant/50" data-tab="settings">
+              <span class="material-symbols-outlined">manage_accounts</span>
+              <span>Cài đặt Tài khoản</span>
             </button>
-            <div class="border-t border-outline-variant/30 my-1"></div>
-            <button id="btn-logout" class="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm text-error hover:bg-error/10 transition-colors w-full text-left">
-              <span class="material-symbols-outlined text-xl">logout</span> Đăng xuất
+            
+            <div class="border-t border-outline-variant/30 my-1 pt-1"></div>
+            <button id="btn-logout" class="w-full px-4 py-3 rounded-xl text-left font-semibold text-sm flex items-center gap-3 text-error hover:bg-error/10 transition-colors">
+              <span class="material-symbols-outlined">logout</span>
+              <span>Đăng xuất</span>
             </button>
-          </nav>
+          </div>
         </div>
 
         <!-- Main Content Area -->
@@ -142,16 +170,22 @@ export async function renderProfilePage(container) {
   const contentArea = container.querySelector("#profile-content-area");
   const tabBtns = container.querySelectorAll(".tab-btn");
 
-  const refreshPage = () => renderProfilePage(container);
+  let activeTabKey = initialTab || (profile.role === "org" ? "donations" : "wardrobe");
+
+  const refreshPage = (targetTab = null) => {
+    const nextTab = typeof targetTab === "string" ? targetTab : activeTabKey;
+    renderProfilePage(container, nextTab);
+  };
 
   const openDonationModal = () => {
     renderDonationModal(document.body, {
       organizations: orgs,
-      onSuccess: refreshPage
+      onSuccess: () => refreshPage("donations")
     });
   };
 
   const switchTab = (tabKey) => {
+    activeTabKey = tabKey;
     tabBtns.forEach(b => {
       if (b.getAttribute("data-tab") === tabKey) {
         b.classList.add("bg-primary", "text-on-primary");
@@ -163,20 +197,20 @@ export async function renderProfilePage(container) {
     });
 
     if (tabKey === "wardrobe") {
-      renderWardrobePanel(contentArea, { orders: buyerOrders, wardrobe, profile, onRefresh: refreshPage });
+      renderWardrobePanel(contentArea, { orders: buyerOrders, wardrobe, profile, onRefresh: () => refreshPage("wardrobe") });
     } else if (tabKey === "shop") {
-      renderShopPanel(contentArea, { sellerOrders, myDrafts: drafts, myProducts, onRefresh: refreshPage });
+      renderShopPanel(contentArea, { sellerOrders, myDrafts: drafts, myProducts, onRefresh: () => refreshPage("shop") });
     } else if (tabKey === "donations") {
       renderDonationsTab(contentArea, { 
         profile, 
         orgDetail, 
         events: myEvents, 
         requests: donations, 
-        onRefresh: refreshPage, 
+        onRefresh: () => refreshPage("donations"), 
         onOpenModal: openDonationModal 
       });
     } else if (tabKey === "settings") {
-      renderSettingsTab(contentArea, { profile, orgDetail, onRefresh: refreshPage });
+      renderSettingsTab(contentArea, { profile, orgDetail, onRefresh: () => refreshPage("settings") });
     }
   };
 
@@ -189,6 +223,5 @@ export async function renderProfilePage(container) {
     window.location.hash = "#/login";
   });
 
-  switchTab(profile.role === "org" ? "donations" : "wardrobe");
+  switchTab(activeTabKey);
 }
-

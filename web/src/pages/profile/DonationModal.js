@@ -6,11 +6,11 @@
  * Supports mandatory DonationEvent selection.
  */
 
-import { 
-  createDonationRequestApi, 
-  createDonationRequestCustomApi, 
-  getAllDonationEventsApi, 
-  getMyWardrobeItemsApi 
+import {
+  createDonationRequestApi,
+  createDonationRequestCustomApi,
+  getAllDonationEventsApi,
+  getMyWardrobeItemsApi
 } from "../../services/profile.service.js";
 import { showToast } from "../../utils/ui.js";
 
@@ -117,12 +117,13 @@ export async function renderDonationModal(container, { organizations = [], onSuc
 
         <div class="overflow-y-auto pr-1 flex-1">
           <!-- Tab 1 Form: From Wardrobe (DonationRequestReq) -->
-          <form id="form-tab-wardrobe" class="flex flex-col gap-4 ${activeTab === 'wardrobe' ? '' : 'hidden'}">
+          <form id="form-tab-wardrobe" class="flex flex-col gap-4 ${activeTab === 'wardrobe' ? '' : 'hidden'}" novalidate>
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-bold text-on-surface uppercase tracking-wider">Chiến dịch Quyên góp <span class="text-error">*</span></label>
-              <select name="donationEventId" required class="px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
+              <select name="donationEventId" required class="px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm transition-colors">
                 ${eventOptions}
               </select>
+              <p class="error-inline text-xs font-semibold text-error mt-1 hidden"></p>
             </div>
 
             <div class="flex flex-col gap-1.5">
@@ -130,7 +131,10 @@ export async function renderDonationModal(container, { organizations = [], onSuc
                 <label class="text-xs font-bold text-on-surface uppercase tracking-wider">Chọn vật phẩm từ Tủ đồ <span class="text-error">*</span></label>
                 <span class="text-[11px] text-primary font-semibold" id="selected-count-label">Đã chọn: 0 món</span>
               </div>
-              ${wardrobeChecklistHtml}
+              <div id="wardrobe-list-container" class="rounded-xl transition-colors">
+                ${wardrobeChecklistHtml}
+              </div>
+              <p class="error-inline text-xs font-semibold text-error mt-1 hidden"></p>
             </div>
 
             <div class="flex flex-col gap-1.5">
@@ -147,25 +151,26 @@ export async function renderDonationModal(container, { organizations = [], onSuc
           </form>
 
           <!-- Tab 2 Form: Quick Custom Item (DonationRequestCustomReq) -->
-          <form id="form-tab-custom" class="flex flex-col gap-4 ${activeTab === 'custom' ? '' : 'hidden'}">
+          <form id="form-tab-custom" class="flex flex-col gap-4 ${activeTab === 'custom' ? '' : 'hidden'}" novalidate>
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-bold text-on-surface uppercase tracking-wider">Chiến dịch Quyên góp <span class="text-error">*</span></label>
-              <select name="donationEventId" required class="px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
+              <select name="donationEventId" required class="px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm transition-colors">
                 ${eventOptions}
               </select>
+              <p class="error-inline text-xs font-semibold text-error mt-1 hidden"></p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-on-surface uppercase tracking-wider">Tên vật phẩm <span class="text-error">*</span></label>
-                <input type="text" name="itemName" required placeholder="VD: Áo khoác mùa đông, Sách giáo khoa" class="px-3.5 py-2 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" />
+                <input type="text" name="itemName" required placeholder="VD: Áo khoác mùa đông..." class="px-3.5 py-2 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm transition-colors" />
+                <p class="error-inline text-xs font-semibold text-error mt-1 hidden"></p>
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-bold text-on-surface uppercase tracking-wider">Danh mục</label>
                 <select name="category" class="px-3.5 py-2 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm">
                   <option value="Quần áo">Quần áo</option>
                   <option value="Giày dép">Giày dép</option>
-                  <option value="Sách vở">Sách vở</option>
                   <option value="Phụ kiện">Phụ kiện</option>
                   <option value="Khác">Khác</option>
                 </select>
@@ -190,14 +195,15 @@ export async function renderDonationModal(container, { organizations = [], onSuc
 
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-bold text-on-surface uppercase tracking-wider">Ảnh chụp thực tế <span class="text-error">*</span></label>
-              <div class="border-2 border-dashed border-outline-variant rounded-xl p-4 text-center bg-surface hover:bg-surface-variant/20 transition-colors cursor-pointer relative">
-                <input type="file" name="image" accept="image/*" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="custom-image-input" />
-                <div id="custom-image-preview" class="flex flex-col items-center pointer-events-none">
+              <div id="custom-image-dropzone" class="border-2 border-dashed border-outline-variant rounded-xl p-4 text-center bg-surface hover:bg-surface-variant/20 transition-all cursor-pointer relative">
+                <input type="file" name="image" accept="image/*" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" id="custom-image-input" />
+                <div id="custom-image-preview" class="flex flex-col items-center pointer-events-none transition-all">
                   <span class="material-symbols-outlined text-3xl text-primary mb-1">add_a_photo</span>
                   <p class="text-xs font-bold text-on-surface">Nhấn hoặc kéo thả file ảnh vật phẩm vào đây</p>
                   <p class="text-[11px] text-on-surface-variant mt-0.5">Hỗ trợ PNG, JPG (Tối đa 5MB)</p>
                 </div>
               </div>
+              <p class="error-inline text-xs font-semibold text-error mt-1 hidden"></p>
             </div>
 
             <div class="flex flex-col gap-1.5">
@@ -249,58 +255,175 @@ export async function renderDonationModal(container, { organizations = [], onSuc
         }
       });
       if (activeTab === "wardrobe") {
-        formWardrobe.classList.remove("hidden");
-        formCustom.classList.add("hidden");
+        formWardrobe?.classList.remove("hidden");
+        formCustom?.classList.add("hidden");
       } else {
-        formWardrobe.classList.add("hidden");
-        formCustom.classList.remove("hidden");
+        formWardrobe?.classList.add("hidden");
+        formCustom?.classList.remove("hidden");
       }
     });
   });
 
-  // Update selected checkbox count
-  const checkboxes = formWardrobe?.querySelectorAll("input[name='wardrobeItemIds']");
-  const countLabel = formWardrobe?.querySelector("#selected-count-label");
-  checkboxes?.forEach(chk => {
-    chk.addEventListener("change", () => {
-      const checkedCount = formWardrobe.querySelectorAll("input[name='wardrobeItemIds']:checked").length;
-      if (countLabel) countLabel.textContent = `Đã chọn: ${checkedCount} món`;
+  // Helper to reset error styling
+  const clearInlineErrors = (form) => {
+    form?.querySelectorAll(".error-inline").forEach(el => {
+      el.textContent = "";
+      el.classList.add("hidden");
+    });
+    form?.querySelectorAll("select, input, textarea").forEach(el => {
+      el.classList.remove("border-error", "bg-error/5");
+    });
+    form?.querySelector("#wardrobe-list-container")?.classList.remove("border", "border-error", "bg-error/5");
+    form?.querySelector("#custom-image-dropzone")?.classList.remove("border-error", "bg-error/5");
+  };
+
+  // Live clear inline errors when user inputs data
+  modalContainer.querySelectorAll("select, input, textarea").forEach(input => {
+    input.addEventListener("input", () => {
+      input.classList.remove("border-error", "bg-error/5");
+      const err = input.parentElement?.querySelector(".error-inline");
+      if (err) {
+        err.textContent = "";
+        err.classList.add("hidden");
+      }
     });
   });
 
-  // Custom image input preview
+  // Update selected checkbox count & clear error
+  const checkboxes = formWardrobe?.querySelectorAll("input[name='wardrobeItemIds']");
+  const countLabel = formWardrobe?.querySelector("#selected-count-label");
+  const wardrobeListContainer = formWardrobe?.querySelector("#wardrobe-list-container");
+  checkboxes?.forEach(chk => {
+    chk.addEventListener("change", () => {
+      const checkedCount = formWardrobe?.querySelectorAll("input[name='wardrobeItemIds']:checked").length || 0;
+      if (countLabel) countLabel.textContent = `Đã chọn: ${checkedCount} món`;
+      if (checkedCount > 0 && wardrobeListContainer) {
+        wardrobeListContainer.classList.remove("border", "border-error", "bg-error/5");
+        const err = wardrobeListContainer.parentElement?.querySelector(".error-inline");
+        if (err) {
+          err.textContent = "";
+          err.classList.add("hidden");
+        }
+      }
+    });
+  });
+
+  // Custom image input preview & enhanced dropzone experience
   const customImgInput = formCustom?.querySelector("#custom-image-input");
   const customImgPreview = formCustom?.querySelector("#custom-image-preview");
+  const customDropzone = formCustom?.querySelector("#custom-image-dropzone");
+
+  const resetDropzonePreview = () => {
+    if (customImgPreview) {
+      customImgPreview.innerHTML = `
+        <span class="material-symbols-outlined text-3xl text-primary mb-1">add_a_photo</span>
+        <p class="text-xs font-bold text-on-surface">Nhấn hoặc kéo thả file ảnh vật phẩm vào đây</p>
+        <p class="text-[11px] text-on-surface-variant mt-0.5">Hỗ trợ PNG, JPG (Tối đa 5MB)</p>
+      `;
+    }
+  };
+
+  customDropzone?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    customDropzone.classList.add("border-primary", "bg-primary/5");
+  });
+  customDropzone?.addEventListener("dragleave", () => {
+    customDropzone.classList.remove("border-primary", "bg-primary/5");
+  });
+  customDropzone?.addEventListener("drop", (e) => {
+    e.preventDefault();
+    customDropzone.classList.remove("border-primary", "bg-primary/5");
+    if (e.dataTransfer?.files?.length && customImgInput) {
+      customImgInput.files = e.dataTransfer.files;
+      customImgInput.dispatchEvent(new Event("change"));
+    }
+  });
+
   customImgInput?.addEventListener("change", (e) => {
     const file = e.target.files?.[0];
+    customDropzone?.classList.remove("border-error", "bg-error/5");
+    const err = customDropzone?.parentElement?.querySelector(".error-inline");
+    if (err) {
+      err.textContent = "";
+      err.classList.add("hidden");
+    }
+
     if (file && customImgPreview) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast("Kích thước ảnh vượt quá giới hạn 5MB!", "warning");
+        customImgInput.value = "";
+        resetDropzonePreview();
+        return;
+      }
+      const imgUrl = URL.createObjectURL(file);
       customImgPreview.innerHTML = `
-        <span class="material-symbols-outlined text-3xl text-emerald-600 mb-1">check_circle</span>
-        <p class="text-xs font-bold text-on-surface truncate max-w-[220px]">${file.name}</p>
-        <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">Đã đính kèm ảnh thành công</p>
+        <div class="flex items-center gap-3 w-full p-2.5 bg-surface-container-lowest rounded-xl border border-emerald-500/30 text-left shadow-xs">
+          <img src="${imgUrl}" class="w-14 h-14 object-cover rounded-lg border border-outline-variant/30 flex-shrink-0" />
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold text-on-surface truncate">${file.name}</p>
+            <p class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+              <span class="material-symbols-outlined text-xs">check_circle</span> Đã chọn ảnh (${(file.size / 1024).toFixed(1)} KB)
+            </p>
+          </div>
+          <button type="button" id="btn-remove-custom-image" class="p-1.5 rounded-lg text-error hover:bg-error/10 transition-colors pointer-events-auto z-20 relative" title="Chọn ảnh khác">
+            <span class="material-symbols-outlined text-base">delete</span>
+          </button>
+        </div>
       `;
+      const removeBtn = customImgPreview.querySelector("#btn-remove-custom-image");
+      removeBtn?.addEventListener("click", (evt) => {
+        evt.stopPropagation();
+        evt.preventDefault();
+        customImgInput.value = "";
+        resetDropzonePreview();
+      });
+    } else {
+      resetDropzonePreview();
     }
   });
 
   // Submit Tab 1: From Wardrobe (DonationRequestReq)
   formWardrobe?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const eventId = formWardrobe.querySelector("select[name='donationEventId']")?.value;
+    clearInlineErrors(formWardrobe);
+
+    const eventSelect = formWardrobe.querySelector("select[name='donationEventId']");
+    const eventId = eventSelect?.value;
     const desc = formWardrobe.querySelector("textarea[name='description']")?.value?.trim() || "";
     const selectedIds = Array.from(formWardrobe.querySelectorAll("input[name='wardrobeItemIds']:checked")).map(c => c.value);
 
+    let hasError = false;
     if (!eventId) {
-      showToast("Vui lòng chọn Chiến dịch Quyên góp!", "warning");
-      return;
+      eventSelect?.classList.add("border-error", "bg-error/5");
+      const err = eventSelect?.parentElement?.querySelector(".error-inline");
+      if (err) {
+        err.textContent = "Vui lòng chọn Chiến dịch Quyên góp để tiếp nhận vật phẩm!";
+        err.classList.remove("hidden");
+      }
+      hasError = true;
     }
+
     if (selectedIds.length === 0) {
-      showToast("Vui lòng tích chọn ít nhất 1 vật phẩm từ Tủ đồ của bạn!", "warning");
+      wardrobeListContainer?.classList.add("border", "border-error", "bg-error/5");
+      const err = wardrobeListContainer?.parentElement?.querySelector(".error-inline");
+      if (err) {
+        err.textContent = "Vui lòng tích chọn ít nhất 1 vật phẩm từ Tủ đồ của bạn!";
+        err.classList.remove("hidden");
+      }
+      hasError = true;
+    }
+
+    if (hasError) {
+      showToast("Vui lòng kiểm tra và điền đầy đủ thông tin bắt buộc trên form!", "warning");
       return;
     }
 
     const submitBtn = formWardrobe.querySelector("button[type='submit']");
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang gửi...`;
+    const originalHtml = submitBtn ? submitBtn.innerHTML : "";
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Đang gửi...`;
+    }
 
     try {
       await createDonationRequestApi({
@@ -316,23 +439,66 @@ export async function renderDonationModal(container, { organizations = [], onSuc
       }
     } catch (err) {
       showToast("Lỗi khi gửi quyên góp: " + err.message, "error");
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = `<span class="material-symbols-outlined text-sm">send</span> Gửi yêu cầu quyên góp`;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+      }
     }
   });
 
   // Submit Tab 2: Quick Custom Item (DonationRequestCustomReq via FormData)
   formCustom?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const eventId = formCustom.querySelector("select[name='donationEventId']")?.value;
+    clearInlineErrors(formCustom);
+
+    const eventSelect = formCustom.querySelector("select[name='donationEventId']");
+    const eventId = eventSelect?.value;
+    const itemNameInput = formCustom.querySelector("input[name='itemName']");
+    const itemName = itemNameInput?.value?.trim() || "";
+    const file = customImgInput?.files?.[0];
+
+    let hasError = false;
     if (!eventId) {
-      showToast("Vui lòng chọn Chiến dịch Quyên góp!", "warning");
+      eventSelect?.classList.add("border-error", "bg-error/5");
+      const err = eventSelect?.parentElement?.querySelector(".error-inline");
+      if (err) {
+        err.textContent = "Vui lòng chọn Chiến dịch Quyên góp để tiếp nhận vật phẩm!";
+        err.classList.remove("hidden");
+      }
+      hasError = true;
+    }
+
+    if (!itemName) {
+      itemNameInput?.classList.add("border-error", "bg-error/5");
+      const err = itemNameInput?.parentElement?.querySelector(".error-inline");
+      if (err) {
+        err.textContent = "Tên vật phẩm không được để trống!";
+        err.classList.remove("hidden");
+      }
+      hasError = true;
+    }
+
+    if (!file) {
+      customDropzone?.classList.add("border-error", "bg-error/5");
+      const err = customDropzone?.parentElement?.querySelector(".error-inline");
+      if (err) {
+        err.textContent = "Vui lòng đính kèm ảnh chụp thực tế của vật phẩm!";
+        err.classList.remove("hidden");
+      }
+      hasError = true;
+    }
+
+    if (hasError) {
+      showToast("Vui lòng kiểm tra và điền đầy đủ thông tin bắt buộc trên form!", "warning");
       return;
     }
 
     const submitBtn = formCustom.querySelector("button[type='submit']");
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang tạo & gửi...`;
+    const originalHtml = submitBtn ? submitBtn.innerHTML : "";
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Đang tạo & gửi...`;
+    }
 
     try {
       const fd = new FormData(formCustom);
@@ -345,8 +511,10 @@ export async function renderDonationModal(container, { organizations = [], onSuc
       }
     } catch (err) {
       showToast("Lỗi khi tạo quyên góp: " + err.message, "error");
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = `<span class="material-symbols-outlined text-sm">send</span> Gửi yêu cầu quyên góp`;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+      }
     }
   });
 }
