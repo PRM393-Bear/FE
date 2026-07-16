@@ -310,7 +310,10 @@ export async function renderDonationModal(container, { organizations = [], onSuc
       });
       showToast("Gửi yêu cầu quyên góp thành công! Cảm ơn tấm lòng của bạn.", "success");
       closeDialog();
-      if (onSuccess) onSuccess();
+      if (onSuccess) {
+        onSuccess();
+        setTimeout(() => { if (onSuccess) onSuccess(); }, 800);
+      }
     } catch (err) {
       showToast("Lỗi khi gửi quyên góp: " + err.message, "error");
       submitBtn.disabled = false;
@@ -336,7 +339,10 @@ export async function renderDonationModal(container, { organizations = [], onSuc
       await createDonationRequestCustomApi(fd);
       showToast("Tạo & quyên góp món đồ mới thành công!", "success");
       closeDialog();
-      if (onSuccess) onSuccess();
+      if (onSuccess) {
+        onSuccess();
+        setTimeout(() => { if (onSuccess) onSuccess(); }, 800);
+      }
     } catch (err) {
       showToast("Lỗi khi tạo quyên góp: " + err.message, "error");
       submitBtn.disabled = false;

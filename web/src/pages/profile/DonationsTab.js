@@ -13,8 +13,12 @@ import {
   updateDonationEventApi,
   cancelDonationEventApi,
   completeDonationEventApi,
-  ongoingDonationEventApi
+  ongoingDonationEventApi,
+  getDonationEventsByOrgIdApi,
+  getAllDonationEventsApi,
+  getOrgDonationRequestsApi
 } from "../../services/profile.service.js";
+import { apiFetch } from "../../utils/api.js";
 import { showToast } from "../../utils/ui.js";
 
 function getDonationStatusBadge(status) {
@@ -36,10 +40,33 @@ function getEventStatusBadge(status) {
   return `<span class="px-3 py-1 bg-surface-variant text-on-surface-variant rounded-full text-xs font-semibold">${st}</span>`;
 }
 
-export function renderDonationsTab(container, { profile, orgDetail, events = [], requests = [], onRefresh, onOpenModal }) {
+export function renderDonationsTab(container, { profile, orgDetail, events: initialEvents = [], requests: initialRequests = [], onRefresh, onOpenModal }) {
   const isOrg = profile?.role === "org";
   let activeSubTab = isOrg ? "campaigns" : "requests";
   let activeRequestFilter = "ALL";
+  let events = Array.isArray(initialEvents) ? [...initialEvents] : [];
+  let requests = Array.isArray(initialRequests) ? [...initialRequests] : [];
+
+  const syncDonationData = async () => {
+    try {
+      const isOrgRole = profile?.role === "org";
+      const [latestEvents, latestRequests] = await Promise.all([
+        isOrgRole && orgDetail?.id
+          ? getDonationEventsByOrgIdApi(orgDetail.id).catch(() => events)
+          : getAllDonationEventsApi().catch(() => events),
+        isOrgRole && orgDetail?.id
+          ? getOrgDonationRequestsApi(orgDetail.id).catch(() => requests)
+          : apiFetch("/api/donation-requests/my-member").catch(() => apiFetch("/api/donation-requests/lists").catch(() => requests))
+      ]);
+      if (Array.isArray(latestEvents)) events = latestEvents;
+      if (Array.isArray(latestRequests)) requests = latestRequests;
+      renderContent();
+    } catch (err) {
+      console.warn("Lỗi đồng bộ dữ liệu chiến dịch:", err);
+      // Xử lý trường hợp dữ liệu backend trả về chậm hoặc lỗi: duy trì state cũ và render lại an toàn
+      renderContent();
+    }
+  };
 
   const renderContent = () => {
     let html = `
@@ -98,12 +125,17 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
         html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">`;
         events.forEach((ev) => {
           const st = String(ev.status || "UPCOMING").toUpperCase();
-          const target = ev.targetQuantity || 100;
-          const receivedCount = requests
-            .filter(r => r.donationEventId === (ev.id || ev.donationEventId) && ['RECEIVED', 'COMPLETED'].includes(String(r.status || '').toUpperCase()))
-            .reduce((sum, r) => sum + (r.items?.length || 1), 0);
-          const current = Math.max(ev.currentQuantity || 0, receivedCount);
-          const percent = Math.min(100, Math.round((current / target) * 100));
+          const target = Number(ev.targetQuantity) || 100;
+          let current = 0;
+          if (ev.currentQuantity !== undefined && ev.currentQuantity !== null && !isNaN(ev.currentQuantity)) {
+            current = Number(ev.currentQuantity);
+          } else {
+            const receivedCount = requests
+              .filter(r => r.donationEventId === (ev.id || ev.donationEventId) && ['ACCEPTED', 'RECEIVED', 'COMPLETED', 'SHIPPING', 'SHIPPED'].includes(String(r.status || '').toUpperCase()))
+              .reduce((sum, r) => sum + (r.items?.length || 1), 0);
+            current = Math.max(0, receivedCount);
+          }
+          const percent = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
           const banner = ev.bannerUrl || ev.imageUrl || 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=600&q=80';
 
           html += `
@@ -119,9 +151,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
                   
                   <!-- Progress bar -->
                   <div class="flex flex-col gap-1 mt-2">
-                    <div class="flex justify-between text-xs font-semibold text-on-surface-variant">
-                      <span>Đã tiếp nhận: <strong class="text-primary">${current}</strong></span>
-                      <span>Mục tiêu: <strong class="text-on-surface">${target}</strong></span>
+                    <div class="flex justify-between items-center text-xs font-semibold text-on-surface-variant">
+                      <span>Đã tiếp nhận <strong class="text-primary font-bold">${current}</strong> / Mục tiêu <strong class="text-on-surface font-bold">${target}</strong></span>
+                      <span class="text-primary font-bold">${percent}%</span>
                     </div>
                     <div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
                       <div class="h-full bg-primary transition-all duration-500" style="width: ${percent}%"></div>
@@ -364,7 +396,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
           else if (action === "complete") await completeDonationEventApi(id);
           else if (action === "cancel") await cancelDonationEventApi(id);
           showToast("Cập nhật trạng thái chiến dịch thành công!", "success");
+          await syncDonationData();
           if (onRefresh) onRefresh();
+          setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
         } catch (err) {
           showToast("Lỗi: " + err.message, "error");
           btn.disabled = false;
@@ -381,7 +415,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
         try {
           await acceptDonationRequest(id);
           showToast("Đã tiếp nhận yêu cầu quyên góp!", "success");
+          await syncDonationData();
           if (onRefresh) onRefresh();
+          setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
         } catch (err) {
           showToast("Lỗi: " + err.message, "error");
           btn.disabled = false;
@@ -398,7 +434,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
         try {
           await rejectDonationRequest(id, "Tổ chức tạm ngừng tiếp nhận vật phẩm này vào lúc này.");
           showToast("Đã từ chối yêu cầu quyên góp.", "info");
+          await syncDonationData();
           if (onRefresh) onRefresh();
+          setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
         } catch (err) {
           showToast("Lỗi: " + err.message, "error");
           btn.disabled = false;
@@ -425,7 +463,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
         try {
           await cancelDonationRequest(id, "Người dùng hủy yêu cầu");
           showToast("Đã hủy yêu cầu quyên góp.", "info");
+          await syncDonationData();
           if (onRefresh) onRefresh();
+          setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
         } catch (err) {
           showToast("Lỗi: " + err.message, "error");
           btn.disabled = false;
@@ -562,7 +602,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
           showToast("Khởi tạo chiến dịch quyên góp mới thành công!", "success");
         }
         closeModal();
+        await syncDonationData();
         if (onRefresh) onRefresh();
+        setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
       } catch (err) {
         showToast("Lỗi: " + err.message, "error");
         if (submitBtn) submitBtn.disabled = false;
@@ -658,7 +700,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
         await shippedDonationRequest(id, trackingCode, file);
         showToast("Cập nhật trạng thái gửi hàng thành công!", "success");
         closeModal();
+        await syncDonationData();
         if (onRefresh) onRefresh();
+        setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
       } catch (err) {
         showToast("Lỗi: " + err.message, "error");
         if (submitBtn) submitBtn.disabled = false;
@@ -752,7 +796,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
         await receivedDonationRequest(id, file);
         showToast("Xác nhận đã tiếp nhận vật phẩm thành công!", "success");
         closeModal();
+        await syncDonationData();
         if (onRefresh) onRefresh();
+        setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
       } catch (err) {
         showToast("Lỗi: " + err.message, "error");
         if (submitBtn) submitBtn.disabled = false;

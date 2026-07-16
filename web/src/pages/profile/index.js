@@ -10,6 +10,7 @@ import {
   getAllOrganizationsApi, 
   getMyOrganizationDetailApi, 
   getDonationEventsByOrgIdApi, 
+  getAllDonationEventsApi,
   getOrgDonationRequestsApi 
 } from "../../services/profile.service.js";
 import { getOrdersByBuyer, getOrdersBySeller } from "../../services/order.service.js";
@@ -78,7 +79,7 @@ export async function renderProfilePage(container) {
       getMyProducts(profile.id).catch(() => []),
       isOrgRole && orgDetail?.id
         ? getDonationEventsByOrgIdApi(orgDetail.id).catch(() => [])
-        : Promise.resolve([])
+        : getAllDonationEventsApi().catch(() => [])
     ]);
 
     buyerOrders = Array.isArray(bOrders) ? bOrders : [];
