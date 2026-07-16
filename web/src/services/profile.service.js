@@ -112,6 +112,26 @@ export async function createDonationRequestApi(payload) {
   });
 }
 
+export async function createDonationRequestCustomApi(formData) {
+  return await apiFetch("/api/donation-requests/custom", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export async function getMyWardrobeItemsApi() {
+  try {
+    const res = await apiFetch("/api/wardrobe-items/my-wardrobe");
+    if (typeof res === "string" || !Array.isArray(res)) {
+      return [];
+    }
+    return res;
+  } catch (err) {
+    console.warn("Lỗi khi tải danh sách tủ đồ:", err);
+    return [];
+  }
+}
+
 export async function acceptDonationRequest(id) {
   return await apiFetch(`/api/donation-requests/${id}/accept`, {
     method: "PATCH",
@@ -131,9 +151,15 @@ export async function shippingDonationRequest(id) {
   });
 }
 
-export async function shippedDonationRequest(id) {
+export async function shippedDonationRequest(id, trackingCode, shippingProofFile) {
+  const formData = new FormData();
+  formData.append("trackingCode", trackingCode || "");
+  if (shippingProofFile) {
+    formData.append("shippingProofFile", shippingProofFile);
+  }
   return await apiFetch(`/api/donation-requests/${id}/shipped`, {
     method: "PATCH",
+    body: formData,
   });
 }
 
