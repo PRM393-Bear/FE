@@ -509,13 +509,18 @@ export function renderDonationsTab(container, { profile, orgDetail, events = [],
     overlay.querySelector("#form-campaign")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
+      const formatToOffsetDateTime = (dateStr) => {
+        if (!dateStr) return null;
+        return dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00+07:00`;
+      };
+
       const payload = {
         title: fd.get("title")?.trim(),
         description: fd.get("description")?.trim(),
         location: fd.get("location")?.trim(),
         targetQuantity: parseInt(fd.get("targetQuantity") || "100", 10),
-        startDate: fd.get("startDate"),
-        endDate: fd.get("endDate"),
+        startDate: formatToOffsetDateTime(fd.get("startDate")),
+        endDate: formatToOffsetDateTime(fd.get("endDate")),
         bannerUrl: fd.get("bannerUrl")?.trim() || null,
         latitude: fd.get("latitude") ? parseFloat(fd.get("latitude")) : null,
         longitude: fd.get("longitude") ? parseFloat(fd.get("longitude")) : null,
