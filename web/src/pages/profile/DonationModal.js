@@ -13,6 +13,7 @@ import {
   getMyWardrobeItemsApi
 } from "../../services/profile.service.js";
 import { showToast } from "../../utils/ui.js";
+import { formatApiError } from "../../utils/api.js";
 
 export async function renderDonationModal(container, { organizations = [], onSuccess, onClose }) {
   // Show loading spinner while fetching active events & user wardrobe
@@ -438,7 +439,8 @@ export async function renderDonationModal(container, { organizations = [], onSuc
         setTimeout(() => { if (onSuccess) onSuccess(); }, 800);
       }
     } catch (err) {
-      showToast("Lỗi khi gửi quyên góp: " + err.message, "error");
+      const errorMsg = formatApiError(err, "gửi yêu cầu quyên góp từ Tủ đồ");
+      showToast(errorMsg, "error");
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalHtml;
@@ -510,7 +512,8 @@ export async function renderDonationModal(container, { organizations = [], onSuc
         setTimeout(() => { if (onSuccess) onSuccess(); }, 800);
       }
     } catch (err) {
-      showToast("Lỗi khi tạo quyên góp: " + err.message, "error");
+      const errorMsg = formatApiError(err, "tạo & gửi quyên góp vật phẩm mới");
+      showToast(errorMsg, "error");
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalHtml;

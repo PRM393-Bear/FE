@@ -20,7 +20,7 @@ import {
   getAllDonationEventsApi,
   getOrgDonationRequestsApi
 } from "../../services/profile.service.js";
-import { apiFetch } from "../../utils/api.js";
+import { apiFetch, formatApiError } from "../../utils/api.js";
 import { showToast } from "../../utils/ui.js";
 
 function getDonationStatusBadge(status) {
@@ -455,7 +455,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
           if (onRefresh) onRefresh();
           setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
         } catch (err) {
-          showToast("Lỗi: " + err.message, "error");
+          showToast(formatApiError(err, "cập nhật trạng thái chiến dịch"), "error");
           btn.disabled = false;
         }
       });
@@ -476,7 +476,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
           await syncDonationData();
           setTimeout(() => syncDonationData(), 800);
         } catch (err) {
-          showToast("Lỗi: " + err.message, "error");
+          showToast(formatApiError(err, "tiếp nhận yêu cầu quyên góp"), "error");
           btn.disabled = false;
         }
       });
@@ -497,7 +497,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
           await syncDonationData();
           setTimeout(() => syncDonationData(), 800);
         } catch (err) {
-          showToast("Lỗi: " + err.message, "error");
+          showToast(formatApiError(err, "từ chối yêu cầu quyên góp"), "error");
           btn.disabled = false;
         }
       });
@@ -528,7 +528,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
           await syncDonationData();
           setTimeout(() => syncDonationData(), 800);
         } catch (err) {
-          showToast("Lỗi: " + err.message, "error");
+          showToast(formatApiError(err, "hủy yêu cầu quyên góp"), "error");
           btn.disabled = false;
         }
       });
@@ -549,7 +549,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
           await syncDonationData();
           setTimeout(() => syncDonationData(), 800);
         } catch (err) {
-          showToast("Lỗi: " + err.message, "error");
+          showToast(formatApiError(err, "chuyển trạng thái giao hàng"), "error");
           btn.disabled = false;
         }
       });
@@ -570,7 +570,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
           await syncDonationData();
           setTimeout(() => syncDonationData(), 800);
         } catch (err) {
-          showToast("Lỗi: " + err.message, "error");
+          showToast(formatApiError(err, "hoàn tất quy trình quyên góp"), "error");
           btn.disabled = false;
         }
       });
@@ -812,7 +812,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         await syncDonationData();
         setTimeout(() => syncDonationData(), 800);
       } catch (err) {
-        showToast("Lỗi: " + err.message, "error");
+        showToast(formatApiError(err, isEdit ? "cập nhật chiến dịch" : "khởi tạo chiến dịch"), "error");
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.classList.remove("opacity-60", "cursor-not-allowed");
@@ -919,7 +919,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         await syncDonationData();
         setTimeout(() => syncDonationData(), 800);
       } catch (err) {
-        showToast("Lỗi: " + err.message, "error");
+        showToast(formatApiError(err, "cập nhật vận đơn & ảnh gửi hàng"), "error");
         if (submitBtn) submitBtn.disabled = false;
       }
     });
@@ -1017,7 +1017,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         await syncDonationData();
         setTimeout(() => syncDonationData(), 800);
       } catch (err) {
-        showToast("Lỗi: " + err.message, "error");
+        showToast(formatApiError(err, "xác nhận tiếp nhận vật phẩm"), "error");
         if (submitBtn) submitBtn.disabled = false;
       }
     });
