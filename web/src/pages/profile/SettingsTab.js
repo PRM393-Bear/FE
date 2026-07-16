@@ -44,6 +44,9 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
             if ((!orgDetail.verificationDocs || orgDetail.verificationDocs.length === 0) && cached.verificationDocs) {
               orgDetail.verificationDocs = cached.verificationDocs;
             }
+            if (cached.status && String(orgDetail.status).toUpperCase() === "REJECTED") {
+              orgDetail.status = cached.status;
+            }
           }
         } catch (e) {
           console.warn("Could not parse org custom cache:", e);
@@ -409,14 +412,19 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
 
       try {
         await updateOrganizationDetailApi(orgDetail.id, payload);
+        const newStatus = String(orgDetail.status).toUpperCase() === "REJECTED" ? "PENDING" : orgDetail.status;
         if (profile?.id) {
           localStorage.setItem("org_custom_fields_" + profile.id, JSON.stringify({
             avtOrg: payload.avtOrg,
             acceptedTypes: payload.acceptedTypes,
-            verificationDocs: payload.verificationDocs
+            verificationDocs: payload.verificationDocs,
+            status: newStatus
           }));
         }
-        showToast("Cập nhật hồ sơ tổ chức thành công!", "success");
+        if (String(orgDetail.status).toUpperCase() === "REJECTED") {
+          orgDetail.status = "PENDING";
+        }
+        showToast("Cập nhật hồ sơ tổ chức thành công! Hồ sơ đã chuyển sang trạng thái chờ thẩm định lại.", "success");
         if (onRefresh) onRefresh();
       } catch (err) {
         showToast("Lỗi khi lưu hồ sơ tổ chức: " + err.message, "error");
