@@ -305,15 +305,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                   builder: (_) => const SellerOrdersPage()),
                             ),
                           ),
-                          _buildMenuItem(
-                            icon: Icons.volunteer_activism_outlined,
-                            title: 'Đơn quyên góp của tôi',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const MyDonationsPage()),
-                            ),
-                          ),
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                             child: Row(
@@ -374,6 +365,16 @@ class _ProfilePageState extends State<ProfilePage> {
                             icon: Icons.card_giftcard_outlined,
                             title: 'Yêu cầu tặng đồ',
                             onTap: () {},
+                          ),
+                          _buildDivider(),
+                          _buildMenuItem(
+                            icon: Icons.volunteer_activism_outlined,
+                            title: 'Đơn quyên góp của tôi',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const MyDonationsPage()),
+                            ),
                           ),
                           _buildDivider(),
                           _buildMenuItem(

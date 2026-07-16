@@ -21,12 +21,12 @@ class _UploadImagePageState extends State<UploadImagePage> {
   final List<String> _uploadedUrls = [];
   final int _maxImages = 10;
   bool _isUploading = false;
-  final _picker = ImagePicker();
 
   Future<void> _pickImage(ImageSource source) async {
     if (_selectedFiles.length >= _maxImages) return;
 
-    final img = await _picker.pickImage(source: source, imageQuality: 85);
+    final picker = ImagePicker();
+    final img = await picker.pickImage(source: source, imageQuality: 85);
     if (img == null) return;
 
     final file = File(img.path);
@@ -44,8 +44,9 @@ class _UploadImagePageState extends State<UploadImagePage> {
               leading: const Icon(Icons.camera_alt_outlined,
                   color: AppColors.primary),
               title: const Text('Chụp ảnh'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
+                await Future.delayed(const Duration(milliseconds: 100));
                 _pickImage(ImageSource.camera);
               },
             ),

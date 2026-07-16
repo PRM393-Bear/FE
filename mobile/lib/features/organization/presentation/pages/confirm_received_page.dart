@@ -19,11 +19,40 @@ class _ConfirmReceivedPageState extends State<ConfirmReceivedPage> {
   File? _proofImage;
   bool _isSubmitting = false;
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final img = await picker.pickImage(source: source, imageQuality: 85);
     if (img == null) return;
     setState(() => _proofImage = File(img.path));
+  }
+
+  void _showPickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              title: const Text('Chụp ảnh'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+              title: const Text('Chọn từ thư viện'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _handleConfirm() async {
@@ -90,7 +119,7 @@ class _ConfirmReceivedPageState extends State<ConfirmReceivedPage> {
             const SizedBox(height: 12),
             if (_proofImage == null)
               GestureDetector(
-                onTap: _pickImage,
+                onTap: _showPickerSheet,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 32),
@@ -106,7 +135,7 @@ class _ConfirmReceivedPageState extends State<ConfirmReceivedPage> {
                       Text('Upload ảnh xác nhận nhận hàng',
                           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary)),
                       const SizedBox(height: 4),
-                      Text('Chạm để chọn ảnh từ thư viện',
+                      Text('Chạm để chụp ảnh hoặc chọn từ thư viện',
                           style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
                     ],
                   ),

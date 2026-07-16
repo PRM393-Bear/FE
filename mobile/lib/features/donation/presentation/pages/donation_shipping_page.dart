@@ -1,8 +1,10 @@
+// mobile/lib/features/donation/presentation/pages/donation_shipping_page.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_text_field.dart';
 import '../../../organization/data/donation_request_model.dart';
 import '../../../organization/data/donation_request_service.dart';
 
@@ -15,25 +17,49 @@ class DonationShippingPage extends StatefulWidget {
 }
 
 class _DonationShippingPageState extends State<DonationShippingPage> {
-  final _codeController = TextEditingController();
+  final _trackingController = TextEditingController();
+  File? _proofImage;
   bool _isSubmitting = false;
 
+  bool get _needsShippingStep => widget.request.status == 'ACCEPTED';
+
+  @override
+  void dispose() {
+    _trackingController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    // Chuyển sang camera để "chụp ảnh xác nhận" như yêu cầu trước đó
+    final img = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    if (img == null) return;
+    setState(() => _proofImage = File(img.path));
+  }
+
   Future<void> _handleSubmit() async {
-    final code = _codeController.text.trim();
-    if (code.isEmpty) {
-      _showSnack('Vui lòng nhập mã vận đơn');
+    if (_trackingController.text.trim().isEmpty || _proofImage == null) {
+      _showSnack('Vui lòng nhập mã vận đơn và chọn ảnh gửi hàng');
       return;
     }
-
     setState(() => _isSubmitting = true);
     try {
-      await DonationRequestService.submitTrackingCode(widget.request.id, code);
+      // Bước 1 (chỉ khi đơn đang ACCEPTED): chuyển sang SHIPPING trước.
+      if (_needsShippingStep) {
+        await DonationRequestService.shipping(widget.request.id);
+      }
+      // Bước 2: gửi mã vận đơn + ảnh, chuyển sang SHIPPED.
+      await DonationRequestService.shipped(
+        widget.request.id,
+        _trackingController.text.trim(),
+        _proofImage!.path,
+      );
       if (!mounted) return;
-      _showSnack('Đã cập nhật thông tin vận chuyển!');
+      _showSnack('Đã gửi hàng thành công! Chờ tổ chức xác nhận nhận hàng.');
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint('🔴 Submit tracking code error: $e');
-      _showSnack('Cập nhật thất bại, thử lại nhé');
+      debugPrint('🔴 Shipping error: $e');
+      _showSnack('Gửi hàng thất bại, thử lại nhé');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -51,46 +77,47 @@ class _DonationShippingPageState extends State<DonationShippingPage> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Thông tin vận chuyển', style: AppTextStyles.headline3),
+        title: Text('Gửi hàng cho tổ chức', style: AppTextStyles.headline3),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            Text(
+              'Nhập mã vận đơn (nếu gửi qua bưu điện/shipper) và chụp ảnh gói hàng trước khi gửi đi.',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _trackingController,
+              decoration: InputDecoration(
+                labelText: 'Mã vận đơn',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Hướng dẫn:', style: AppTextStyles.label.copyWith(color: AppColors.primary)),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '1. Bạn vui lòng đóng gói vật phẩm quyên góp.\n'
-                    '2. Mang ra đơn vị vận chuyển (GHTK, Viettel Post, J&T...) để gửi đến địa chỉ của tổ chức.\n'
-                    '3. Nhập mã vận đơn (tracking number) vào ô bên dưới để tổ chức có thể theo dõi.',
-                    style: TextStyle(fontSize: 14, height: 1.5),
-                  ),
-                ],
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 180,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: _proofImage == null
+                    ? const Center(
+                        child: Icon(Icons.add_a_photo_outlined, size: 40, color: AppColors.neutral),
+                      )
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(_proofImage!, fit: BoxFit.cover),
+                      ),
               ),
             ),
             const SizedBox(height: 32),
-            Text('Thông tin yêu cầu:', style: AppTextStyles.label),
-            const SizedBox(height: 8),
-            _infoRow('Tổ chức', widget.request.organizationName),
-            _infoRow('Vật phẩm', widget.request.description),
-            const SizedBox(height: 32),
-            AppTextField(
-              label: 'Mã vận đơn',
-              controller: _codeController,
-              hint: 'Ví dụ: SPX123456789',
-            ),
-            const SizedBox(height: 40),
             AppButton(
               label: 'Xác nhận đã gửi hàng',
               isLoading: _isSubmitting,
@@ -98,18 +125,6 @@ class _DonationShippingPageState extends State<DonationShippingPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w600)),
-          Expanded(child: Text(value)),
-        ],
       ),
     );
   }

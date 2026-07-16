@@ -39,6 +39,34 @@ class DonationRequestService {
     );
   }
 
+  /// Member xem các đơn quyên góp của chính mình.
+  static Future<List<DonationRequestModel>> getMyDonations() async {
+    try {
+      final res = await ApiClient.dio.get('/api/donation-requests/my-member');
+      return (res.data as List)
+          .map((e) => DonationRequestModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return [];
+      rethrow;
+    }
+  }
+
+  static Future<void> shipping(String id) =>
+      ApiClient.dio.patch('/api/donation-requests/$id/shipping');
+
+  static Future<void> shipped(String id, String trackingCode, String imagePath) async {
+    final formData = FormData.fromMap({
+      'trackingCode': trackingCode,
+      'shippingProofFile': await MultipartFile.fromFile(imagePath),
+    });
+    await ApiClient.dio.patch(
+      '/api/donation-requests/$id/shipped',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+  }
+
   static Future<List<DonationRequestModel>> getMyRequests() async {
     final res = await ApiClient.dio.get('/api/donation-requests/my-requests');
     return (res.data as List)

@@ -61,7 +61,7 @@ class _WardrobePageState extends State<WardrobePage> {
   }
 
   int get _availableCount =>
-      _items.where((i) => i.status == 'AVAILABLE').length;
+      _items.where((i) => i.status == 'OWNED').length;
   int get _soldCount => _items.where((i) => i.status == 'SOLD').length;
   int get _donatedCount => _items.where((i) => i.status == 'DONATED').length;
 
