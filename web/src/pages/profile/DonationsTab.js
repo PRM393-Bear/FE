@@ -6,8 +6,10 @@
 import { 
   acceptDonationRequest, 
   rejectDonationRequest, 
+  shippingDonationRequest,
   shippedDonationRequest,
   receivedDonationRequest, 
+  completedDonationRequest,
   cancelDonationRequest,
   createDonationEventApi,
   updateDonationEventApi,
@@ -23,11 +25,14 @@ import { showToast } from "../../utils/ui.js";
 
 function getDonationStatusBadge(status) {
   const st = String(status || "PENDING").toUpperCase();
-  if (st === "PENDING") return `<span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-semibold">Chờ tiếp nhận</span>`;
-  if (st === "ACCEPTED") return `<span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">Đã tiếp nhận</span>`;
-  if (st === "SHIPPING" || st === "SHIPPED") return `<span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-semibold">Đang vận chuyển</span>`;
-  if (st === "RECEIVED" || st === "COMPLETED") return `<span class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold">Đã hoàn tất</span>`;
-  if (st === "REJECTED" || st === "CANCELLED") return `<span class="px-3 py-1 bg-rose-100 text-rose-800 rounded-full text-xs font-semibold">Đã hủy/từ chối</span>`;
+  if (st === "PENDING") return `<span class="px-3 py-1 bg-amber-100 text-amber-800 border border-amber-200 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit"><span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>Chờ tiếp nhận</span>`;
+  if (st === "ACCEPTED") return `<span class="px-3 py-1 bg-blue-100 text-blue-800 border border-blue-200 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit"><span class="material-symbols-outlined text-sm">thumb_up</span>Đã tiếp nhận</span>`;
+  if (st === "SHIPPING") return `<span class="px-3 py-1 bg-purple-100 text-purple-800 border border-purple-200 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit"><span class="material-symbols-outlined text-sm">box</span>Chuẩn bị giao hàng</span>`;
+  if (st === "SHIPPED") return `<span class="px-3 py-1 bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit"><span class="material-symbols-outlined text-sm">local_shipping</span>Đã gửi hàng</span>`;
+  if (st === "RECEIVED") return `<span class="px-3 py-1 bg-teal-100 text-teal-800 border border-teal-200 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit"><span class="material-symbols-outlined text-sm">inventory_2</span>Tổ chức đã nhận</span>`;
+  if (st === "COMPLETED") return `<span class="px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit"><span class="material-symbols-outlined text-sm">verified</span>Hoàn tất quyên góp</span>`;
+  if (st === "REJECTED") return `<span class="px-3 py-1 bg-rose-100 text-rose-800 border border-rose-200 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit"><span class="material-symbols-outlined text-sm">cancel</span>Đã từ chối</span>`;
+  if (st === "CANCELLED") return `<span class="px-3 py-1 bg-slate-100 text-slate-800 border border-slate-200 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit"><span class="material-symbols-outlined text-sm">block</span>Đã hủy</span>`;
   return `<span class="px-3 py-1 bg-surface-variant text-on-surface-variant rounded-full text-xs font-semibold">${st}</span>`;
 }
 
@@ -206,6 +211,8 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
       if (isOrg && activeRequestFilter !== "ALL") {
         if (activeRequestFilter === "PENDING") {
           filteredRequests = requests.filter(r => String(r.status || "PENDING").toUpperCase() === "PENDING");
+        } else if (activeRequestFilter === "ACCEPTED") {
+          filteredRequests = requests.filter(r => String(r.status || "").toUpperCase() === "ACCEPTED");
         } else if (activeRequestFilter === "SHIPPED") {
           filteredRequests = requests.filter(r => ["SHIPPING", "SHIPPED"].includes(String(r.status || "").toUpperCase()));
         } else if (activeRequestFilter === "RECEIVED") {
@@ -223,8 +230,9 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
               <div class="flex flex-wrap gap-2">
                 <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'ALL' ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'}" data-filter="ALL">Tất cả</button>
                 <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-surface-variant text-on-surface-variant'}" data-filter="PENDING">Chờ tiếp nhận</button>
+                <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'ACCEPTED' ? 'bg-blue-100 text-blue-800' : 'bg-surface-variant text-on-surface-variant'}" data-filter="ACCEPTED">Đã tiếp nhận</button>
                 <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'SHIPPED' ? 'bg-indigo-100 text-indigo-800' : 'bg-surface-variant text-on-surface-variant'}" data-filter="SHIPPED">Đang giao hàng</button>
-                <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'RECEIVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-surface-variant text-on-surface-variant'}" data-filter="RECEIVED">Lịch sử nhận</button>
+                <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'RECEIVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-surface-variant text-on-surface-variant'}" data-filter="RECEIVED">Hoàn tất & Nhận</button>
               </div>
             `
                 : ""
@@ -299,13 +307,18 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                 </div>
               </div>
 
-              <div class="flex items-center gap-2 self-end md:self-center flex-shrink-0">
+              <div class="flex flex-wrap items-center gap-2 self-end md:self-center flex-shrink-0">
                 ${
                   isOrg && st === "PENDING"
                     ? `
-                  <button class="btn-accept-req px-3.5 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm" data-id="${req.id}">Tiếp nhận</button>
-                  <button class="btn-reject-req px-3.5 py-2 bg-error text-on-error rounded-lg text-xs font-semibold hover:bg-error/90 transition-colors shadow-sm" data-id="${req.id}">Từ chối</button>
+                  <button class="btn-accept-req px-3.5 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">check_circle</span> Tiếp nhận</button>
+                  <button class="btn-reject-req px-3.5 py-2 bg-error text-on-error rounded-lg text-xs font-semibold hover:bg-error/90 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">cancel</span> Từ chối</button>
                 `
+                    : ""
+                }
+                ${
+                  isOrg && st === "ACCEPTED"
+                    ? `<span class="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-medium flex items-center gap-1.5"><span class="material-symbols-outlined text-sm animate-spin">sync</span> Đang chờ người gửi đồ</span>`
                     : ""
                 }
                 ${
@@ -318,15 +331,57 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                     : ""
                 }
                 ${
+                  isOrg && st === "RECEIVED"
+                    ? `
+                  <button class="btn-complete-req px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
+                    <span class="material-symbols-outlined text-sm">task_alt</span> Hoàn tất quyên góp
+                  </button>
+                `
+                    : ""
+                }
+                ${
                   !isOrg && st === "PENDING"
-                    ? `<button class="btn-cancel-req px-3.5 py-2 bg-surface-variant text-on-surface-variant rounded-lg text-xs font-medium hover:bg-outline-variant transition-colors" data-id="${req.id}">Hủy yêu cầu</button>`
+                    ? `<button class="btn-cancel-req px-3.5 py-2 bg-surface-variant text-on-surface-variant rounded-lg text-xs font-medium hover:bg-outline-variant transition-colors flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">cancel</span> Hủy yêu cầu</button>`
                     : ""
                 }
                 ${
                   !isOrg && st === "ACCEPTED"
-                    ? `<button class="btn-open-shipping-modal px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
-                         <span class="material-symbols-outlined text-sm">local_shipping</span> Gửi hàng & Nhập tracking
-                       </button>`
+                    ? `
+                  <button class="btn-shipping-status px-3.5 py-2 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
+                    <span class="material-symbols-outlined text-sm">box</span> Chuẩn bị gửi đồ
+                  </button>
+                  <button class="btn-open-shipping-modal px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
+                    <span class="material-symbols-outlined text-sm">local_shipping</span> Gửi hàng & Nhập tracking
+                  </button>
+                `
+                    : ""
+                }
+                ${
+                  !isOrg && st === "SHIPPING"
+                    ? `
+                  <button class="btn-open-shipping-modal px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5 animate-pulse" data-id="${req.id}">
+                    <span class="material-symbols-outlined text-sm">local_shipping</span> Nhập tracking & Ảnh gửi
+                  </button>
+                `
+                    : ""
+                }
+                ${
+                  !isOrg && st === "SHIPPED"
+                    ? `
+                  <button class="btn-open-shipping-modal px-3.5 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center gap-1" data-id="${req.id}">
+                    <span class="material-symbols-outlined text-xs">edit</span> Sửa thông tin gửi
+                  </button>
+                `
+                    : ""
+                }
+                ${
+                  !isOrg && st === "RECEIVED"
+                    ? `<span class="px-3 py-1.5 bg-teal-50 text-teal-800 border border-teal-200 rounded-xl text-xs font-medium flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">check_circle</span> Tổ chức đã nhận vật phẩm</span>`
+                    : ""
+                }
+                ${
+                  st === "COMPLETED"
+                    ? `<span class="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1"><span class="material-symbols-outlined text-sm">verified</span> Đã hoàn tất</span>`
                     : ""
                 }
               </div>
@@ -415,9 +470,11 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         try {
           await acceptDonationRequest(id);
           showToast("Đã tiếp nhận yêu cầu quyên góp!", "success");
+          const targetReq = requests.find(r => String(r.id || r.donationRequestId) === String(id));
+          if (targetReq) targetReq.status = "ACCEPTED";
+          renderContent();
           await syncDonationData();
-          if (onRefresh) onRefresh();
-          setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
+          setTimeout(() => syncDonationData(), 800);
         } catch (err) {
           showToast("Lỗi: " + err.message, "error");
           btn.disabled = false;
@@ -434,9 +491,11 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         try {
           await rejectDonationRequest(id, "Tổ chức tạm ngừng tiếp nhận vật phẩm này vào lúc này.");
           showToast("Đã từ chối yêu cầu quyên góp.", "info");
+          const targetReq = requests.find(r => String(r.id || r.donationRequestId) === String(id));
+          if (targetReq) targetReq.status = "REJECTED";
+          renderContent();
           await syncDonationData();
-          if (onRefresh) onRefresh();
-          setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
+          setTimeout(() => syncDonationData(), 800);
         } catch (err) {
           showToast("Lỗi: " + err.message, "error");
           btn.disabled = false;
@@ -463,9 +522,11 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         try {
           await cancelDonationRequest(id, "Người dùng hủy yêu cầu");
           showToast("Đã hủy yêu cầu quyên góp.", "info");
+          const targetReq = requests.find(r => String(r.id || r.donationRequestId) === String(id));
+          if (targetReq) targetReq.status = "CANCELLED";
+          renderContent();
           await syncDonationData();
-          if (onRefresh) onRefresh();
-          setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
+          setTimeout(() => syncDonationData(), 800);
         } catch (err) {
           showToast("Lỗi: " + err.message, "error");
           btn.disabled = false;
@@ -473,7 +534,49 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
       });
     });
 
-    // Member open shipping modal
+    // Member mark status as SHIPPING (`shippingDonationRequest`)
+    container.querySelectorAll(".btn-shipping-status").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (!id) return;
+        btn.disabled = true;
+        try {
+          await shippingDonationRequest(id);
+          showToast("Đã chuyển sang trạng thái đang chuẩn bị giao hàng!", "success");
+          const targetReq = requests.find(r => String(r.id || r.donationRequestId) === String(id));
+          if (targetReq) targetReq.status = "SHIPPING";
+          renderContent();
+          await syncDonationData();
+          setTimeout(() => syncDonationData(), 800);
+        } catch (err) {
+          showToast("Lỗi: " + err.message, "error");
+          btn.disabled = false;
+        }
+      });
+    });
+
+    // Complete donation request (`completedDonationRequest`)
+    container.querySelectorAll(".btn-complete-req").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        if (!id) return;
+        btn.disabled = true;
+        try {
+          await completedDonationRequest(id);
+          showToast("Đã hoàn tất quy trình quyên góp!", "success");
+          const targetReq = requests.find(r => String(r.id || r.donationRequestId) === String(id));
+          if (targetReq) targetReq.status = "COMPLETED";
+          renderContent();
+          await syncDonationData();
+          setTimeout(() => syncDonationData(), 800);
+        } catch (err) {
+          showToast("Lỗi: " + err.message, "error");
+          btn.disabled = false;
+        }
+      });
+    });
+
+    // Member open shipping modal (`openShippingProofModal`)
     container.querySelectorAll(".btn-open-shipping-modal").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-id");
@@ -700,9 +803,14 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         await shippedDonationRequest(id, trackingCode, file);
         showToast("Cập nhật trạng thái gửi hàng thành công!", "success");
         closeModal();
+        const targetReq = requests.find(r => String(r.id || r.donationRequestId) === String(id));
+        if (targetReq) {
+          targetReq.status = "SHIPPED";
+          targetReq.trackingCode = trackingCode;
+        }
+        renderContent();
         await syncDonationData();
-        if (onRefresh) onRefresh();
-        setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
+        setTimeout(() => syncDonationData(), 800);
       } catch (err) {
         showToast("Lỗi: " + err.message, "error");
         if (submitBtn) submitBtn.disabled = false;
@@ -745,7 +853,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
               <input type="file" id="input-receipt-file" name="receiptProofFile" accept="image/*" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
               <div id="preview-container" class="flex flex-col items-center pointer-events-none">
                 <span class="material-symbols-outlined text-4xl text-primary mb-1">add_a_photo</span>
-                <p class="text-xs font-semibold text-on-surface">Nhấn hoặc kéo thả file ảnh vào đây</p>
+                <p class="text-xs font-semibold text-on-surface">Nhấn hoặc kéo thả file ảnh biên nhận vào đây</p>
                 <p class="text-[11px] text-on-surface-variant mt-0.5">Hỗ trợ PNG, JPG (Tối đa 5MB)</p>
               </div>
             </div>
@@ -754,7 +862,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
           <div class="flex justify-end gap-3 pt-3 border-t border-outline-variant/30">
             <button type="button" id="btn-cancel-receive-modal" class="px-4 py-2 rounded-xl border border-outline-variant font-semibold text-xs hover:bg-surface-variant/50 transition-colors">Hủy</button>
             <button type="submit" class="px-5 py-2 bg-emerald-600 text-white rounded-xl font-semibold text-xs hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-sm">check</span> Xác nhận đã tiếp nhận
+              <span class="material-symbols-outlined text-sm">check</span> Xác nhận tiếp nhận
             </button>
           </div>
         </form>
@@ -768,11 +876,11 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
 
     fileInput?.addEventListener("change", (e) => {
       const file = e.target.files[0];
-      if (file) {
+      if (file && previewContainer) {
         previewContainer.innerHTML = `
           <span class="material-symbols-outlined text-3xl text-emerald-600 mb-1">check_circle</span>
           <p class="text-xs font-bold text-on-surface truncate max-w-[200px]">${file.name}</p>
-          <p class="text-[11px] text-emerald-600 mt-0.5">Đã chọn ảnh thành công</p>
+          <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">Đã đính kèm ảnh biên nhận</p>
         `;
       }
     });
@@ -796,9 +904,11 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         await receivedDonationRequest(id, file);
         showToast("Xác nhận đã tiếp nhận vật phẩm thành công!", "success");
         closeModal();
+        const targetReq = requests.find(r => String(r.id || r.donationRequestId) === String(id));
+        if (targetReq) targetReq.status = "RECEIVED";
+        renderContent();
         await syncDonationData();
-        if (onRefresh) onRefresh();
-        setTimeout(() => { syncDonationData(); if (onRefresh) onRefresh(); }, 800);
+        setTimeout(() => syncDonationData(), 800);
       } catch (err) {
         showToast("Lỗi: " + err.message, "error");
         if (submitBtn) submitBtn.disabled = false;
