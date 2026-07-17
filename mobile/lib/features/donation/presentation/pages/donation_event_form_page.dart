@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../organization/data/organization_service.dart';
+import '../../../organization/presentation/pages/org_donations_page.dart';
 import '../../data/donation_event_model.dart';
 import '../../../../core/auth/auth_storage.dart';
 
@@ -176,6 +177,8 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
         return;
       }
 
+      final isClosedCampaign = _isEditMode && widget.existingEvent!.status == 'CANCELLED';
+
       final body = {
         'title': _titleController.text.trim(),
         'description': _descController.text.trim(),
@@ -186,7 +189,8 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
         'endDate': _toApiDate(_endDate),
         'acceptedTypes': _selectedTypes,
         'targetQuantity': int.tryParse(_targetController.text.trim()) ?? 0,
-        'status': (_startDate != null && !_startDate!.isAfter(now)) ? 'ONGOING' : 'UPCOMING',
+        if (!isClosedCampaign)
+          'status': (_startDate != null && !_startDate!.isAfter(now)) ? 'ONGOING' : 'UPCOMING',
         'bannerUrl': bannerUrl,
         if (myOrg != null) 'organizationId': myOrg.id,
         if (myOrg != null) 'organizationDetailId': myOrg.id,
@@ -269,18 +273,54 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
         ),
         title: Text(_isEditMode ? 'Chỉnh sửa chiến dịch' : 'Tạo sự kiện',
             style: AppTextStyles.headline3),
-        actions: _isEditMode
-            ? [
-                TextButton(
-                  onPressed: _isLoading ? null : _handleClose,
-                  child: Text('Đóng chiến dịch',
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+        actions: [
+          if (_isEditMode)
+            TextButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OrgDonationsPage(eventNameFilter: widget.existingEvent!.title),
                 ),
-              ]
-            : null,
+              ),
+              child: Text('Người quyên góp',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary)),
+            ),
+          if (_isEditMode && widget.existingEvent!.status != 'CANCELLED')
+            TextButton(
+              onPressed: _isLoading ? null : _handleClose,
+              child: Text('Đóng chiến dịch',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error)),
+            ),
+        ],
       ),
       body: Column(
         children: [
+          if (_isEditMode && widget.existingEvent!.status == 'CANCELLED') ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: AppColors.error, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Chiến dịch này đã bị đóng, chỉ để xem lại thông tin.',
+                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           _buildStepIndicator(),
           Expanded(
             child: PageView(

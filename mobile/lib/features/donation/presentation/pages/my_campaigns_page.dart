@@ -5,6 +5,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../organization/data/organization_service.dart';
 import '../../data/donation_event_model.dart';
 import 'donation_event_form_page.dart';
+import '../../../organization/presentation/pages/org_donations_page.dart';
 import '../../../../core/auth/auth_storage.dart';
 
 class MyCampaignsPage extends StatefulWidget {
@@ -87,7 +88,21 @@ class _MyCampaignsPageState extends State<MyCampaignsPage> {
                 title: Text(e.title, style: AppTextStyles.bodyLarge),
                 subtitle: Text(
                     '${e.currentQuantity}/${e.targetQuantity} • ${e.status}'),
-                trailing: const Icon(Icons.edit_outlined),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OrgDonationsPage(eventNameFilter: e.title),
+                        ),
+                      ),
+                      child: const Text('Xem đơn'),
+                    ),
+                    const Icon(Icons.edit_outlined),
+                  ],
+                ),
                 onTap: () async {
                   final updated = await Navigator.push(
                     context,

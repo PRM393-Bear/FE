@@ -8,7 +8,8 @@ import 'confirm_received_page.dart';
 
 class OrgDonationsPage extends StatefulWidget {
   final List<DonationRequestModel> initialRequests;
-  const OrgDonationsPage({super.key, this.initialRequests = const []});
+  final String? eventNameFilter; // THÊM MỚI — null = xem tất cả như cũ
+  const OrgDonationsPage({super.key, this.initialRequests = const [], this.eventNameFilter});
 
   @override
   State<OrgDonationsPage> createState() => _OrgDonationsPageState();
@@ -35,7 +36,9 @@ class _OrgDonationsPageState extends State<OrgDonationsPage> {
           ? await DonationRequestService.getMyOrganizationRequests(org.id)
           : <DonationRequestModel>[];
       setState(() {
-        _requests = list;
+        _requests = widget.eventNameFilter == null
+            ? list
+            : list.where((r) => r.eventName == widget.eventNameFilter).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -45,20 +48,23 @@ class _OrgDonationsPageState extends State<OrgDonationsPage> {
   }
 
   List<DonationRequestModel> get _filtered {
+    final base = widget.eventNameFilter == null
+        ? _requests
+        : _requests.where((r) => r.eventName == widget.eventNameFilter).toList();
     switch (_tabIndex) {
       case 0:
-        return _requests.where((r) => r.status == 'PENDING').toList();
+        return base.where((r) => r.status == 'PENDING').toList();
       case 1:
-        return _requests
+        return base
             .where((r) =>
-        r.status == 'ACCEPTED' || r.status == 'SHIPPING' || r.status == 'SHIPPED')
+                r.status == 'ACCEPTED' || r.status == 'SHIPPING' || r.status == 'SHIPPED')
             .toList();
       case 2:
-        return _requests
+        return base
             .where((r) => r.status == 'RECEIVED' || r.status == 'COMPLETED')
             .toList();
       default:
-        return _requests;
+        return base;
     }
   }
 
@@ -105,7 +111,11 @@ class _OrgDonationsPageState extends State<OrgDonationsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text('Donations', style: AppTextStyles.headline3)),
+      appBar: AppBar(
+          title: Text(
+        widget.eventNameFilter ?? 'Donations',
+        style: AppTextStyles.headline3,
+      )),
       body: Column(
         children: [
           SizedBox(
