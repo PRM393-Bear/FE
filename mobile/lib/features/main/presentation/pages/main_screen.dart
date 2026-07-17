@@ -73,6 +73,7 @@ class _MainScreenState extends State<MainScreen> {
         RouteNames.orgDashboard,
         RouteNames.explore,
         RouteNames.community,
+        RouteNames.chat,
         RouteNames.profile,
       ];
     }
@@ -101,6 +102,7 @@ class _MainScreenState extends State<MainScreen> {
         BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Chiến dịch'),
         BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: 'Khám phá'),
         BottomNavigationBarItem(icon: Icon(Icons.groups_outlined), label: 'Cộng đồng'),
+        BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'Tin nhắn'),
         BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Hồ sơ'),
       ];
     }
