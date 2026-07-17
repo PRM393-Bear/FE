@@ -13,6 +13,7 @@ import '../features/listing/presentation/pages/my_listings_page.dart';
 import '../features/main/presentation/pages/main_screen.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
 import '../features/profile/presentation/pages/edit_profile_page.dart';
+import '../features/community/presentation/pages/community_page.dart';
 import 'route_names.dart';
 import '../features/wardrobe/presentation/pages/wardrobe_page.dart';
 import '../features/organization/presentation/pages/org_dashboard_page.dart';
@@ -80,7 +81,7 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: RouteNames.community,
-          builder: (context, state) => const Placeholder(),
+          builder: (context, state) => const CommunityPage(),
         ),
       ],
     ),

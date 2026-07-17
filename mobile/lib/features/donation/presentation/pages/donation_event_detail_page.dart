@@ -7,6 +7,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../data/donation_event_model.dart';
 import 'donation_register_page.dart';
+import '../../../organization/data/organization_detail_model.dart';
+import '../../../chat/presentation/pages/chat_detail_page.dart';
 
 class DonationEventDetailPage extends StatefulWidget {
   final String eventId;
@@ -50,6 +52,31 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
     }
   }
 
+  Future<void> _openChatWithOrg() async {
+    if (_event?.organizationDetailId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Không tìm thấy thông tin tổ chức để nhắn tin'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+    try {
+      final res = await ApiClient.dio.get('/api/organization-details/${_event!.organizationDetailId}');
+      final org = OrganizationDetailModel.fromJson(res.data as Map<String, dynamic>);
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => ChatDetailPage(otherUserId: org.userId, otherUsername: org.orgName),
+      ));
+    } catch (e) {
+      debugPrint('🔴 Fetch org for chat error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Không lấy được thông tin tổ chức, thử lại nhé'),
+        backgroundColor: AppColors.error,
+      ));
+    }
+  }
+
   String _formatDate(String iso) {
     try {
       return DateFormat('dd/MM/yyyy').format(DateTime.parse(iso).toLocal());
@@ -85,6 +112,14 @@ class _DonationEventDetailPageState extends State<DonationEventDetailPage> {
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
               onPressed: () => Navigator.pop(context),
             ),
+            actions: [
+              if (_role != 'ORGANIZATION')
+                IconButton(
+                  icon: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
+                  tooltip: 'Nhắn tin cho tổ chức',
+                  onPressed: _openChatWithOrg,
+                ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,

@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -26,6 +28,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   final _scrollController = ScrollController();
   List<ChatMessageModel> _messages = [];
   bool _isLoading = true;
+  bool _isUploadingImage = false;
   String _currentUserId = '';
   StompClient? _stompClient;
   bool _isConnected = false;
@@ -52,14 +55,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     while (payload.length % 4 != 0) payload += '=';
     final decoded = utf8.decode(base64Url.decode(payload));
     final claims = jsonDecode(decoded) as Map<String, dynamic>;
-    _currentUserId =
-        claims['userId']?.toString() ?? claims['sub']?.toString() ?? '';
+    _currentUserId = claims['userId']?.toString() ?? claims['sub']?.toString() ?? '';
   }
 
   Future<void> _fetchHistory() async {
     try {
-      final res = await ApiClient.dio
-          .get('/api/chat/history/${widget.otherUserId}');
+      final res = await ApiClient.dio.get('/api/chat/history/${widget.otherUserId}');
       final list = (res.data as List)
           .map((e) => ChatMessageModel.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -81,10 +82,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
     _stompClient = StompClient(
       config: StompConfig(
-        url: 'wss://prm393-backend.onrender.com/ws',
+        url: 'wss://prm393-backend.onrender.com/ws/websocket',
         webSocketConnectHeaders: {'Authorization': 'Bearer $token'},
+        stompConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: _onConnect,
-        onDisconnect: (_) {
+        reconnectDelay: const Duration(seconds: 5),
+        onDisconnect: (frame) {
           debugPrint('🔴 WebSocket disconnected');
           if (mounted) setState(() => _isConnected = false);
         },
@@ -108,14 +111,14 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       destination: '/user/queue/messages',
       callback: (frame) {
         if (frame.body == null) return;
-        final msg = ChatMessageModel.fromJson(
-            jsonDecode(frame.body!) as Map<String, dynamic>);
-        // Tin nhắn mình vừa tự gửi đã được hiện ngay (optimistic) trong
-        // _sendMessage rồi — nếu server vọng lại đúng tin đó, bỏ qua để
-        // tránh hiện trùng 2 lần.
+        final msg = ChatMessageModel.fromJson(jsonDecode(frame.body!) as Map<String, dynamic>);
+        // Tránh hiện trùng tin nhắn mình vừa tự gửi (optimistic) khi server vọng lại —
+        // so cả content LẪN imageUrl vì tin ảnh có content null giống nhau hết.
         final isEchoOfMine = msg.senderId == _currentUserId &&
             _messages.any((m) =>
-                m.id.startsWith('local-') && m.content == msg.content);
+                m.id.startsWith('local-') &&
+                m.content == msg.content &&
+                m.imageUrl == msg.imageUrl);
         if (isEchoOfMine) return;
         setState(() => _messages.add(msg));
         _scrollToBottom();
@@ -135,8 +138,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       return;
     }
 
-    // Hiện ngay tin nhắn của mình trên UI (optimistic), không chờ server
-    // phản hồi — tránh cảm giác "bấm gửi không thấy gì" khi mạng chậm.
     final optimisticMsg = ChatMessageModel(
       id: 'local-${DateTime.now().millisecondsSinceEpoch}',
       roomId: '',
@@ -166,6 +167,84 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         backgroundColor: AppColors.error,
       ));
     }
+  }
+
+  // MỚI — chụp/chọn ảnh, upload lên Cloudinary (tái dùng /api/upload/image),
+  // rồi gửi tin nhắn chỉ có imageUrl (không có content) qua đúng kênh chat.send cũ.
+  Future<void> _pickAndSendImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final img = await picker.pickImage(source: source, imageQuality: 85);
+    if (img == null) return;
+
+    if (_stompClient == null || !_isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Chưa kết nối được tới máy chủ chat, vui lòng thử lại sau vài giây.'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+
+    setState(() => _isUploadingImage = true);
+    try {
+      final formData = FormData.fromMap({'file': await MultipartFile.fromFile(img.path)});
+      final uploadRes = await ApiClient.dio.post('/api/upload/image',
+          data: formData, options: Options(contentType: 'multipart/form-data'));
+      final url = uploadRes.data['url'] as String?;
+      if (url == null) throw Exception('Upload không trả về url');
+
+      final optimisticMsg = ChatMessageModel(
+        id: 'local-${DateTime.now().millisecondsSinceEpoch}',
+        roomId: '',
+        senderId: _currentUserId,
+        content: null,
+        imageUrl: url,
+        createdAt: DateTime.now().toIso8601String(),
+        status: 'SENT',
+      );
+      setState(() => _messages.add(optimisticMsg));
+      _scrollToBottom();
+
+      _stompClient!.send(
+        destination: '/app/chat.send',
+        body: jsonEncode({
+          'receiverId': widget.otherUserId,
+          'content': null,
+          'imageUrl': url,
+        }),
+      );
+    } catch (e) {
+      debugPrint('🔴 Send image error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Gửi ảnh thất bại, vui lòng thử lại.'),
+        backgroundColor: AppColors.error,
+      ));
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
+  void _showImagePickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              title: const Text('Chụp ảnh'),
+              onTap: () { Navigator.pop(context); _pickAndSendImage(ImageSource.camera); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+              title: const Text('Chọn từ thư viện'),
+              onTap: () { Navigator.pop(context); _pickAndSendImage(ImageSource.gallery); },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _scrollToBottom() {
@@ -211,11 +290,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               radius: 16,
               backgroundColor: AppColors.primary.withOpacity(0.2),
               child: Text(
-                widget.otherUsername.isNotEmpty
-                    ? widget.otherUsername[0].toUpperCase()
-                    : '?',
-                style: AppTextStyles.label
-                    .copyWith(color: AppColors.primary),
+                widget.otherUsername.isNotEmpty ? widget.otherUsername[0].toUpperCase() : '?',
+                style: AppTextStyles.label.copyWith(color: AppColors.primary),
               ),
             ),
             const SizedBox(width: 8),
@@ -225,55 +301,63 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       ),
       body: Column(
         children: [
-          // Messages
           Expanded(
             child: _isLoading
-                ? const Center(
-                child: CircularProgressIndicator(
-                    color: AppColors.primary))
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                 : _messages.isEmpty
-                ? Center(
-              child: Text('Bắt đầu trò chuyện!',
-                  style: AppTextStyles.bodyMedium),
-            )
-                : ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isMe = msg.senderId == _currentUserId;
-                return _buildMessageBubble(msg, isMe);
-              },
-            ),
+                    ? Center(child: Text('Bắt đầu trò chuyện!', style: AppTextStyles.bodyMedium))
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = _messages[index];
+                          final isMe = msg.senderId == _currentUserId;
+                          return _buildMessageBubble(msg, isMe);
+                        },
+                      ),
           ),
-
-          // Input
           Container(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              border:
-              Border(top: BorderSide(color: AppColors.border)),
+              border: Border(top: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               children: [
+                GestureDetector(
+                  onTap: _isUploadingImage ? null : _showImagePickerSheet,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: _isUploadingImage
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          )
+                        : const Icon(Icons.image_outlined, color: AppColors.primary, size: 22),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
                     style: AppTextStyles.bodyLarge,
                     decoration: InputDecoration(
                       hintText: 'Nhập tin nhắn...',
-                      hintStyle: AppTextStyles.bodyMedium
-                          .copyWith(color: AppColors.textHint),
+                      hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
                       filled: true,
                       fillColor: AppColors.background,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
                     onSubmitted: (_) => _sendMessage(),
                   ),
@@ -284,12 +368,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   child: Container(
                     width: 44,
                     height: 44,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.send_rounded,
-                        color: Colors.white, size: 20),
+                    decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -304,8 +384,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        mainAxisAlignment:
-        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
@@ -313,26 +392,20 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               radius: 14,
               backgroundColor: AppColors.primary.withOpacity(0.2),
               child: Text(
-                widget.otherUsername.isNotEmpty
-                    ? widget.otherUsername[0].toUpperCase()
-                    : '?',
-                style: const TextStyle(
-                    fontSize: 10, color: AppColors.primary),
+                widget.otherUsername.isNotEmpty ? widget.otherUsername[0].toUpperCase() : '?',
+                style: const TextStyle(fontSize: 10, color: AppColors.primary),
               ),
             ),
             const SizedBox(width: 6),
           ],
           Column(
-            crossAxisAlignment: isMe
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Container(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.65,
-                ),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.65),
+                padding: msg.imageUrl != null
+                    ? const EdgeInsets.all(4)
+                    : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: isMe ? AppColors.primary : AppColors.surface,
                   borderRadius: BorderRadius.only(
@@ -341,23 +414,37 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     bottomLeft: Radius.circular(isMe ? 16 : 4),
                     bottomRight: Radius.circular(isMe ? 4 : 16),
                   ),
-                  border: isMe
-                      ? null
-                      : Border.all(color: AppColors.border),
+                  border: isMe ? null : Border.all(color: AppColors.border),
                 ),
-                child: Text(
-                  msg.content ?? '',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: isMe ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
+                child: msg.imageUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          msg.imageUrl!,
+                          fit: BoxFit.cover,
+                          width: 200,
+                          height: 200,
+                          loadingBuilder: (context, child, progress) => progress == null
+                              ? child
+                              : const SizedBox(
+                                  width: 200,
+                                  height: 200,
+                                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                                ),
+                          errorBuilder: (_, __, ___) => const SizedBox(
+                              width: 200, height: 200, child: Icon(Icons.broken_image_outlined)),
+                        ),
+                      )
+                    : Text(
+                        msg.content ?? '',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: isMe ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
               ),
               const SizedBox(height: 2),
-              Text(
-                _formatTime(msg.createdAt),
-                style: AppTextStyles.bodySmall
-                    .copyWith(color: AppColors.textSecondary),
-              ),
+              Text(_formatTime(msg.createdAt),
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
             ],
           ),
         ],

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:stomp_dart_client/stomp_dart_client.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -17,11 +18,19 @@ class NotificationListPage extends StatefulWidget {
 class _NotificationListPageState extends State<NotificationListPage> {
   List<NotificationModel> _notifications = [];
   bool _isLoading = true;
+  StompClient? _stompClient;
 
   @override
   void initState() {
     super.initState();
     _fetchNotifications();
+    _connectWebSocket();
+  }
+
+  @override
+  void dispose() {
+    _stompClient?.deactivate();
+    super.dispose();
   }
 
   Future<String?> _getCurrentUserId() async {
@@ -39,10 +48,7 @@ class _NotificationListPageState extends State<NotificationListPage> {
   Future<void> _fetchNotifications() async {
     setState(() => _isLoading = true);
     try {
-      final userId = await _getCurrentUserId();
-      if (userId == null) throw Exception('Chưa đăng nhập');
-
-      final res = await ApiClient.dio.get('/api/notifications/user/$userId');
+      final res = await ApiClient.dio.get('/api/notifications/my-notifications');
       final list = (res.data as List<dynamic>)
           .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -54,6 +60,37 @@ class _NotificationListPageState extends State<NotificationListPage> {
       debugPrint('🔴 Fetch notifications error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _connectWebSocket() async {
+    const storage = FlutterSecureStorage();
+    final token = await storage.read(key: 'auth_token');
+    if (token == null) return;
+    _stompClient = StompClient(
+      config: StompConfig(
+        url: 'wss://prm393-backend.onrender.com/ws/websocket',
+        webSocketConnectHeaders: {'Authorization': 'Bearer $token'},
+        stompConnectHeaders: {'Authorization': 'Bearer $token'},
+        onConnect: (frame) {
+          _stompClient!.subscribe(
+            destination: '/user/queue/notifications',
+            callback: (frame) {
+              if (frame.body == null) return;
+              final n = NotificationModel.fromJson(jsonDecode(frame.body!) as Map<String, dynamic>);
+              if (!mounted) return;
+              setState(() {
+                _notifications.removeWhere((e) => e.id == n.id);
+                _notifications.insert(0, n);
+              });
+            },
+          );
+        },
+        reconnectDelay: const Duration(seconds: 5),
+        onWebSocketError: (e) => debugPrint('🔴 Notification WS error: $e'),
+        onStompError: (f) => debugPrint('🔴 Notification STOMP error: ${f.body}'),
+      ),
+    );
+    _stompClient!.activate();
   }
 
   Future<void> _markAsRead(NotificationModel n) async {

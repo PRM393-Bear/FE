@@ -88,6 +88,7 @@ class _MainScreenState extends State<MainScreen> {
     return [
       RouteNames.productList,
       RouteNames.explore,
+      RouteNames.community, // MỚI
       RouteNames.myListings,
       RouteNames.chat,
       RouteNames.profile,
@@ -115,6 +116,7 @@ class _MainScreenState extends State<MainScreen> {
     return const [
       BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Trang chủ'),
       BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: 'Khám phá'),
+      BottomNavigationBarItem(icon: Icon(Icons.groups_outlined), label: 'Cộng đồng'), // MỚI
       BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline_rounded), label: 'Đăng bán'),
       BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'Chat'),
       BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Hồ sơ'),

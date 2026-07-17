@@ -81,15 +81,15 @@ class _OrgDonationsPageState extends State<OrgDonationsPage> {
     final reasonController = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Từ chối yêu cầu'),
         content: TextField(
             controller: reasonController,
             decoration: const InputDecoration(hintText: 'Lý do từ chối')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Huỷ')),
           TextButton(
-              onPressed: () => Navigator.pop(context, true), child: const Text('Từ chối')),
+              onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Từ chối')),
         ],
       ),
     );
