@@ -242,7 +242,7 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
           </div>
 
           <div class="flex justify-end pt-4 border-t border-outline-variant/30">
-            <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-2">
+            <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
               <span class="material-symbols-outlined text-lg">save</span>
               Lưu Hồ sơ Tổ chức
             </button>

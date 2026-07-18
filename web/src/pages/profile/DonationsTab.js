@@ -120,10 +120,10 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
 
       if (events.length === 0) {
         html += `
-          <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50">
+          <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
             <span class="material-symbols-outlined text-5xl text-outline mb-3">campaign</span>
             <p class="font-bold text-on-surface text-lg">Chưa có chiến dịch nào được khởi tạo</p>
-            <p class="text-body-sm text-on-surface-variant max-w-md mt-1">Hãy bấm 'Tạo chiến dịch mới' để kêu gọi cộng đồng cùng chung tay quyên góp vật phẩm.</p>
+            <p class="text-body-sm text-on-surface-variant max-w-md mt-1">Hãy bấm 'Tạo chiến dịch mới' để kêu gọi cộng đồng cùng chung tay quyên góp vật phẩm. Các chiến dịch của tổ chức sẽ hiển thị tại đây.</p>
           </div>
         `;
       } else {
@@ -242,10 +242,10 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
 
       if (filteredRequests.length === 0) {
         html += `
-          <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50">
-            <span class="material-symbols-outlined text-5xl text-outline mb-3">clean_hands</span>
-            <p class="font-bold text-on-surface text-lg">Chưa có yêu cầu quyên góp nào ở danh mục này</p>
-            <p class="text-body-sm text-on-surface-variant max-w-md mt-1">Các vật phẩm được người dùng quyên góp tới tổ chức sẽ được hiển thị và cập nhật liên tục tại đây.</p>
+          <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
+            <span class="material-symbols-outlined text-5xl text-outline mb-3">${isOrg ? 'clean_hands' : 'volunteer_activism'}</span>
+            <p class="font-bold text-on-surface text-lg">${isOrg ? 'Chưa có yêu cầu quyên góp nào ở danh mục này' : 'Bạn chưa tạo yêu cầu quyên góp nào'}</p>
+            <p class="text-body-sm text-on-surface-variant max-w-md mt-1">${isOrg ? 'Các vật phẩm được người dùng quyên góp tới tổ chức sẽ được hiển thị và cập nhật liên tục tại đây.' : 'Hãy bắt đầu hành trình xanh bằng cách quyên góp những vật phẩm không còn sử dụng để bảo vệ môi trường.'}</p>
           </div>
         `;
       } else {
@@ -253,8 +253,8 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         filteredRequests.forEach((req) => {
           const st = String(req.status || "PENDING").toUpperCase();
           html += `
-            <div class="p-5 rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface">
-              <div class="flex items-start gap-4 flex-1">
+            <div class="p-5 rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface w-full overflow-hidden">
+              <div class="flex items-start gap-4 flex-1 w-full md:w-auto">
                 <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                   <span class="material-symbols-outlined text-2xl">favorite</span>
                 </div>
@@ -307,7 +307,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                 </div>
               </div>
 
-              <div class="flex flex-wrap items-center gap-2 self-end md:self-center flex-shrink-0">
+              <div class="flex flex-wrap items-center gap-2 self-start md:self-center w-full md:w-auto mt-2 md:mt-0 flex-shrink-0">
                 ${
                   isOrg && st === "PENDING"
                     ? `

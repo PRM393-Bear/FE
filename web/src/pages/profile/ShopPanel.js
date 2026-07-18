@@ -61,7 +61,7 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
 
   if (filteredOrders.length === 0) {
     html += `
-      <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl">
+      <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
         <span class="material-symbols-outlined text-4xl text-outline mb-2">storefront</span>
         <p class="font-medium text-on-surface">Chưa có đơn hàng nào ở trạng thái này</p>
         <p class="text-body-sm text-on-surface-variant mt-1">Khi khách hàng đặt mua món đồ của bạn, thông tin và lịch sử xử lý sẽ hiển thị tại đây.</p>
@@ -132,7 +132,7 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
 
   if (myProducts.length === 0) {
     html += `
-      <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl">
+      <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
         <span class="material-symbols-outlined text-4xl text-outline mb-2">checkroom</span>
         <p class="font-medium text-on-surface">Bạn chưa có sản phẩm đăng bán nào</p>
         <p class="text-body-sm text-on-surface-variant mt-1">Nhấn "Đăng bán mới" để bắt đầu bán hoặc trao đổi quần áo.</p>
