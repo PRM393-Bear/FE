@@ -19,6 +19,7 @@ import { renderCreateListingPage } from "./pages/create-listing.js";
 import { renderPendingApprovalPage } from "./pages/pending-approval.js";
 import { renderCartPage } from "./pages/cart.js";
 import { renderStaffDashboard } from "./pages/staff/index.js";
+import { renderMapPage } from "./pages/map.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
 import { logoutApi, isAuthenticated, getUser, refreshUserOrgStatus } from "./services/auth.service.js";
@@ -63,6 +64,11 @@ const routes = {
     renderHeader({ activePage: "products" });
     currentCleanup = renderProductsPage(app);
     renderFooter();
+  },
+  "#/map": () => {
+    renderHeader({ activePage: "map" });
+    currentCleanup = renderMapPage(app);
+    // No footer for map page to keep it full height
   },
   "#/cart": () => {
     if (!isAuthenticated()) {
