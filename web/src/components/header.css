@@ -93,21 +93,27 @@
 
 /* ── Right Side (Nav + Auth) ── */
 .site-header__right {
-  display: none; /* hidden on mobile, replaced by bottom nav or drawer */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .site-header__right {
+    gap: 24px;
+  }
+}
+
+.site-header__nav {
+  display: none;
   align-items: center;
   gap: 24px;
 }
 
 @media (min-width: 768px) {
-  .site-header__right {
+  .site-header__nav {
     display: flex;
   }
-}
-
-.site-header__nav {
-  display: flex;
-  align-items: center;
-  gap: 24px;
 }
 
 .site-header__nav-link {
@@ -208,7 +214,7 @@
 .site-header__dropdown-menu {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  right: -10px;
   width: 200px;
   background: var(--surface-container-lowest);
   border: 1px solid var(--surface-variant);
@@ -219,6 +225,12 @@
   visibility: hidden;
   transform: translateY(10px);
   transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+  .site-header__dropdown-menu {
+    right: 0;
+  }
 }
 
 .site-header__user-dropdown:hover .site-header__dropdown-menu {

@@ -109,10 +109,10 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
     // Sub-tab 1: Campaigns Management (Only visible when isOrg && activeSubTab === 'campaigns')
     if (isOrg && activeSubTab === "campaigns") {
       html += `
-        <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
-          <div class="flex justify-between items-center">
+        <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col gap-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h4 class="text-title-lg font-bold text-on-surface">Danh sách Chiến dịch Quyên góp</h4>
-            <button id="btn-open-create-campaign" class="px-4 py-2 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm">
+            <button id="btn-open-create-campaign" class="w-full sm:w-auto justify-center px-4 py-2 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm">
               <span class="material-symbols-outlined text-sm">add</span> Tạo chiến dịch mới
             </button>
           </div>
@@ -226,13 +226,13 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
       }
 
       html += `
-        <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+        <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col gap-6">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h4 class="text-title-lg font-bold text-on-surface">Danh sách Yêu cầu Quyên góp (${filteredRequests.length})</h4>
             ${
               isOrg
                 ? `
-              <div class="flex flex-wrap gap-2">
+              <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'ALL' ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'}" data-filter="ALL">Tất cả</button>
                 <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-surface-variant text-on-surface-variant'}" data-filter="PENDING">Chờ tiếp nhận</button>
                 <button class="req-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeRequestFilter === 'ACCEPTED' ? 'bg-blue-100 text-blue-800' : 'bg-surface-variant text-on-surface-variant'}" data-filter="ACCEPTED">Đã tiếp nhận</button>
@@ -265,8 +265,8 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
         filteredRequests.forEach((req) => {
           const st = String(req.status || "PENDING").toUpperCase();
           html += `
-            <div class="p-5 rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface w-full overflow-hidden">
-              <div class="flex items-start gap-4 flex-1 w-full md:w-auto">
+            <div class="p-4 sm:p-5 rounded-xl border border-outline-variant/30 hover:border-primary/40 transition-colors flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface w-full overflow-hidden">
+              <div class="flex flex-col sm:flex-row items-start gap-4 flex-1 w-full md:w-auto">
                 <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                   <span class="material-symbols-outlined text-2xl">favorite</span>
                 </div>
@@ -319,12 +319,12 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                 </div>
               </div>
 
-              <div class="flex flex-wrap items-center gap-2 self-start md:self-center w-full md:w-auto mt-2 md:mt-0 flex-shrink-0">
+              <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 self-start md:self-center w-full md:w-auto mt-4 md:mt-0 flex-shrink-0">
                 ${
                   isOrg && st === "PENDING"
                     ? `
-                  <button class="btn-accept-req px-3.5 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">check_circle</span> Tiếp nhận</button>
-                  <button class="btn-reject-req px-3.5 py-2 bg-error text-on-error rounded-lg text-xs font-semibold hover:bg-error/90 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">cancel</span> Từ chối</button>
+                  <button class="btn-accept-req w-full sm:w-auto justify-center px-3.5 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">check_circle</span> Tiếp nhận</button>
+                  <button class="btn-reject-req w-full sm:w-auto justify-center px-3.5 py-2 bg-error text-on-error rounded-lg text-xs font-semibold hover:bg-error/90 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">cancel</span> Từ chối</button>
                 `
                     : ""
                 }
@@ -336,7 +336,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                 ${
                   isOrg && (st === "SHIPPING" || st === "SHIPPED")
                     ? `
-                  <button class="btn-open-receive-modal px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}" data-tracking="${req.trackingCode || ''}" data-proof="${req.shippingProofUrl || ''}">
+                  <button class="btn-open-receive-modal w-full sm:w-auto justify-center px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}" data-tracking="${req.trackingCode || ''}" data-proof="${req.shippingProofUrl || ''}">
                     <span class="material-symbols-outlined text-sm">inventory_2</span> Xác nhận nhận hàng
                   </button>
                 `
@@ -345,7 +345,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                 ${
                   isOrg && st === "RECEIVED"
                     ? `
-                  <button class="btn-complete-req px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
+                  <button class="btn-complete-req w-full sm:w-auto justify-center px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
                     <span class="material-symbols-outlined text-sm">task_alt</span> Hoàn tất quyên góp
                   </button>
                 `
@@ -353,16 +353,16 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                 }
                 ${
                   !isOrg && st === "PENDING"
-                    ? `<button class="btn-cancel-req px-3.5 py-2 bg-surface-variant text-on-surface-variant rounded-lg text-xs font-medium hover:bg-outline-variant transition-colors flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">cancel</span> Hủy yêu cầu</button>`
+                    ? `<button class="btn-cancel-req w-full sm:w-auto justify-center px-3.5 py-2 bg-surface-variant text-on-surface-variant rounded-lg text-xs font-medium hover:bg-outline-variant transition-colors flex items-center gap-1.5" data-id="${req.id}"><span class="material-symbols-outlined text-sm">cancel</span> Hủy yêu cầu</button>`
                     : ""
                 }
                 ${
                   !isOrg && st === "ACCEPTED"
                     ? `
-                  <button class="btn-shipping-status px-3.5 py-2 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
+                  <button class="btn-shipping-status w-full sm:w-auto justify-center px-3.5 py-2 bg-purple-600 text-white rounded-lg text-xs font-semibold hover:bg-purple-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
                     <span class="material-symbols-outlined text-sm">box</span> Chuẩn bị gửi đồ
                   </button>
-                  <button class="btn-open-shipping-modal px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
+                  <button class="btn-open-shipping-modal w-full sm:w-auto justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5" data-id="${req.id}">
                     <span class="material-symbols-outlined text-sm">local_shipping</span> Gửi hàng & Nhập tracking
                   </button>
                 `
@@ -371,7 +371,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                 ${
                   !isOrg && st === "SHIPPING"
                     ? `
-                  <button class="btn-open-shipping-modal px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5 animate-pulse" data-id="${req.id}">
+                  <button class="btn-open-shipping-modal w-full sm:w-auto justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5 animate-pulse" data-id="${req.id}">
                     <span class="material-symbols-outlined text-sm">local_shipping</span> Nhập tracking & Ảnh gửi
                   </button>
                 `
@@ -380,7 +380,7 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                 ${
                   !isOrg && st === "SHIPPED"
                     ? `
-                  <button class="btn-open-shipping-modal px-3.5 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center gap-1" data-id="${req.id}">
+                  <button class="btn-open-shipping-modal w-full sm:w-auto justify-center px-3.5 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors flex items-center gap-1" data-id="${req.id}">
                     <span class="material-symbols-outlined text-xs">edit</span> Sửa thông tin gửi
                   </button>
                 `

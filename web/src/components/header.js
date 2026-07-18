@@ -98,7 +98,7 @@ export function renderHeader(opts = {}) {
               <span class="material-symbols-outlined">notifications</span>
               <span id="header-notification-badge" class="absolute -top-1.5 -right-1.5 bg-error text-on-error text-[11px] font-bold w-5 h-5 rounded-full hidden items-center justify-center border-2 border-surface shadow-sm">0</span>
             </button>
-            <div class="site-header__notification-menu hidden absolute right-0 top-full mt-2 w-80 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/30 overflow-hidden z-50 flex flex-col" id="header-notification-menu">
+            <div class="site-header__notification-menu hidden absolute right-[-40px] sm:right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-sm sm:w-80 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/30 overflow-hidden z-50 flex flex-col" id="header-notification-menu">
               <div class="p-3 border-b border-outline-variant/30 bg-surface/50 backdrop-blur font-bold text-on-surface flex justify-between items-center">
                 Thông báo
               </div>

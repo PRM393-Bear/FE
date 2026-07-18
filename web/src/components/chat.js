@@ -114,10 +114,10 @@ export function initChat() {
 
 function renderChatHTML() {
   const html = `
-    <div id="chat-drawer-container" class="fixed bottom-6 right-6 flex flex-col items-end pointer-events-none">
+    <div id="chat-drawer-container" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col items-end pointer-events-none z-[100]">
       
       <!-- Chat Drawer -->
-      <div id="chat-drawer" class="pointer-events-auto bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/30 w-80 md:w-96 h-[500px] mb-4 flex flex-col overflow-hidden transition-all duration-300 transform origin-bottom-right scale-0 opacity-0">
+      <div id="chat-drawer" class="pointer-events-auto bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant/30 w-[calc(100vw-2rem)] sm:w-80 md:w-96 h-[65vh] max-h-[600px] sm:h-[500px] mb-4 flex flex-col overflow-hidden transition-all duration-300 transform origin-bottom-right scale-0 opacity-0">
         
         <!-- Room List View -->
         <div id="chat-room-list-view" class="flex flex-col h-full w-full">

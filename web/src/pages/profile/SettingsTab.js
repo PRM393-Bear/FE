@@ -143,7 +143,7 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
     const currentDocs = Array.isArray(orgDetail?.verificationDocs) ? orgDetail.verificationDocs.join("\n") : "";
 
     orgSectionHtml = `
-      <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-8 shadow-sm">
+      <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4 sm:p-8 shadow-sm">
         <div class="flex items-center justify-between gap-4 mb-2">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-2xl text-primary">domain</span>
@@ -276,7 +276,7 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
       ${orgSectionHtml}
 
       <!-- Section 1: Profile Info -->
-      <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-8 shadow-sm">
+      <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4 sm:p-8 shadow-sm">
         <h3 class="text-headline-sm font-bold text-on-surface mb-2">Cài đặt Thông tin Cá nhân Đăng nhập</h3>
         <p class="text-body-md text-on-surface-variant mb-6">Cập nhật họ tên, địa chỉ email, số điện thoại liên lạc tài khoản cá nhân.</p>
 
@@ -312,7 +312,7 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
           </div>
 
           <div class="flex justify-end pt-4 border-t border-outline-variant/30">
-            <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
+            <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm">
               Lưu thay đổi cá nhân
             </button>
           </div>
@@ -320,7 +320,7 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
       </div>
 
       <!-- Section 2/3: Change Password -->
-      <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-8 shadow-sm">
+      <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4 sm:p-8 shadow-sm">
         <div class="flex items-center gap-3 mb-2">
           <span class="material-symbols-outlined text-2xl text-primary">lock</span>
           <h3 class="text-headline-sm font-bold text-on-surface">Đổi mật khẩu</h3>
@@ -369,7 +369,7 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
           <p id="pw-error-msg" class="text-sm text-error hidden"></p>
 
           <div class="flex justify-end pt-4 border-t border-outline-variant/30">
-            <button type="submit" id="btn-change-password" class="px-6 py-2.5 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-2">
+            <button type="submit" id="btn-change-password" class="w-full sm:w-auto px-6 py-2.5 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
               <span class="material-symbols-outlined text-lg">key</span>
               Đổi mật khẩu
             </button>
