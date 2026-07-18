@@ -9,6 +9,7 @@ class ChatService {
     this.connected = false;
     this.messageCallbacks = [];
     this.receiptCallbacks = [];
+    this.notificationCallbacks = [];
   }
 
   connect(onConnectSuccess, onConnectError) {
@@ -52,6 +53,14 @@ class ChatService {
           this.receiptCallbacks.forEach(cb => cb(parsedReceipt));
         }
       });
+
+      // Subscribe to notifications
+      this.client.subscribe('/user/queue/notifications', (message) => {
+        if (message.body) {
+          const parsedNotification = JSON.parse(message.body);
+          this.notificationCallbacks.forEach(cb => cb(parsedNotification));
+        }
+      });
     };
 
     this.client.onStompError = (frame) => {
@@ -70,6 +79,7 @@ class ChatService {
     this.connected = false;
     this.messageCallbacks = [];
     this.receiptCallbacks = [];
+    this.notificationCallbacks = [];
   }
 
   onMessage(callback) {
@@ -80,12 +90,20 @@ class ChatService {
     this.receiptCallbacks.push(callback);
   }
 
+  onNotification(callback) {
+    this.notificationCallbacks.push(callback);
+  }
+
   offMessage(callback) {
     this.messageCallbacks = this.messageCallbacks.filter(cb => cb !== callback);
   }
 
   offReceipt(callback) {
     this.receiptCallbacks = this.receiptCallbacks.filter(cb => cb !== callback);
+  }
+
+  offNotification(callback) {
+    this.notificationCallbacks = this.notificationCallbacks.filter(cb => cb !== callback);
   }
 
   sendMessage(receiverId, content, imageUrl = null) {

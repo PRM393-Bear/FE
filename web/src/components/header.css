@@ -246,3 +246,18 @@
   background: var(--surface-variant);
   color: var(--primary);
 }
+
+/* Notification Dropdown Scrollbar */
+#header-notification-list::-webkit-scrollbar {
+  width: 4px;
+}
+#header-notification-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+#header-notification-list::-webkit-scrollbar-thumb {
+  background: rgba(110, 123, 108, 0.3);
+  border-radius: 4px;
+}
+#header-notification-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 123, 108, 0.5);
+}
