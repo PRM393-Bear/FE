@@ -213,6 +213,8 @@ export function renderLoginPage(container) {
       } else if (user && (user.role === 'organization' || user.role === 'org') && user.status === 'rejected') {
         showToast('Hồ sơ tổ chức của bạn đã bị từ chối xét duyệt.', 'error');
         setTimeout(() => { window.location.hash = '#/pending-approval'; }, 1200);
+      } else if (user && (user.role === 'organization' || user.role === 'org')) {
+        setTimeout(() => { window.location.hash = '#/profile'; }, 800);
       } else {
         setTimeout(() => { window.location.hash = '#/'; }, 800);
       }

@@ -119,9 +119,9 @@ export async function renderProfilePage(container, initialTab = null) {
           <!-- User Info Card -->
           <div class="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant/30 shadow-sm flex flex-col items-center text-center">
             <div class="w-24 h-24 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-3xl mb-3 border-2 border-primary/20 shadow-inner overflow-hidden">
-              ${profile.avatarUrl ? `<img src="${profile.avatarUrl}" class="w-full h-full object-cover" />` : (profile.fullName || profile.username || "U").substring(0,2).toUpperCase()}
+              ${(profile.avatar || profile.avatarUrl) ? `<img src="${profile.avatar || profile.avatarUrl}" class="w-full h-full object-cover" />` : (profile.name || profile.fullName || profile.username || "U").substring(0,2).toUpperCase()}
             </div>
-            <h2 class="text-title-md font-bold text-on-surface">${profile.fullName || profile.username}</h2>
+            <h2 class="text-title-md font-bold text-on-surface">${profile.name || profile.fullName || profile.username}</h2>
             <p class="text-body-sm text-on-surface-variant mt-0.5">${profile.email || "Thành viên EcoCycle"}</p>
             
             <div class="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${isOrg ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
