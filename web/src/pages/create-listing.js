@@ -403,6 +403,32 @@ export function renderCreateListingPage(container) {
     }
   });
 
+  const MAX_CONCURRENT_UPLOADS = 3;
+  let activeUploads = 0;
+
+  async function processUploadQueue() {
+    while (activeUploads < MAX_CONCURRENT_UPLOADS) {
+      const nextImg = selectedImages.find(img => img.status === 'pending');
+      if (!nextImg) break;
+
+      activeUploads++;
+      nextImg.status = 'uploading';
+      renderImageThumbnails();
+
+      uploadProductImage(nextImg.compressedFile).then(res => {
+        nextImg.uploadUrl = res.url;
+        nextImg.status = 'success';
+      }).catch(err => {
+        console.error("Lỗi upload ảnh:", err);
+        nextImg.status = 'error';
+      }).finally(() => {
+        activeUploads--;
+        renderImageThumbnails();
+        processUploadQueue();
+      });
+    }
+  }
+
   async function handleFiles(files) {
     const spaceLeft = 10 - selectedImages.length;
     if (spaceLeft <= 0) {
@@ -411,9 +437,7 @@ export function renderCreateListingPage(container) {
     }
 
     const filesToProcess = Array.from(files).slice(0, spaceLeft);
-
-    // Render placeholder indicators while compressing
-    showLoading("Đang nén tối ưu hóa hình ảnh...");
+    showLoading("Đang xử lý hình ảnh...");
 
     for (const file of filesToProcess) {
       if (!file.type.startsWith("image/")) continue;
@@ -426,7 +450,8 @@ export function renderCreateListingPage(container) {
           file,
           compressedFile: compressed,
           previewUrl,
-          uploadUrl: null
+          uploadUrl: null,
+          status: 'pending' // pending, uploading, success, error
         });
       } catch (err) {
         console.error("Nén ảnh thất bại:", err);
@@ -436,29 +461,53 @@ export function renderCreateListingPage(container) {
     isDirty = true;
     hideLoading();
     renderImageThumbnails();
+    processUploadQueue();
   }
 
   function renderImageThumbnails() {
     imageGrid.innerHTML = selectedImages
       .map(
-        (img, idx) => `
+        (img, idx) => {
+          let statusOverlay = '';
+          if (img.status === 'uploading') {
+            statusOverlay = `<div class="cl-image-status uploading"><span class="material-symbols-outlined">progress_activity</span></div>`;
+          } else if (img.status === 'error') {
+            statusOverlay = `<div class="cl-image-status error cl-retry-btn" data-index="${idx}" title="Lỗi upload. Click để thử lại."><span class="material-symbols-outlined">refresh</span></div>`;
+          } else if (img.status === 'success') {
+            statusOverlay = `<div class="cl-image-status success"><span class="material-symbols-outlined">check_circle</span></div>`;
+          }
+          
+          return `
       <div class="cl-image-item">
         <img src="${img.previewUrl}" alt="Preview" />
+        ${statusOverlay}
         <button type="button" class="cl-image-remove" data-index="${idx}">&times;</button>
       </div>
-    `
+    `;
+        }
       )
       .join("");
 
     // Bind remove event
     imageGrid.querySelectorAll(".cl-image-remove").forEach((btn) => {
       btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const idx = parseInt(btn.getAttribute("data-index"), 10);
         // Revoke Object URL to free memory
         URL.revokeObjectURL(selectedImages[idx].previewUrl);
         selectedImages.splice(idx, 1);
         isDirty = true;
         renderImageThumbnails();
+      });
+    });
+
+    imageGrid.querySelectorAll(".cl-retry-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.getAttribute("data-index"), 10);
+        selectedImages[idx].status = 'pending';
+        renderImageThumbnails();
+        processUploadQueue();
       });
     });
   }
@@ -529,18 +578,32 @@ export function renderCreateListingPage(container) {
     });
   }
 
-  // 8. Image Upload Loop to Cloudinary Backend API
   async function uploadAllImages() {
+    const isUploading = selectedImages.some(img => img.status === 'pending' || img.status === 'uploading');
+    if (isUploading) {
+      throw new Error("Vui lòng chờ hệ thống tải lên hình ảnh hoàn tất.");
+    }
+    const hasError = selectedImages.some(img => img.status === 'error');
+    if (hasError) {
+      throw new Error("Có ảnh tải lên bị lỗi. Vui lòng thử lại hoặc xóa ảnh lỗi.");
+    }
+
     const urls = [];
     for (let i = 0; i < selectedImages.length; i++) {
       const img = selectedImages[i];
       if (img.uploadUrl) {
         urls.push(img.uploadUrl);
       } else {
-        showLoading(`Đang đăng tải ảnh ${i + 1}/${selectedImages.length} lên Cloudinary...`);
-        const res = await uploadProductImage(img.compressedFile);
-        img.uploadUrl = res.url;
-        urls.push(res.url);
+        // Fallback for pre-existing URLs or edge cases
+        if (!img.compressedFile) {
+          urls.push(img.previewUrl); // Existing image url
+        } else {
+          showLoading(`Đang đăng tải ảnh ${i + 1}/${selectedImages.length} lên máy chủ...`);
+          const res = await uploadProductImage(img.compressedFile);
+          img.uploadUrl = res.url;
+          img.status = 'success';
+          urls.push(res.url);
+        }
       }
     }
     return urls;
