@@ -22,6 +22,7 @@ import { renderStaffDashboard } from "./pages/staff/index.js";
 import { renderHeader } from "./components/header.js";
 import { renderFooter } from "./components/footer.js";
 import { logoutApi, isAuthenticated, getUser, refreshUserOrgStatus } from "./services/auth.service.js";
+import { initChat } from "./components/chat.js";
 
 const app = document.getElementById("app");
 
@@ -242,12 +243,14 @@ function navigate() {
       renderHeader({ activePage: "products" });
       currentCleanup = renderProductDetailPage(app, productId);
       renderFooter();
+      initChat();
       return;
     }
   }
 
   const handler = routes[route] ?? routes["#/"];
   handler();
+  initChat();
 }
 
 /* ── Init ── */
