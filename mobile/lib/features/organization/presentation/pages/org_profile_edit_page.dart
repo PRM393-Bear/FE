@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio_pkg;
 import 'package:flutter/material.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -22,6 +23,10 @@ class _OrgProfileEditPageState extends State<OrgProfileEditPage> {
   late TextEditingController _websiteController;
   bool _isLoading = false;
 
+  double? _lat;
+  double? _lon;
+  bool _isGeocoding = false;
+
   final List<String> _allAcceptedTypes = [
     'Quần áo', 'Giày dép', 'Đồ chơi trẻ em', 'Sách vở', 'Đồ gia dụng', 'Thực phẩm khô',
   ];
@@ -35,6 +40,68 @@ class _OrgProfileEditPageState extends State<OrgProfileEditPage> {
     _addressController = TextEditingController(text: widget.org.address);
     _websiteController = TextEditingController(text: widget.org.websiteUrl ?? '');
     _selectedTypes = List.from(widget.org.acceptedTypes);
+    _lat = widget.org.latitude;
+    _lon = widget.org.longitude;
+  }
+
+  Future<void> _geocodeAddress() async {
+    final addr = _addressController.text.trim();
+    if (addr.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Vui lòng nhập địa chỉ trước'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+    setState(() => _isGeocoding = true);
+    try {
+      final res = await dio_pkg.Dio().get(
+        'https://nominatim.openstreetmap.org/search',
+        queryParameters: {
+          'format': 'json',
+          'q': addr,
+          'limit': 1,
+          'countrycodes': 'vn',
+        },
+        options: dio_pkg.Options(headers: {
+          'User-Agent': 'com.prm393bear.bear_market_mobile',
+        }),
+      );
+      final data = res.data as List;
+      if (data.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Không tìm thấy toạ độ, thử ghi địa chỉ cụ thể hơn'),
+            backgroundColor: AppColors.error,
+          ));
+        }
+        setState(() {
+          _lat = null;
+          _lon = null;
+        });
+        return;
+      }
+      setState(() {
+        _lat = double.parse(data[0]['lat']);
+        _lon = double.parse(data[0]['lon']);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Đã cập nhật toạ độ mới!'),
+          backgroundColor: AppColors.primary,
+        ));
+      }
+    } catch (e) {
+      debugPrint('🔴 Geocode error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Lỗi khi tìm toạ độ, thử lại sau'),
+          backgroundColor: AppColors.error,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
   }
 
   @override
@@ -57,8 +124,8 @@ class _OrgProfileEditPageState extends State<OrgProfileEditPage> {
         'description': _descController.text.trim(),
         'address': _addressController.text.trim(),
         'websiteUrl': _websiteController.text.trim(),
-        'latitude': widget.org.latitude,
-        'longitude': widget.org.longitude,
+        'latitude': _lat,
+        'longitude': _lon,
         'acceptedTypes': _selectedTypes,
       });
       if (!mounted) return;
@@ -108,6 +175,25 @@ class _OrgProfileEditPageState extends State<OrgProfileEditPage> {
             AppTextField(label: 'Mô tả', controller: _descController),
             const SizedBox(height: 16),
             AppTextField(label: 'Địa chỉ', controller: _addressController),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _isGeocoding ? null : _geocodeAddress,
+              icon: _isGeocoding
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.my_location, size: 18),
+              label: Text(_isGeocoding ? 'Đang tìm...' : 'Tìm toạ độ từ địa chỉ'),
+            ),
+            if (_lat != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                    'Toạ độ hiện tại: ${_lat!.toStringAsFixed(5)}, ${_lon!.toStringAsFixed(5)}',
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.primary)),
+              ),
             const SizedBox(height: 16),
             AppTextField(label: 'Website', controller: _websiteController),
             const SizedBox(height: 16),

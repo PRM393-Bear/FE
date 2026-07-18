@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio_pkg;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/network/api_client.dart';
@@ -35,6 +36,10 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
   bool _isLoading = false;
   bool _isUploadingBanner = false;
 
+  double? _geocodedLat;
+  double? _geocodedLon;
+  bool _isGeocoding = false;
+
   final List<String> _allAcceptedTypes = [
     'Quần áo', 'Giày dép', 'Đồ chơi trẻ em', 'Sách vở', 'Đồ gia dụng', 'Thực phẩm khô',
   ];
@@ -56,6 +61,8 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
     _startDate = e?.startDate != null ? DateTime.tryParse(e!.startDate!) : null;
     _endDate = e?.endDate != null ? DateTime.tryParse(e!.endDate!) : null;
     _existingBannerUrl = e?.bannerUrl;
+    _geocodedLat = e?.latitude;
+    _geocodedLon = e?.longitude;
   }
 
   @override
@@ -66,6 +73,49 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
     _locationController.dispose();
     _targetController.dispose();
     super.dispose();
+  }
+
+  Future<void> _geocodeAddress() async {
+    final addr = _locationController.text.trim();
+    if (addr.isEmpty) {
+      _showSnack('Vui lòng nhập địa chỉ trước', isError: true);
+      return;
+    }
+    setState(() => _isGeocoding = true);
+    try {
+      final res = await dio_pkg.Dio().get(
+        'https://nominatim.openstreetmap.org/search',
+        queryParameters: {
+          'format': 'json',
+          'q': addr,
+          'limit': 1,
+          'countrycodes': 'vn',
+        },
+        options: dio_pkg.Options(headers: {
+          'User-Agent': 'com.prm393bear.bear_market_mobile',
+        }),
+      );
+      final data = res.data as List;
+      if (data.isEmpty) {
+        _showSnack('Không tìm thấy toạ độ, thử ghi địa chỉ cụ thể hơn',
+            isError: true);
+        setState(() {
+          _geocodedLat = null;
+          _geocodedLon = null;
+        });
+        return;
+      }
+      setState(() {
+        _geocodedLat = double.parse(data[0]['lat']);
+        _geocodedLon = double.parse(data[0]['lon']);
+      });
+      _showSnack('Đã tìm thấy toạ độ!');
+    } catch (e) {
+      debugPrint('🔴 Geocode error: $e');
+      _showSnack('Lỗi khi tìm toạ độ, thử lại sau', isError: true);
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
   }
 
   Future<void> _pickBanner() async {
@@ -183,8 +233,8 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
         'title': _titleController.text.trim(),
         'description': _descController.text.trim(),
         'location': _locationController.text.trim(),
-        'latitude': 10.7769, 
-        'longitude': 106.7009,
+        'latitude': _geocodedLat ?? 10.7769,
+        'longitude': _geocodedLon ?? 106.7009,
         'startDate': _toApiDate(_startDate),
         'endDate': _toApiDate(_endDate),
         'acceptedTypes': _selectedTypes,
@@ -415,7 +465,29 @@ class _DonationEventFormPageState extends State<DonationEventFormPage> {
           const SizedBox(height: 16),
           AppTextField(label: 'Mô tả', controller: _descController),
           const SizedBox(height: 16),
-          AppTextField(label: 'Địa điểm nhận đồ', controller: _locationController),
+          AppTextField(
+              label: 'Địa điểm nhận đồ', controller: _locationController),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: _isGeocoding ? null : _geocodeAddress,
+            icon: _isGeocoding
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.primary),
+                  )
+                : const Icon(Icons.location_searching, size: 18),
+            label: Text(_geocodedLat != null
+                ? 'Đã lấy được toạ độ (${_geocodedLat!.toStringAsFixed(4)}, ${_geocodedLon!.toStringAsFixed(4)})'
+                : 'Tìm toạ độ từ địa chỉ'),
+            style: TextButton.styleFrom(
+              foregroundColor:
+                  _geocodedLat != null ? AppColors.secondary : AppColors.primary,
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
         ],
       ),
     );

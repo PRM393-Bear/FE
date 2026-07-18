@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geolocator_android/geolocator_android.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -87,47 +88,51 @@ class _DonationEventListPageState extends State<DonationEventListPage> {
   }
 
   Future<void> _loadMapData() async {
-    setState(() {
-      _isLoadingMap = true;
-      _mapError = null;
-    });
+    debugPrint('>>> [1] _loadMapData BẮT ĐẦU');
+    setState(() { _isLoadingMap = true; _mapError = null; });
     try {
+      debugPrint('>>> [2] check location service');
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      debugPrint('>>> [3] serviceEnabled = $serviceEnabled');
       if (!serviceEnabled) {
-        setState(() {
-          _mapError = 'Vui lòng bật định vị (GPS) để xem tổ chức gần đây';
-          _isLoadingMap = false;
-        });
+        setState(() { _mapError = 'Vui lòng bật định vị (GPS) để xem tổ chức gần đây'; _isLoadingMap = false; });
         return;
       }
+      debugPrint('>>> [4] check permission');
       LocationPermission permission = await Geolocator.checkPermission();
+      debugPrint('>>> [5] permission = $permission');
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        debugPrint('>>> [5b] permission sau khi xin = $permission');
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        setState(() {
-          _mapError = 'Cần quyền truy cập vị trí để xem tổ chức gần đây';
-          _isLoadingMap = false;
-        });
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        setState(() { _mapError = 'Cần quyền truy cập vị trí để xem tổ chức gần đây'; _isLoadingMap = false; });
         return;
       }
+      debugPrint('>>> [6] gọi getCurrentPosition');
       final pos = await Geolocator.getCurrentPosition(
-          locationSettings:
-              const LocationSettings(accuracy: LocationAccuracy.medium));
+        locationSettings: AndroidSettings(
+          accuracy: LocationAccuracy.medium,
+          forceLocationManager: true, // MỚI: đọc trực tiếp GPS provider, tương thích adb emu geo fix
+        ),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw Exception('Hết thời gian chờ định vị (15s)'),
+      );
+      debugPrint('>>> [7] CÓ vị trí: ${pos.latitude}, ${pos.longitude}');
+      debugPrint('>>> [8] gọi API getNearby');
       final orgs = await OrganizationService.getNearby(
-          latitude: pos.latitude, longitude: pos.longitude, radius: 50);
-      setState(() {
-        _myPosition = pos;
-        _nearbyOrgs = orgs;
-        _isLoadingMap = false;
-      });
+        latitude: pos.latitude, longitude: pos.longitude, radius: 50,
+      ).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw Exception('Hết thời gian chờ server (20s)'),
+      );
+      debugPrint('>>> [9] CÓ ${orgs.length} tổ chức gần đây');
+      setState(() { _myPosition = pos; _nearbyOrgs = orgs; _isLoadingMap = false; });
+      debugPrint('>>> [10] XONG');
     } catch (e) {
       debugPrint('🔴 Load map error: $e');
-      setState(() {
-        _mapError = 'Không tải được dữ liệu bản đồ';
-        _isLoadingMap = false;
-      });
+      setState(() { _mapError = 'Không tải được dữ liệu bản đồ'; _isLoadingMap = false; });
     }
   }
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio_pkg;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -28,6 +29,10 @@ class OrgRegisterPage extends StatefulWidget {
 class _OrgRegisterPageState extends State<OrgRegisterPage> {
   int _currentStep = 0;
   bool _isLoading = false;
+
+  double? _geocodedLat;
+  double? _geocodedLon;
+  bool _isGeocoding = false;
 
   /// Trạng thái đang hiển thị ở màn hình cuối (_currentStep == 3).
   /// null / 'PENDING' / 'REJECTED' -> dùng UI "Đang chờ xét duyệt" hiện có.
@@ -60,6 +65,49 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
       debugPrint('ℹ️ Error reading cached status: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _geocodeAddress() async {
+    final addr = _addressController.text.trim();
+    if (addr.isEmpty) {
+      _showSnack('Vui lòng nhập địa chỉ trước', isError: true);
+      return;
+    }
+    setState(() => _isGeocoding = true);
+    try {
+      final res = await dio_pkg.Dio().get(
+        'https://nominatim.openstreetmap.org/search',
+        queryParameters: {
+          'format': 'json',
+          'q': addr,
+          'limit': 1,
+          'countrycodes': 'vn',
+        },
+        options: dio_pkg.Options(headers: {
+          'User-Agent': 'com.prm393bear.bear_market_mobile',
+        }),
+      );
+      final data = res.data as List;
+      if (data.isEmpty) {
+        _showSnack('Không tìm thấy toạ độ, thử ghi địa chỉ cụ thể hơn',
+            isError: true);
+        setState(() {
+          _geocodedLat = null;
+          _geocodedLon = null;
+        });
+        return;
+      }
+      setState(() {
+        _geocodedLat = double.parse(data[0]['lat']);
+        _geocodedLon = double.parse(data[0]['lon']);
+      });
+      _showSnack('Đã tìm thấy toạ độ!');
+    } catch (e) {
+      debugPrint('🔴 Geocode error: $e');
+      _showSnack('Lỗi khi tìm toạ độ, thử lại sau', isError: true);
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
     }
   }
 
@@ -193,8 +241,8 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
         'phone': _phoneController.text.trim(),
         'orgType': _selectedOrgType,
         'website': _websiteController.text.trim(),
-        'latitude': 10.7769,
-        'longitude': 106.7009,
+        'latitude': _geocodedLat ?? 10.7769,
+        'longitude': _geocodedLon ?? 106.7009,
         'acceptedTypes': _selectedAcceptedTypes,
         'verificationDocs': verificationDocs,
         'isVerified': false,
@@ -474,8 +522,27 @@ class _OrgRegisterPageState extends State<OrgRegisterPage> {
             hint: 'Số nhà, tên đường, phường/xã...',
             controller: _addressController,
             validator: (v) =>
-            v == null || v.isEmpty ? 'Vui lòng nhập địa chỉ' : null,
+                v == null || v.isEmpty ? 'Vui lòng nhập địa chỉ' : null,
           ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _isGeocoding ? null : _geocodeAddress,
+            icon: _isGeocoding
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.my_location, size: 18),
+            label: Text(_isGeocoding ? 'Đang tìm...' : 'Tìm toạ độ từ địa chỉ'),
+          ),
+          if (_geocodedLat != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                  'Toạ độ: ${_geocodedLat!.toStringAsFixed(5)}, ${_geocodedLon!.toStringAsFixed(5)}',
+                  style: AppTextStyles.bodySmall
+                      .copyWith(color: AppColors.primary)),
+            ),
           const SizedBox(height: 32),
 
           AppButton(
