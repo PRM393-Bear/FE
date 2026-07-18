@@ -4,6 +4,7 @@
  */
 
 import { updateUserProfile, changePassword, getMyOrganizationDetailApi, updateOrganizationDetailApi } from "../../services/profile.service.js";
+import { createOrganizationDetailApi } from "../../services/auth.service.js";
 import { showToast } from "../../utils/ui.js";
 
 const DEFAULT_ACCEPTED_TYPES = [
@@ -61,7 +62,24 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
     const status = String(orgDetail?.status || "PENDING").toUpperCase();
     let statusBannerHtml = "";
 
-    if (status === "APPROVED") {
+    if (!orgDetail || !orgDetail.id) {
+      statusBannerHtml = `
+        <div class="flex items-start gap-4 p-5 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-blue-500/10 border-2 border-indigo-500/30 rounded-2xl text-indigo-900 mb-6 shadow-sm">
+          <div class="w-12 h-12 rounded-xl bg-indigo-500/15 flex items-center justify-center flex-shrink-0 text-indigo-600">
+            <span class="material-symbols-outlined text-3xl">add_business</span>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h4 class="font-bold text-base text-indigo-900">Chưa có Hồ sơ Tổ chức</h4>
+              <span class="px-3 py-1 rounded-full bg-indigo-600 text-white font-bold text-xs uppercase tracking-wider shadow-xs flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">info</span> EMPTY
+              </span>
+            </div>
+            <p class="text-xs text-indigo-800 mt-1.5 leading-relaxed">Bạn hiện đang có quyền truy cập dành cho Tổ chức nhưng chưa hoàn thiện hồ sơ. Vui lòng điền đầy đủ các thông tin bên dưới và nhấn lưu để gửi yêu cầu phê duyệt lên Ban Quản Trị.</p>
+          </div>
+        </div>
+      `;
+    } else if (status === "APPROVED") {
       statusBannerHtml = `
         <div class="flex items-start gap-4 p-5 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-teal-500/10 border-2 border-emerald-500/30 rounded-2xl text-emerald-900 mb-6 shadow-sm">
           <div class="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center flex-shrink-0 text-emerald-600">
@@ -366,7 +384,7 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
 
   // ── Organization Settings Form Event Bindings ──
   const orgForm = container.querySelector("#form-org-settings");
-  if (orgForm && orgDetail) {
+  if (orgForm) {
     // Helper to reset error styling
     const clearOrgInlineErrors = () => {
       orgForm.querySelectorAll(".error-inline").forEach(el => {
@@ -587,19 +605,26 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
 
       const payload = {
         orgName: orgNameVal,
-        avtOrg: formData.get("avtOrg")?.trim() || orgDetail.avtOrg || "",
+        avtOrg: formData.get("avtOrg")?.trim() || orgDetail?.avtOrg || "",
         description: descriptionVal,
         address: addressVal,
-        websiteUrl: formData.get("websiteUrl")?.trim() || orgDetail.websiteUrl || "",
+        websiteUrl: formData.get("websiteUrl")?.trim() || orgDetail?.websiteUrl || "",
         latitude: Number(latVal),
         longitude: Number(lngVal),
         acceptedTypes: acceptedTypes,
-        verificationDocs: verificationDocs.length > 0 ? verificationDocs : (orgDetail.verificationDocs || []),
+        verificationDocs: verificationDocs.length > 0 ? verificationDocs : (orgDetail?.verificationDocs || []),
       };
 
       try {
-        await updateOrganizationDetailApi(orgDetail.id, payload);
-        const newStatus = String(orgDetail.status).toUpperCase() === "REJECTED" ? "PENDING" : orgDetail.status;
+        if (orgDetail && orgDetail.id) {
+          await updateOrganizationDetailApi(orgDetail.id, payload);
+          showToast("Cập nhật hồ sơ tổ chức thành công! Dữ liệu đã được đồng bộ.", "success");
+        } else {
+          await createOrganizationDetailApi(payload);
+          showToast("Khởi tạo hồ sơ tổ chức thành công!", "success");
+        }
+        
+        const newStatus = (!orgDetail || String(orgDetail.status).toUpperCase() === "REJECTED") ? "PENDING" : orgDetail.status;
         if (profile?.id) {
           localStorage.setItem("org_custom_fields_" + profile.id, JSON.stringify({
             avtOrg: payload.avtOrg,
@@ -608,10 +633,9 @@ export async function renderSettingsTab(container, { profile, orgDetail: passedO
             status: newStatus
           }));
         }
-        if (String(orgDetail.status).toUpperCase() === "REJECTED") {
+        if (orgDetail && String(orgDetail.status).toUpperCase() === "REJECTED") {
           orgDetail.status = "PENDING";
         }
-        showToast("Cập nhật hồ sơ tổ chức thành công! Dữ liệu đã được đồng bộ.", "success");
         if (onRefresh) {
           onRefresh("settings");
           setTimeout(() => onRefresh("settings"), 600);
