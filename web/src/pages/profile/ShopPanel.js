@@ -228,11 +228,11 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
                     Tiếp tục chỉnh sửa
                   </a>`
                 : `
-                  <a href="#/edit-listing?id=${prod.id}" class="flex-1 py-2 px-3 text-center rounded-lg border border-outline-variant text-on-surface font-semibold text-xs hover:bg-surface-variant hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5">
+                  <a ${isPending ? 'style="pointer-events:none; opacity: 0.5;" title="Sản phẩm đang chờ duyệt, không thể sửa"' : `href="#/edit-listing?id=${prod.id}"`} class="flex-1 py-2 px-3 text-center rounded-lg border border-outline-variant text-on-surface font-semibold text-xs hover:bg-surface-variant hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5">
                     <span class="material-symbols-outlined text-sm">edit</span>
                     Sửa
                   </a>
-                  <button class="btn-toggle-hide flex-1 py-2 px-3 text-center rounded-lg border ${isHidden ? 'border-primary text-primary hover:bg-primary/10' : 'border-error/50 text-error hover:bg-error/10'} font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" data-id="${prod.id}" data-hidden="${isHidden}">
+                  <button ${isPending ? 'disabled style="opacity: 0.5; cursor: not-allowed;" title="Sản phẩm đang chờ duyệt, không thể ẩn/hiện"' : ''} class="btn-toggle-hide flex-1 py-2 px-3 text-center rounded-lg border ${isHidden ? 'border-primary text-primary hover:bg-primary/10' : 'border-error/50 text-error hover:bg-error/10'} font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" data-id="${prod.id}" data-hidden="${isHidden}">
                     <span class="material-symbols-outlined text-sm">${isHidden ? 'visibility' : 'visibility_off'}</span>
                     ${isHidden ? 'Hiện' : 'Ẩn'}
                   </button>

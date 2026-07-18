@@ -708,7 +708,19 @@ export function renderCreateListingPage(container) {
       isSubmitting = true;
       hideLoading();
 
-      alert(isEditMode ? "Cập nhật sản phẩm thành công!" : (status === "AVAILABLE" ? "Đăng bán sản phẩm thành công!" : "Lưu bản nháp thành công!"));
+      const finalStatus = (createdProduct?.status || createdProduct?.data?.status || status).toUpperCase();
+      let successMsg = "Thao tác thành công!";
+      if (isEditMode) {
+        successMsg = finalStatus === "PENDING" ? "Cập nhật thành công! Sản phẩm đang chờ quản trị viên duyệt." : "Cập nhật sản phẩm thành công!";
+      } else {
+        if (status === "DRAFT") {
+          successMsg = "Lưu bản nháp thành công!";
+        } else {
+          successMsg = finalStatus === "PENDING" ? "Đăng bán thành công! Sản phẩm đang chờ quản trị viên duyệt." : "Đăng bán sản phẩm thành công!";
+        }
+      }
+      alert(successMsg);
+      
       cleanup();
       window.location.hash = "#/profile";
       return true;
