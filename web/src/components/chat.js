@@ -91,8 +91,20 @@ export function initChat() {
 
   fileInput.addEventListener("change", async (e) => {
     if (e.target.files && e.target.files[0]) {
-      await sendImage(e.target.files[0]);
-      e.target.value = ""; // reset
+      const file = e.target.files[0];
+      const originalHtml = uploadBtn.innerHTML;
+      
+      // Show loading state
+      uploadBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span>';
+      uploadBtn.disabled = true;
+      
+      try {
+        await sendImage(file);
+      } finally {
+        e.target.value = ""; // reset
+        uploadBtn.innerHTML = originalHtml;
+        uploadBtn.disabled = false;
+      }
     }
   });
 
