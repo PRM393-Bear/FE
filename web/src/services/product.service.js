@@ -252,6 +252,35 @@ export async function unhideProduct(productId) {
 }
 
 /**
+ * Submit a draft product for review.
+ * @param {string} productId - Product UUID.
+ * @returns {Promise<Object>} Response from submit API.
+ */
+export async function submitProductForReview(productId) {
+  try {
+    // Attempt dedicated endpoint first
+    const data = await apiFetch(`/api/products/submit-review?productId=${productId}`, {
+      method: "PUT",
+    });
+    unmarkDraftProductId(productId);
+    invalidateProductCache();
+    return data;
+  } catch (error) {
+    // Fallback to updateProduct if the dedicated endpoint isn't implemented (404)
+    if (error.status === 404 || (error.message && error.message.includes("404"))) {
+      console.warn("submit-review endpoint not found, falling back to updateProduct...");
+      const existingProduct = await getProductById(productId);
+      const data = await updateProduct(productId, { ...existingProduct, status: "PENDING" });
+      unmarkDraftProductId(productId);
+      invalidateProductCache();
+      return data;
+    }
+    console.error("submitProductForReview failed:", error);
+    throw error;
+  }
+}
+
+/**
  * Get products by seller userId.
  * @param {string} userId - User UUID.
  * @returns {Promise<Array>} List of seller's products.

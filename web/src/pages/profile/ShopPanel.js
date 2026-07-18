@@ -4,7 +4,7 @@
  */
 
 import { confirmOrder, shipOrder } from "../../services/order.service.js";
-import { hideProduct, unhideProduct, isDraftProduct } from "../../services/product.service.js";
+import { hideProduct, unhideProduct, isDraftProduct, submitProductForReview } from "../../services/product.service.js";
 import { showToast } from "../../utils/ui.js";
 
 function formatPrice(num) {
@@ -211,7 +211,18 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
           </div>
           <div class="px-4 pb-4 pt-2 border-t border-outline-variant/20 flex items-center justify-between gap-2">
             ${
-              isDraft || isRejected
+              isDraft
+                ? `
+                  <a href="#/edit-listing?id=${prod.id}" class="flex-1 py-2 px-3 text-center rounded-lg border border-primary text-primary font-semibold text-xs hover:bg-primary/10 transition-colors flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">edit</span>
+                    Sửa
+                  </a>
+                  <button class="btn-submit-review flex-1 py-2 px-3 text-center rounded-lg border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" data-id="${prod.id}">
+                    <span class="material-symbols-outlined text-sm">send</span>
+                    Gửi duyệt
+                  </button>
+                `
+                : isRejected
                 ? `<a href="#/edit-listing?id=${prod.id}" class="w-full py-2 px-3 text-center rounded-lg border border-primary text-primary font-semibold text-xs hover:bg-primary/10 transition-colors flex items-center justify-center gap-1.5">
                     <span class="material-symbols-outlined text-sm">edit</span>
                     Tiếp tục chỉnh sửa
@@ -309,6 +320,32 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
         if (onRefresh) onRefresh();
       } catch (err) {
         showToast("Lỗi khi thao tác bài đăng: " + (err.message || 'Xin thử lại'), "error");
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    });
+  });
+
+  // Bind buttons: Submit Review
+  container.querySelectorAll(".btn-submit-review").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const productId = btn.getAttribute("data-id");
+      if (!productId) return;
+
+      if (!confirm("Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?")) {
+        return;
+      }
+
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Đang gửi...';
+
+      try {
+        await submitProductForReview(productId);
+        showToast("Đã gửi yêu cầu duyệt thành công! Vui lòng chờ phản hồi.", "success");
+        if (onRefresh) onRefresh();
+      } catch (err) {
+        showToast("Lỗi khi gửi duyệt: " + (err.message || 'Xin thử lại'), "error");
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
