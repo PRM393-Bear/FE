@@ -1,5 +1,5 @@
 import "../styles/product-detail.css";
-import { getProductById, getAllProducts, isDraftProduct, uploadProductImage } from "../services/product.service.js";
+import { getProductById, getAllProducts, isDraftProduct, uploadProductImage, hideProduct, unhideProduct, submitProductForReview } from "../services/product.service.js";
 import { getConditionLabel, getConditionPercentage } from "../utils/conditionMapping.js";
 import { createOrder } from "../services/order.service.js";
 import { addToCart } from "../services/cart.service.js";
@@ -150,39 +150,100 @@ export async function renderProductDetailPage(container, productId) {
     `;
 
     if (isOwner) {
+      const statusStr = (product.status || "AVAILABLE").toUpperCase();
+      const isHidden = statusStr === 'HIDDEN';
+      const isPending = statusStr === 'PENDING';
+      const isRejected = statusStr === 'REJECTED';
+      const rejectionReason = product.rejectionReason || "Không đạt tiêu chuẩn kiểm duyệt.";
+      
+      const auditLogs = product.auditLogs || product.logs || [];
+      let auditHtml = '';
+      if (auditLogs.length > 0) {
+        auditHtml = `
+          <div class="mt-4 pt-4 border-t border-current/20">
+            <p class="font-bold text-sm mb-2 flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">history</span> Lịch sử duyệt</p>
+            <ul class="text-xs space-y-2 opacity-90">
+              ${auditLogs.map(log => `<li><span class="font-semibold">${log.date || log.createdAt}:</span> ${log.action || log.message} ${log.reason ? `(Lý do: ${log.reason})` : ''}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+
       if (isDraft) {
         actionsHtml = `
           <div class="flex flex-col gap-3 w-full">
-            <div class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm font-medium flex items-center gap-2">
-              <span class="material-symbols-outlined text-amber-600">drafts</span>
-              <span>Sản phẩm này đang ở trạng thái Bản nháp (DRAFT).</span>
+            <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm flex items-start gap-3">
+              <span class="material-symbols-outlined text-amber-600 shrink-0">drafts</span>
+              <div>
+                <p class="font-bold">Bản nháp</p>
+                <p class="mt-1">Sản phẩm này chưa được gửi đi kiểm duyệt. Vui lòng hoàn tất thông tin và gửi yêu cầu phê duyệt để đưa lên cửa hàng.</p>
+                ${auditHtml}
+              </div>
             </div>
-            <a href="#/edit-listing?id=${product.id}" class="pd-btn-buy w-full !bg-primary !text-on-primary hover:!bg-primary/90 transition-colors flex items-center justify-center gap-2 font-bold py-3.5 px-4 rounded-xl shadow-sm text-center">
-              <span class="material-symbols-outlined">edit</span>
-              Chỉnh sửa bài đăng
-            </a>
-          </div>
-          <div class="pd-secondary-actions mt-3 justify-end">
-            <button class="pd-btn-fav" aria-label="Add to favorites">
-              <span class="material-symbols-outlined">favorite</span>
-            </button>
+            <div class="flex gap-2">
+              <a href="#/edit-listing?id=${product.id}" class="pd-btn-buy flex-1 !bg-surface-variant !text-primary border border-primary/40 hover:!bg-primary/10 transition-colors flex items-center justify-center gap-2 font-bold py-3.5 px-4 rounded-xl shadow-sm text-center">
+                <span class="material-symbols-outlined">edit</span> Sửa
+              </a>
+              <button class="pd-btn-buy flex-1 !bg-primary !text-on-primary hover:!bg-primary/90 transition-colors flex items-center justify-center gap-2 font-bold py-3.5 px-4 rounded-xl shadow-sm text-center" id="pd-btn-submit-review" data-id="${product.id}">
+                <span class="material-symbols-outlined">send</span> Gửi duyệt
+              </button>
+            </div>
           </div>
         `;
-      } else {
+      } else if (isRejected) {
         actionsHtml = `
           <div class="flex flex-col gap-3 w-full">
-            <div class="p-4 bg-surface-variant/40 border border-outline-variant/60 rounded-xl text-on-surface text-sm flex items-center gap-3.5">
-              <span class="material-symbols-outlined text-primary text-2xl shrink-0">checkroom</span>
+            <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm flex items-start gap-3">
+              <span class="material-symbols-outlined text-red-600 shrink-0">error</span>
               <div>
-                <p class="font-bold text-base">Sản phẩm của bạn</p>
-                <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">Bạn là người đăng bán sản phẩm này nên không thể đặt mua hay thêm vào giỏ hàng.</p>
+                <p class="font-bold">Đã bị từ chối</p>
+                <p class="mt-1">Lý do: <strong>${rejectionReason}</strong></p>
+                <p class="mt-1">Bạn cần chỉnh sửa lại sản phẩm và gửi duyệt lại.</p>
+                ${auditHtml}
+              </div>
+            </div>
+            <a href="#/edit-listing?id=${product.id}" class="pd-btn-buy w-full !bg-primary !text-on-primary hover:!bg-primary/90 transition-colors flex items-center justify-center gap-2 font-bold py-3.5 px-4 rounded-xl shadow-sm text-center">
+              <span class="material-symbols-outlined">edit</span> Sửa sản phẩm
+            </a>
+          </div>
+        `;
+      } else if (isPending) {
+        actionsHtml = `
+          <div class="flex flex-col gap-3 w-full">
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm flex items-start gap-3">
+              <span class="material-symbols-outlined text-blue-600 shrink-0">pending_actions</span>
+              <div>
+                <p class="font-bold">Chờ duyệt</p>
+                <p class="mt-1">Sản phẩm đang được quản trị viên kiểm tra. Không thể chỉnh sửa lúc này.</p>
+                ${auditHtml}
               </div>
             </div>
           </div>
-          <div class="pd-secondary-actions mt-3 justify-end">
-            <button class="pd-btn-fav" aria-label="Add to favorites">
-              <span class="material-symbols-outlined">favorite</span>
-            </button>
+        `;
+      } else {
+        // AVAILABLE or HIDDEN
+        actionsHtml = `
+          <div class="flex flex-col gap-3 w-full">
+            <div class="p-4 ${isHidden ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-surface-variant/40 border-outline-variant/60 text-on-surface'} border rounded-xl text-sm flex items-start gap-3">
+              <span class="material-symbols-outlined ${isHidden ? 'text-gray-600' : 'text-primary'} text-2xl shrink-0">
+                ${isHidden ? 'visibility_off' : 'checkroom'}
+              </span>
+              <div>
+                <p class="font-bold text-base">${isHidden ? 'Đã ẩn' : 'Đang hiển thị'}</p>
+                <p class="text-xs ${isHidden ? 'text-gray-600' : 'text-on-surface-variant'} mt-1 leading-relaxed">
+                  Bạn là người đăng bán sản phẩm này. ${isHidden ? 'Sản phẩm đang bị ẩn khỏi cửa hàng.' : 'Người khác có thể thấy và mua.'}
+                </p>
+                ${auditHtml}
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <a href="#/edit-listing?id=${product.id}" class="pd-btn-buy flex-1 !bg-surface-variant !text-primary border border-primary/40 hover:!bg-primary/10 transition-colors flex items-center justify-center gap-2 font-bold py-3.5 px-4 rounded-xl shadow-sm text-center">
+                <span class="material-symbols-outlined">edit</span> Sửa
+              </a>
+              <button class="pd-btn-buy flex-1 ${isHidden ? '!bg-primary !text-on-primary' : 'bg-red-50 text-red-700 border border-red-200'} hover:opacity-90 transition-colors flex items-center justify-center gap-2 font-bold py-3.5 px-4 rounded-xl shadow-sm text-center" id="pd-btn-toggle-hide" data-hidden="${isHidden}" data-id="${product.id}">
+                <span class="material-symbols-outlined">${isHidden ? 'visibility' : 'visibility_off'}</span> ${isHidden ? 'Hiện' : 'Ẩn'}
+              </button>
+            </div>
           </div>
         `;
       }
@@ -946,6 +1007,58 @@ export async function renderProductDetailPage(container, productId) {
       const s2 = container.querySelector("#pd-similar-listings-section");
       if (s1) s1.style.display = "none";
       if (s2) s2.style.display = "none";
+    }
+
+    // Add Seller Action Listeners
+    const btnSubmitReview = container.querySelector("#pd-btn-submit-review");
+    if (btnSubmitReview) {
+      btnSubmitReview.addEventListener("click", async () => {
+        const id = btnSubmitReview.getAttribute("data-id");
+        if (!id) return;
+        if (!confirm("Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?")) return;
+        
+        btnSubmitReview.disabled = true;
+        const originalText = btnSubmitReview.innerHTML;
+        btnSubmitReview.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Đang gửi...';
+        
+        try {
+          await submitProductForReview(id);
+          showToast("Đã gửi yêu cầu duyệt thành công!", "success");
+          setTimeout(() => renderProductDetailPage(container, id), 500);
+        } catch (err) {
+          showToast("Lỗi khi gửi duyệt: " + err.message, "error");
+          btnSubmitReview.disabled = false;
+          btnSubmitReview.innerHTML = originalText;
+        }
+      });
+    }
+
+    const btnToggleHide = container.querySelector("#pd-btn-toggle-hide");
+    if (btnToggleHide) {
+      btnToggleHide.addEventListener("click", async () => {
+        const id = btnToggleHide.getAttribute("data-id");
+        const isHidden = btnToggleHide.getAttribute("data-hidden") === "true";
+        if (!id) return;
+        
+        btnToggleHide.disabled = true;
+        const originalText = btnToggleHide.innerHTML;
+        btnToggleHide.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Đang xử lý...';
+        
+        try {
+          if (isHidden) {
+            await unhideProduct(id);
+            showToast("Đã hiển thị lại sản phẩm!", "success");
+          } else {
+            await hideProduct(id);
+            showToast("Đã ẩn sản phẩm khỏi cửa hàng!", "info");
+          }
+          setTimeout(() => renderProductDetailPage(container, id), 500);
+        } catch (err) {
+          showToast("Lỗi khi thao tác: " + err.message, "error");
+          btnToggleHide.disabled = false;
+          btnToggleHide.innerHTML = originalText;
+        }
+      });
     }
 
   } catch (error) {
