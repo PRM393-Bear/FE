@@ -120,10 +120,15 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
 
       if (events.length === 0) {
         html += `
-          <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
-            <span class="material-symbols-outlined text-5xl text-outline mb-3">campaign</span>
-            <p class="font-bold text-on-surface text-lg">Chưa có chiến dịch nào được khởi tạo</p>
-            <p class="text-body-sm text-on-surface-variant max-w-md mt-1">Hãy bấm 'Tạo chiến dịch mới' để kêu gọi cộng đồng cùng chung tay quyên góp vật phẩm. Các chiến dịch của tổ chức sẽ hiển thị tại đây.</p>
+          <div class="flex flex-col items-center justify-center py-16 px-6 text-center border-2 border-dashed border-outline-variant/50 rounded-2xl bg-gradient-to-br from-surface-variant/20 to-surface-container-lowest w-full">
+            <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-5 shadow-sm text-primary">
+              <span class="material-symbols-outlined text-4xl">campaign</span>
+            </div>
+            <h5 class="font-bold text-on-surface text-xl mb-2">Chưa có chiến dịch nào được khởi tạo</h5>
+            <p class="text-body-md text-on-surface-variant max-w-lg mb-6 leading-relaxed">Hãy bấm nút <strong>"Tạo chiến dịch mới"</strong> ở góc trên bên phải để bắt đầu kêu gọi cộng đồng chung tay quyên góp vật phẩm. Các chiến dịch của tổ chức sẽ được hiển thị công khai cho mọi người.</p>
+            <button onclick="document.getElementById('btn-open-create-campaign')?.click()" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-md">
+              <span class="material-symbols-outlined text-sm">add</span> Bắt đầu tạo ngay
+            </button>
           </div>
         `;
       } else {
@@ -155,13 +160,13 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
                   <p class="text-body-sm text-on-surface-variant line-clamp-2">${ev.description || "Không có mô tả chi tiết."}</p>
                   
                   <!-- Progress bar -->
-                  <div class="flex flex-col gap-1 mt-2">
-                    <div class="flex justify-between items-center text-xs font-semibold text-on-surface-variant">
-                      <span>Đã tiếp nhận <strong class="text-primary font-bold">${current}</strong> / Mục tiêu <strong class="text-on-surface font-bold">${target}</strong></span>
-                      <span class="text-primary font-bold">${percent}%</span>
+                  <div class="flex flex-col gap-1.5 mt-3">
+                    <div class="flex justify-between items-center text-xs font-semibold">
+                      <span class="text-on-surface-variant">Đã tiếp nhận <strong class="text-primary text-sm">${current}</strong> <span class="mx-1 font-normal opacity-50">/</span> Mục tiêu <strong class="text-on-surface">${target}</strong></span>
+                      <span class="text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-md">${percent}%</span>
                     </div>
-                    <div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
-                      <div class="h-full bg-primary transition-all duration-500" style="width: ${percent}%"></div>
+                    <div class="w-full h-2.5 bg-surface-variant/60 rounded-full overflow-hidden shadow-inner">
+                      <div class="h-full bg-gradient-to-r from-primary to-emerald-400 transition-all duration-700 ease-out" style="width: ${percent}%"></div>
                     </div>
                   </div>
 
@@ -242,10 +247,17 @@ export function renderDonationsTab(container, { profile, orgDetail, events: init
 
       if (filteredRequests.length === 0) {
         html += `
-          <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
-            <span class="material-symbols-outlined text-5xl text-outline mb-3">${isOrg ? 'clean_hands' : 'volunteer_activism'}</span>
-            <p class="font-bold text-on-surface text-lg">${isOrg ? 'Chưa có yêu cầu quyên góp nào ở danh mục này' : 'Bạn chưa tạo yêu cầu quyên góp nào'}</p>
-            <p class="text-body-sm text-on-surface-variant max-w-md mt-1">${isOrg ? 'Các vật phẩm được người dùng quyên góp tới tổ chức sẽ được hiển thị và cập nhật liên tục tại đây.' : 'Hãy bắt đầu hành trình xanh bằng cách quyên góp những vật phẩm không còn sử dụng để bảo vệ môi trường.'}</p>
+          <div class="flex flex-col items-center justify-center py-16 px-6 text-center border-2 border-dashed border-outline-variant/50 rounded-2xl bg-gradient-to-br from-surface-variant/20 to-surface-container-lowest w-full">
+            <div class="w-20 h-20 ${isOrg ? 'bg-amber-50 text-amber-600' : 'bg-primary/10 text-primary'} rounded-full flex items-center justify-center mb-5 shadow-sm">
+              <span class="material-symbols-outlined text-4xl">${isOrg ? 'clean_hands' : 'volunteer_activism'}</span>
+            </div>
+            <h5 class="font-bold text-on-surface text-xl mb-2">${isOrg ? 'Chưa có yêu cầu quyên góp nào' : 'Bạn chưa thực hiện quyên góp nào'}</h5>
+            <p class="text-body-md text-on-surface-variant max-w-lg mb-6 leading-relaxed">${isOrg ? 'Hiện tại chưa có vật phẩm nào được người dùng quyên góp tới tổ chức của bạn. Các yêu cầu mới sẽ xuất hiện tại đây khi người dùng gửi thông tin.' : 'Hãy bắt đầu hành trình xanh của bạn bằng cách gửi những vật phẩm không còn sử dụng cho các tổ chức để bảo vệ môi trường và lan tỏa yêu thương.'}</p>
+            ${!isOrg ? `
+            <button onclick="document.getElementById('btn-open-donate-modal')?.click()" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-md">
+              <span class="material-symbols-outlined text-sm">volunteer_activism</span> Bắt đầu quyên góp ngay
+            </button>
+            ` : ''}
           </div>
         `;
       } else {
