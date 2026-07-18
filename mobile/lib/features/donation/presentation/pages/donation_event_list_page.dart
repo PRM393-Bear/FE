@@ -110,15 +110,19 @@ class _DonationEventListPageState extends State<DonationEventListPage> {
         return;
       }
       debugPrint('>>> [6] gọi getCurrentPosition');
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: AndroidSettings(
-          accuracy: LocationAccuracy.medium,
-          forceLocationManager: true, // MỚI: đọc trực tiếp GPS provider, tương thích adb emu geo fix
-        ),
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw Exception('Hết thời gian chờ định vị (15s)'),
-      );
+      Position? pos = await Geolocator.getLastKnownPosition();
+      debugPrint('>>> [6a] lastKnownPosition = $pos');
+      if (pos == null) {
+        pos = await Geolocator.getCurrentPosition(
+          locationSettings: AndroidSettings(
+            accuracy: LocationAccuracy.medium,
+            forceLocationManager: true,
+          ),
+        ).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw Exception('Hết thời gian chờ định vị (15s)'),
+        );
+      }
       debugPrint('>>> [7] CÓ vị trí: ${pos.latitude}, ${pos.longitude}');
       debugPrint('>>> [8] gọi API getNearby');
       final orgs = await OrganizationService.getNearby(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 
@@ -12,6 +13,7 @@ class AppTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final bool readOnly;
   final Iterable<String>? autofillHints;
+  final List<TextInputFormatter>? inputFormatters;
 
   const AppTextField({
     super.key,
@@ -24,6 +26,7 @@ class AppTextField extends StatelessWidget {
     this.suffixIcon,
     this.readOnly = false,
     this.autofillHints,
+    this.inputFormatters,
   });
 
   @override
@@ -40,6 +43,7 @@ class AppTextField extends StatelessWidget {
           validator: validator,
           readOnly: readOnly,
           autofillHints: autofillHints,
+          inputFormatters: inputFormatters,
           style: AppTextStyles.bodyLarge,
           decoration: InputDecoration(
             hintText: hint,

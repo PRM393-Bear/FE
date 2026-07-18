@@ -8,7 +8,26 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../data/listing_model.dart';
 import '../widgets/step_indicator.dart';
+import 'package:flutter/services.dart';
 import 'listing_preview_page.dart';
+
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    String digitsOnly =
+        newValue.text.replaceAll('.', '').replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.isEmpty) return newValue.copyWith(text: '');
+    String formatted = digitsOnly.replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class ListingFormPage extends StatefulWidget {
   final List<String> imagePaths;
@@ -48,6 +67,13 @@ class _ListingFormPageState extends State<ListingFormPage> {
 
   bool get _isEditMode => widget.existingListing != null;
 
+  String _formatPrice(double price) {
+    return price.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -55,11 +81,10 @@ class _ListingFormPageState extends State<ListingFormPage> {
     if (l != null) {
       _titleController = TextEditingController(text: l.title);
       _brandController = TextEditingController(text: l.brand);
-      _priceController =
-          TextEditingController(text: l.price.toStringAsFixed(0));
+      _priceController = TextEditingController(text: _formatPrice(l.price));
       _descController = TextEditingController(text: l.description);
       _shippingFeeController = TextEditingController(
-        text: l.shippingFee?.toStringAsFixed(0) ?? '',
+        text: l.shippingFee != null ? _formatPrice(l.shippingFee!) : '',
       );
       _selectedCategory = l.category;
       _selectedCondition = l.condition;
@@ -125,12 +150,12 @@ class _ListingFormPageState extends State<ListingFormPage> {
       color: _selectedColor,
       condition: _selectedCondition,
       tags: _tags,
-      price: double.tryParse(_priceController.text) ?? 0,
+      price: double.tryParse(_priceController.text.replaceAll('.', '')) ?? 0,
       size: _selectedSize,
       description: _descController.text,
       shipNationwide: _shipNationwide,
       meetInPerson: _meetInPerson,
-      shippingFee: double.tryParse(_shippingFeeController.text),
+      shippingFee: double.tryParse(_shippingFeeController.text.replaceAll('.', '')),
       imagePaths: widget.imagePaths,
     );
 
@@ -403,6 +428,7 @@ class _ListingFormPageState extends State<ListingFormPage> {
                 hint: '0',
                 controller: _priceController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsSeparatorInputFormatter()],
                 validator: (v) =>
                 v == null || v.isEmpty ? 'Vui lòng nhập giá' : null,
               ),
@@ -483,6 +509,7 @@ class _ListingFormPageState extends State<ListingFormPage> {
                   hint: 'Nhập phí ship nếu muốn cố định',
                   controller: _shippingFeeController,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [ThousandsSeparatorInputFormatter()],
                 ),
               ],
 

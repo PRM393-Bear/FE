@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../data/cart_model.dart';
 import '../../../order/presentation/pages/my_orders_page.dart';
+import '../../../product/presentation/widgets/order_confirm_sheet.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -80,11 +81,23 @@ class _CartPageState extends State<CartPage> {
     final cart = _cart;
     if (cart == null || cart.items.isEmpty) return;
 
+    final confirmed = await OrderConfirmSheet.show(
+      context,
+      productTitle: '${cart.items.length} sản phẩm trong giỏ hàng',
+      price: cart.totalPrice,
+    );
+    if (confirmed != true) return;
+
     setState(() => _isCheckingOut = true);
     try {
-      await ApiClient.dio.post('/api/cart/checkout', data: {
-        'cartItemIds': cart.items.map((e) => e.cartItemId).toList(),
-      });
+      // BE chỉ có POST /api/orders nhận 1 productId/lần — lặp qua từng item
+      for (final item in cart.items) {
+        await ApiClient.dio.post('/api/orders', data: {
+          'productId': item.productId,
+        });
+      }
+      await ApiClient.dio.delete('/api/cart/clear');
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Đặt hàng thành công! Chờ người bán xác nhận.'),
@@ -98,16 +111,10 @@ class _CartPageState extends State<CartPage> {
       debugPrint(
           '🔴 Checkout error: ${e.response?.statusCode} ${e.response?.data}');
       if (!mounted) return;
-      final status = e.response?.statusCode;
-      String msg;
-      if (status == 404 || status == 405) {
-        msg = 'Tính năng đặt hàng từ giỏ đang được hoàn thiện, vui lòng quay lại sau nhé!';
-      } else {
-        final data = e.response?.data;
-        msg = (data is Map && data['message'] != null)
-            ? data['message'].toString()
-            : 'Đặt hàng thất bại, vui lòng thử lại';
-      }
+      final data = e.response?.data;
+      final msg = (data is Map && data['message'] != null)
+          ? data['message'].toString()
+          : 'Đặt hàng thất bại, vui lòng thử lại';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(msg),
         backgroundColor: AppColors.error,

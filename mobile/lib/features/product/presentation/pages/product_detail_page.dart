@@ -14,6 +14,7 @@ import '../../../chat/presentation/pages/chat_detail_page.dart';
 import '../../../order/presentation/pages/my_orders_page.dart';
 import '../../../../core/auth/auth_storage.dart';
 import '../../../../shared/widgets/login_prompt_sheet.dart';
+import '../widgets/order_confirm_sheet.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final ProductModel product;
@@ -24,6 +25,7 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+  late ProductModel _product;
   bool _isFavorite = false;
   bool _isExpanded = false;
   int _currentImageIndex = 0;
@@ -31,10 +33,26 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   bool _isBuying = false;
   bool _isAddingToCart = false;
 
+  bool get _canEdit =>
+      _product.status == 'PENDING' || _product.status == 'REJECTED';
+
   @override
   void initState() {
     super.initState();
+    _product = widget.product;
     _checkOwnership();
+  }
+
+  Future<void> _reloadProduct() async {
+    try {
+      final res = await ApiClient.dio.get('/api/products/${_product.id}');
+      if (!mounted) return;
+      setState(() {
+        _product = ProductModel.fromJson(res.data as Map<String, dynamic>);
+      });
+    } catch (e) {
+      debugPrint('🔴 Reload product error: $e');
+    }
   }
 
   Future<void> _checkOwnership() async {
@@ -77,7 +95,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.product;
+    final product = _product;
 
     return Scaffold(
       body: CustomScrollView(
@@ -110,7 +128,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     setState(() => _isFavorite = !_isFavorite);
                   },
                 ),
-              if (_isOwner)
+              if (_isOwner && _canEdit)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   tooltip: 'Chỉnh sửa',
@@ -139,6 +157,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         ),
                       ),
                     );
+                    await _reloadProduct();
                   },
                 ),
             ],
@@ -172,6 +191,18 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Banner thông báo nếu không thể sửa
+                  if (_isOwner && !_canEdit)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Sản phẩm đã được duyệt nên không thể chỉnh sửa thông tin nữa, để đảm bảo đúng nội dung staff '
+                        'đã kiểm duyệt. Nếu muốn đổi thông tin, hãy ẩn sản phẩm này và đăng sản phẩm mới.',
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.textSecondary),
+                      ),
+                    ),
+
                   // Image dots
                   if (product.images.length > 1) ...[
                     Row(
@@ -384,44 +415,47 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Widget _buildOwnerActions(ProductModel product) {
     return Row(
       children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              final listing = ListingModel(
-                title: product.title,
-                category: product.category,
-                brand: '',
-                color: product.color,
-                condition: _conditionText(product.condition),
-                tags: product.aiTags,
-                price: product.price,
-                size: product.size,
-                description: product.description,
-                shipNationwide: true,
-                meetInPerson: false,
-                imagePaths: product.images,
-              );
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ListingFormPage(
-                    imagePaths: product.images,
-                    existingListing: listing,
-                    existingProductId: product.id,
+        if (_canEdit) ...[
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final listing = ListingModel(
+                  title: product.title,
+                  category: product.category,
+                  brand: '',
+                  color: product.color,
+                  condition: _conditionText(product.condition),
+                  tags: product.aiTags,
+                  price: product.price,
+                  size: product.size,
+                  description: product.description,
+                  shipNationwide: true,
+                  meetInPerson: false,
+                  imagePaths: product.images,
+                );
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ListingFormPage(
+                      imagePaths: product.images,
+                      existingListing: listing,
+                      existingProductId: product.id,
+                    ),
                   ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            label: const Text('Chỉnh sửa'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 48),
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
+                );
+                await _reloadProduct();
+              },
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('Chỉnh sửa'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 12),
+          const SizedBox(width: 12),
+        ],
         Expanded(
           child: AppButton(
             label: 'Ẩn sản phẩm',
@@ -601,23 +635,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       return;
     }
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xác nhận mua hàng'),
-        content: Text(
-            'Bạn có chắc muốn mua "${product.title}" với giá ${_formatPrice(product.price)}đ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xác nhận'),
-          ),
-        ],
-      ),
+    final confirmed = await OrderConfirmSheet.show(
+      context,
+      productTitle: product.title,
+      price: product.price,
     );
     if (confirmed != true) return;
 

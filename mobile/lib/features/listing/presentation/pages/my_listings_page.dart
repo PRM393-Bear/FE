@@ -123,28 +123,7 @@ class _MyListingsPageState extends State<MyListingsPage> {
 
   Future<void> _unhideProduct(String productId) async {
     try {
-      final getRes = await ApiClient.dio.get('/api/products/$productId');
-      final Map<String, dynamic> productData =
-          Map<String, dynamic>.from(getRes.data);
-
-      await ApiClient.dio.put(
-        '/api/products/$productId',
-        data: {
-          'title': productData['title'],
-          'description': productData['description'],
-          'type': productData['type'],
-          'condition': productData['condition'],
-          'price': productData['price'],
-          'size': productData['size'],
-          'color': productData['color'],
-          'images': productData['images'],
-          'aiTags': productData['aiTags'],
-          'brand': productData['brand'],
-          'status': 'AVAILABLE',
-          'lifecycleGeneration': productData['lifecycleGeneration'] ?? 1,
-        },
-      );
-
+      await ApiClient.dio.put('/api/products/unhide?productId=$productId');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Đã hiện lại sản phẩm'),
@@ -155,8 +134,9 @@ class _MyListingsPageState extends State<MyListingsPage> {
       debugPrint('🔴 Unhide product error: ${e.response?.data}');
       final data = e.response?.data;
       String msg = 'Hiện lại sản phẩm thất bại';
-      if (data is Map && data['message'] != null)
+      if (data is Map && data['message'] != null) {
         msg = data['message'].toString();
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(msg),
@@ -336,6 +316,7 @@ class _MyListingsPageState extends State<MyListingsPage> {
 
   Widget _buildProductCard(ProductModel product) {
     final isHidden = product.status == 'HIDDEN';
+    final canEdit = product.status == 'PENDING' || product.status == 'REJECTED';
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -352,7 +333,8 @@ class _MyListingsPageState extends State<MyListingsPage> {
               : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isHidden ? AppColors.neutral.withOpacity(0.3) : AppColors.border,
+            color:
+                isHidden ? AppColors.neutral.withOpacity(0.3) : AppColors.border,
           ),
         ),
         child: Row(
@@ -365,12 +347,12 @@ class _MyListingsPageState extends State<MyListingsPage> {
                 borderRadius: BorderRadius.circular(8),
                 child: product.imageUrl.isNotEmpty
                     ? Image.network(
-                  product.imageUrl,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _imagePlaceholder(),
-                )
+                        product.imageUrl,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                      )
                     : _imagePlaceholder(),
               ),
             ),
@@ -385,7 +367,9 @@ class _MyListingsPageState extends State<MyListingsPage> {
                     product.title,
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: isHidden ? AppColors.textSecondary : AppColors.textPrimary,
+                      color: isHidden
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -444,46 +428,47 @@ class _MyListingsPageState extends State<MyListingsPage> {
             Column(
               children: [
                 if (!isHidden) ...[
-                  // Nút Edit (chỉ hiện khi đang bán)
-                  GestureDetector(
-                    onTap: () async {
-                      final listing = ListingModel(
-                        title: product.title,
-                        category: product.category,
-                        brand: '',
-                        color: product.color,
-                        condition: _conditionText(product.condition),
-                        tags: product.aiTags,
-                        price: product.price,
-                        size: product.size,
-                        description: product.description,
-                        shipNationwide: true,
-                        meetInPerson: false,
-                        imagePaths: product.images,
-                      );
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ListingFormPage(
-                            imagePaths: product.images,
-                            existingListing: listing,
-                            existingProductId: product.id,
+                  // Nút Edit (chỉ hiện khi có thể sửa)
+                  if (canEdit)
+                    GestureDetector(
+                      onTap: () async {
+                        final listing = ListingModel(
+                          title: product.title,
+                          category: product.category,
+                          brand: '',
+                          color: product.color,
+                          condition: _conditionText(product.condition),
+                          tags: product.aiTags,
+                          price: product.price,
+                          size: product.size,
+                          description: product.description,
+                          shipNationwide: true,
+                          meetInPerson: false,
+                          imagePaths: product.images,
+                        );
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ListingFormPage(
+                              imagePaths: product.images,
+                              existingListing: listing,
+                              existingProductId: product.id,
+                            ),
                           ),
+                        );
+                        _fetchMyProducts();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      );
-                      _fetchMyProducts();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        child: const Icon(Icons.edit_outlined,
+                            color: AppColors.primary, size: 18),
                       ),
-                      child: const Icon(Icons.edit_outlined,
-                          color: AppColors.primary, size: 18),
                     ),
-                  ),
-                  const SizedBox(height: 8),
+                  if (canEdit) const SizedBox(height: 8),
 
                   // Nút Ẩn
                   GestureDetector(
@@ -539,8 +524,7 @@ class _MyListingsPageState extends State<MyListingsPage> {
                               _unhideProduct(product.id);
                             },
                             child: Text('Hiện lại',
-                                style: TextStyle(
-                                    color: AppColors.primary)),
+                                style: TextStyle(color: AppColors.primary)),
                           ),
                         ],
                       ),
