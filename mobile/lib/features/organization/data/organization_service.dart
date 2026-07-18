@@ -19,4 +19,19 @@ class OrganizationService {
     }
     return null;
   }
+
+  static Future<List<OrganizationDetailModel>> getNearby({
+    required double latitude,
+    required double longitude,
+    double radius = 50.0,
+  }) async {
+    final res = await ApiClient.dio.get('/api/organization-details/nearby', queryParameters: {
+      'latitude': latitude,
+      'longitude': longitude,
+      'radius': radius,
+    });
+    return (res.data as List)
+        .map((e) => OrganizationDetailModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

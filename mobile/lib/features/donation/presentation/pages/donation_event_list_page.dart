@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/donation_event_model.dart';
+import '../../../organization/data/organization_detail_model.dart';
+import '../../../organization/data/organization_service.dart';
 import 'donation_event_detail_page.dart';
 
 class DonationEventListPage extends StatefulWidget {
@@ -16,6 +21,12 @@ class _DonationEventListPageState extends State<DonationEventListPage> {
   List<DonationEventModel> _events = [];
   bool _isLoading = true;
   bool _isMapView = false;
+  List<OrganizationDetailModel> _nearbyOrgs = [];
+  Position? _myPosition;
+  bool _isLoadingMap = false;
+  String? _mapError;
+  final MapController _mapController = MapController();
+  String? _filterOrgId;
 
   @override
   void initState() {
@@ -54,7 +65,10 @@ class _DonationEventListPageState extends State<DonationEventListPage> {
               children: [
                 _buildToggleChip('List', !_isMapView, () => setState(() => _isMapView = false)),
                 const SizedBox(width: 6),
-                _buildToggleChip('Map', _isMapView, () => setState(() => _isMapView = true)),
+                _buildToggleChip('Map', _isMapView, () {
+                  setState(() => _isMapView = true);
+                  if (_nearbyOrgs.isEmpty && !_isLoadingMap) _loadMapData();
+                }),
               ],
             ),
           ),
@@ -66,9 +80,166 @@ class _DonationEventListPageState extends State<DonationEventListPage> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
             : _isMapView
-            ? _buildMapPlaceholder()
+            ? _buildMap()
             : _buildList(),
       ),
+    );
+  }
+
+  Future<void> _loadMapData() async {
+    setState(() {
+      _isLoadingMap = true;
+      _mapError = null;
+    });
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _mapError = 'Vui lòng bật định vị (GPS) để xem tổ chức gần đây';
+          _isLoadingMap = false;
+        });
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        setState(() {
+          _mapError = 'Cần quyền truy cập vị trí để xem tổ chức gần đây';
+          _isLoadingMap = false;
+        });
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.medium));
+      final orgs = await OrganizationService.getNearby(
+          latitude: pos.latitude, longitude: pos.longitude, radius: 50);
+      setState(() {
+        _myPosition = pos;
+        _nearbyOrgs = orgs;
+        _isLoadingMap = false;
+      });
+    } catch (e) {
+      debugPrint('🔴 Load map error: $e');
+      setState(() {
+        _mapError = 'Không tải được dữ liệu bản đồ';
+        _isLoadingMap = false;
+      });
+    }
+  }
+
+  void _showOrgSheet(OrganizationDetailModel org) {
+    double? distanceKm;
+    if (_myPosition != null && org.latitude != null && org.longitude != null) {
+      distanceKm = Geolocator.distanceBetween(_myPosition!.latitude,
+              _myPosition!.longitude, org.latitude!, org.longitude!) /
+          1000;
+    }
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(org.orgName, style: AppTextStyles.headline3),
+              const SizedBox(height: 4),
+              Text(org.address, style: AppTextStyles.bodyMedium),
+              if (distanceKm != null) ...[
+                const SizedBox(height: 4),
+                Text('Cách bạn ${distanceKm.toStringAsFixed(1)} km',
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(color: AppColors.primary)),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _filterOrgId = org.id;
+                      _isMapView = false;
+                    });
+                  },
+                  child: const Text('Xem chiến dịch của tổ chức này',
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMap() {
+    if (_isLoadingMap) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    if (_mapError != null) {
+      return ListView(
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+          const Icon(Icons.location_off_outlined,
+              size: 60, color: AppColors.neutral),
+          const SizedBox(height: 12),
+          Center(
+              child: Text(_mapError!,
+                  textAlign: TextAlign.center, style: AppTextStyles.bodyLarge)),
+          const SizedBox(height: 16),
+          Center(
+              child:
+                  TextButton(onPressed: _loadMapData, child: const Text('Thử lại'))),
+        ],
+      );
+    }
+    final myPos = _myPosition;
+    if (myPos == null) return const SizedBox.shrink();
+
+    final myLatLng = LatLng(myPos.latitude, myPos.longitude);
+
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(initialCenter: myLatLng, initialZoom: 13),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.prm393bear.bear_market_mobile',
+        ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: myLatLng,
+              width: 36,
+              height: 36,
+              child: const Icon(Icons.my_location, color: Colors.blue, size: 30),
+            ),
+            ..._nearbyOrgs
+                .where((o) => o.latitude != null && o.longitude != null)
+                .map(
+                  (o) => Marker(
+                    point: LatLng(o.latitude!, o.longitude!),
+                    width: 40,
+                    height: 40,
+                    child: GestureDetector(
+                      onTap: () => _showOrgSheet(o),
+                      child: const Icon(Icons.location_on,
+                          color: AppColors.error, size: 36),
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -89,34 +260,29 @@ class _DonationEventListPageState extends State<DonationEventListPage> {
     );
   }
 
-  Widget _buildMapPlaceholder() {
-    return ListView(
-      children: [
-        SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-        const Icon(Icons.map_outlined, size: 60, color: AppColors.neutral),
-        const SizedBox(height: 12),
-        Center(
-          child: Text('Chế độ bản đồ đang phát triển', style: AppTextStyles.bodyLarge),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildList() {
-    if (_events.isEmpty) {
+    final displayEvents = _filterOrgId == null
+        ? _events
+        : _events.where((e) => e.organizationDetailId == _filterOrgId).toList();
+    if (displayEvents.isEmpty) {
       return ListView(
         children: [
           SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-          const Icon(Icons.volunteer_activism_outlined, size: 60, color: AppColors.neutral),
+          const Icon(Icons.volunteer_activism_outlined,
+              size: 60, color: AppColors.neutral),
           const SizedBox(height: 12),
-          Center(child: Text('Chưa có sự kiện quyên góp nào', style: AppTextStyles.bodyLarge)),
+          Center(
+              child: Text('Chưa có sự kiện quyên góp nào',
+                  style: AppTextStyles.bodyLarge)),
         ],
       );
     }
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _events.length,
-      itemBuilder: (context, index) => _buildEventCard(_events[index]),
+      itemCount: displayEvents.length,
+      itemBuilder: (context, index) => _buildEventCard(displayEvents[index]),
     );
   }
 
