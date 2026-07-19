@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../data/cart_model.dart';
+import '../../data/outfit_suggestion_model.dart';
 import '../../../order/presentation/pages/my_orders_page.dart';
 import '../../../product/presentation/widgets/order_confirm_sheet.dart';
 
@@ -21,11 +22,13 @@ class _CartPageState extends State<CartPage> {
   bool _isLoading = true;
   bool _isCheckingOut = false;
   final Set<String> _removingIds = {};
+  List<CatalogSuggestionModel> _suggestions = [];
 
   @override
   void initState() {
     super.initState();
     _fetchCart();
+    _fetchSuggestions();
   }
 
   Future<void> _fetchCart() async {
@@ -124,6 +127,137 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
+  Future<void> _fetchSuggestions() async {
+    try {
+      final res = await ApiClient.dio
+          .get('/api/outfit', queryParameters: {'maxOutfits': 3});
+      final data = res.data;
+      final list = (data is Map ? data['catalog_suggestions'] : null) as List?;
+      if (list == null || !mounted) return;
+      setState(() {
+        _suggestions = list
+            .map((e) =>
+                CatalogSuggestionModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      });
+    } catch (e) {
+      // AI service lỗi/chưa sẵn sàng -> bỏ qua, không hiện gì, không ảnh hưởng giỏ hàng chính
+      debugPrint('🔴 Fetch outfit suggestions error: $e');
+    }
+  }
+
+  Future<void> _addSuggestionToCart(CatalogSuggestionModel item) async {
+    try {
+      await ApiClient.dio
+          .post('/api/cart/add', queryParameters: {'productId': item.id});
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Đã thêm "${item.name}" vào giỏ hàng'),
+        backgroundColor: AppColors.primary,
+      ));
+      _fetchCart();
+    } on DioException catch (e) {
+      debugPrint('🔴 Add suggestion to cart error: ${e.response?.data}');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Thêm vào giỏ thất bại, thử lại nhé'),
+        backgroundColor: AppColors.error,
+      ));
+    }
+  }
+
+  Widget _buildSuggestionsSection() {
+    if (_suggestions.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child:
+              Text('Gợi ý phối đồ cho bạn ✨', style: AppTextStyles.headline3),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 215,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _suggestions.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) =>
+                _buildSuggestionCard(_suggestions[index]),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildSuggestionCard(CatalogSuggestionModel item) {
+    return Container(
+      width: 140,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: item.imageUrl != null
+                ? Image.network(
+                    item.imageUrl!,
+                    height: 100,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _suggestionImagePlaceholder(),
+                  )
+                : _suggestionImagePlaceholder(),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name,
+                    style: AppTextStyles.bodyMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text('${_formatPrice(item.price.toDouble())} đ',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  height: 30,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 30)),
+                    onPressed:
+                        item.inStock ? () => _addSuggestionToCart(item) : null,
+                    child: Text(item.inStock ? 'Thêm vào giỏ' : 'Hết hàng',
+                        style: const TextStyle(fontSize: 12)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _suggestionImagePlaceholder() => Container(
+        height: 100,
+        color: AppColors.background,
+        child: const Icon(Icons.checkroom_outlined, color: AppColors.textHint),
+      );
+
   String _formatPrice(double price) {
     return price.toStringAsFixed(0).replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -169,95 +303,101 @@ class _CartPageState extends State<CartPage> {
             Expanded(
               child: _isLoading
                   ? const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary))
+                      child: CircularProgressIndicator(color: AppColors.primary))
                   : isEmpty
-                  ? RefreshIndicator(
-                color: AppColors.primary,
-                onRefresh: _fetchCart,
-                child: ListView(
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.6,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.shopping_cart_outlined,
-                                size: 60, color: AppColors.neutral),
-                            const SizedBox(height: 12),
-                            Text('Giỏ hàng trống',
-                                style: AppTextStyles.bodyLarge),
-                            const SizedBox(height: 4),
-                            Text('Thêm sản phẩm bạn thích vào giỏ nhé!',
-                                style: AppTextStyles.bodyMedium),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-                  : RefreshIndicator(
-                color: AppColors.primary,
-                onRefresh: _fetchCart,
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: cart.items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final item = cart.items[index];
-                    final isRemoving =
-                    _removingIds.contains(item.cartItemId);
-                    return Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.productName,
-                                  style: AppTextStyles.bodyLarge,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${_formatPrice(item.price)} đ',
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
+                      ? RefreshIndicator(
+                          color: AppColors.primary,
+                          onRefresh: _fetchCart,
+                          child: ListView(
+                            children: [
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.6,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.shopping_cart_outlined,
+                                          size: 60, color: AppColors.neutral),
+                                      const SizedBox(height: 12),
+                                      Text('Giỏ hàng trống',
+                                          style: AppTextStyles.bodyLarge),
+                                      const SizedBox(height: 4),
+                                      Text('Thêm sản phẩm bạn thích vào giỏ nhé!',
+                                          style: AppTextStyles.bodyMedium),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          isRemoving
-                              ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2),
-                          )
-                              : IconButton(
-                            icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                color: AppColors.error),
-                            onPressed: () => _removeItem(item),
+                        )
+                      : RefreshIndicator(
+                          color: AppColors.primary,
+                          onRefresh: _fetchCart,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: cart.items.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final item = cart.items[index];
+                              final isRemoving =
+                                  _removingIds.contains(item.cartItemId);
+                              return Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.productName,
+                                            style: AppTextStyles.bodyLarge,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${_formatPrice(item.price)} đ',
+                                            style: AppTextStyles.bodyLarge
+                                                .copyWith(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    isRemoving
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2),
+                                          )
+                                        : IconButton(
+                                            icon: const Icon(
+                                                Icons.delete_outline_rounded,
+                                                color: AppColors.error),
+                                            onPressed: () => _removeItem(item),
+                                          ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
+                        ),
             ),
+
+            _buildSuggestionsSection(),
 
             // Bottom Bar
             if (!isEmpty)
