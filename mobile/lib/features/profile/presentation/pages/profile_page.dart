@@ -17,6 +17,7 @@ import '../../../order/presentation/pages/my_orders_page.dart';
 import '../../../order/data/order_model.dart';
 import '../../../order/presentation/pages/seller_orders_page.dart';
 import '../../../donation/presentation/pages/my_donations_page.dart';
+import '../../../review/presentation/pages/seller_reviews_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -303,6 +304,15 @@ class _ProfilePageState extends State<ProfilePage> {
                               context,
                               MaterialPageRoute(
                                   builder: (_) => const SellerOrdersPage()),
+                            ),
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.star_outline_rounded,
+                            title: 'Đánh giá nhận được',
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SellerReviewsPage()),
                             ),
                           ),
                           Padding(
