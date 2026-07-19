@@ -39,3 +39,39 @@ export async function getMyWardrobe() {
   }
 }
 
+/**
+ * Request AI Styling recommendations by occasion and body shape.
+ * Calls backend OutfitController endpoint: POST /api/outfit
+ * @param {Object} payload - { message, occasion, bodyShape, productTitle, productCategory, productColor, productImageUrl, bodyImageUrl }
+ * @param {number} maxOutfits - Number of outfits to request (default 3)
+ */
+export async function getAIOutfitsByOccasion(payload, maxOutfits = 3) {
+  try {
+    return await apiFetch(`/api/outfit?maxOutfits=${maxOutfits}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.error("getAIOutfitsByOccasion failed:", error);
+    throw error;
+  }
+}
+
+/**
+ * Request AI Try-On realistic image (product + body).
+ * Note: Backend currently has endpoint in OutfitController.java for outfit recommendations,
+ * while AI try-on real image generation endpoint (/api/outfit/try-on) is pending backend addition (P0).
+ * This connects FE cleanly to handle both real try-on image (when available) and styling guide fallback.
+ * @param {Object} payload - { message, occasion, bodyShape, productTitle, productCategory, productColor, productImageUrl, bodyImageUrl }
+ */
+export async function getAITryOnImage(payload) {
+  try {
+    return await apiFetch(`/api/outfit/try-on`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.warn("getAITryOnImage endpoint not available yet or failed:", error?.message);
+    return null;
+  }
+}

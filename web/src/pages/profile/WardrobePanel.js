@@ -63,7 +63,7 @@ export function renderWardrobePanel(container, { orders = [], wardrobe = [], pro
 
     if (wardrobe.length === 0) {
       html += `
-        <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50">
+        <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
           <span class="material-symbols-outlined text-4xl text-outline mb-2">checkroom</span>
           <p class="font-medium text-on-surface">Tủ đồ của bạn đang trống</p>
           <p class="text-body-sm text-on-surface-variant mt-1">Đăng bán hoặc trao đổi quần áo cũ để góp phần bảo vệ môi trường.</p>
@@ -119,7 +119,7 @@ export function renderWardrobePanel(container, { orders = [], wardrobe = [], pro
 
   if (filteredOrders.length === 0) {
     html += `
-      <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl">
+      <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
         <span class="material-symbols-outlined text-4xl text-outline mb-2">shopping_bag</span>
         <p class="font-medium text-on-surface">Không có đơn mua hàng nào ở trạng thái này</p>
         <a href="#/products" class="mt-3 px-4 py-2 bg-surface-variant text-on-surface-variant rounded-lg text-sm font-medium hover:bg-outline-variant transition-colors">Khám phá cửa hàng</a>

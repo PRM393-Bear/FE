@@ -4,7 +4,7 @@
  */
 
 import { confirmOrder, shipOrder } from "../../services/order.service.js";
-import { hideProduct, unhideProduct, isDraftProduct } from "../../services/product.service.js";
+import { hideProduct, unhideProduct, isDraftProduct, submitProductForReview } from "../../services/product.service.js";
 import { showToast } from "../../utils/ui.js";
 
 function formatPrice(num) {
@@ -13,6 +13,7 @@ function formatPrice(num) {
 }
 
 let currentShopFilter = "ALL";
+let currentProductFilter = "ALL";
 
 export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], myProducts = [], onRefresh }) {
   const filteredOrders = currentShopFilter === "ALL"
@@ -61,7 +62,7 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
 
   if (filteredOrders.length === 0) {
     html += `
-      <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl">
+      <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
         <span class="material-symbols-outlined text-4xl text-outline mb-2">storefront</span>
         <p class="font-medium text-on-surface">Chưa có đơn hàng nào ở trạng thái này</p>
         <p class="text-body-sm text-on-surface-variant mt-1">Khi khách hàng đặt mua món đồ của bạn, thông tin và lịch sử xử lý sẽ hiển thị tại đây.</p>
@@ -121,34 +122,80 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
   }
   html += `</div>`;
 
-  // Section 2: My Products (Active, Hidden, Pending)
+  // Section 2: My Products with Status Tabs
+  const allProducts = [...myProducts, ...myDrafts];
+  
+  const counts = {
+    ALL: allProducts.length,
+    PENDING: allProducts.filter(p => !isDraftProduct(p) && (p.status || "").toUpperCase() === "PENDING").length,
+    AVAILABLE: allProducts.filter(p => !isDraftProduct(p) && (!p.status || p.status.toUpperCase() === "AVAILABLE")).length,
+    HIDDEN: allProducts.filter(p => !isDraftProduct(p) && (p.status || "").toUpperCase() === "HIDDEN").length,
+    REJECTED: allProducts.filter(p => !isDraftProduct(p) && (p.status || "").toUpperCase() === "REJECTED").length,
+    DRAFT: myDrafts.length
+  };
+
+  const filteredProducts = currentProductFilter === "ALL"
+    ? allProducts
+    : allProducts.filter(p => {
+        if (currentProductFilter === "DRAFT") return isDraftProduct(p);
+        if (isDraftProduct(p)) return false;
+        
+        const st = (p.status || "AVAILABLE").toUpperCase();
+        return st === currentProductFilter;
+      });
+
   html += `
     <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm">
-      <h4 class="text-title-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">inventory_2</span>
-        Sản phẩm đã đăng bán (${myProducts.length})
-      </h4>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h4 class="text-title-lg font-bold text-on-surface flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">inventory_2</span>
+          Sản phẩm của bạn (${counts.ALL})
+        </h4>
+
+        <!-- Product Status Filter Tabs -->
+        <div class="flex flex-wrap gap-2 bg-surface-variant/40 p-1 rounded-xl">
+          <button class="btn-product-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentProductFilter === 'ALL' ? 'bg-surface shadow-sm text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="ALL">Tất cả</button>
+          <button class="btn-product-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentProductFilter === 'PENDING' ? 'bg-surface shadow-sm text-blue-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="PENDING">Chờ duyệt (${counts.PENDING})</button>
+          <button class="btn-product-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentProductFilter === 'AVAILABLE' ? 'bg-surface shadow-sm text-emerald-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="AVAILABLE">Đang hiển thị (${counts.AVAILABLE})</button>
+          <button class="btn-product-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentProductFilter === 'HIDDEN' ? 'bg-surface shadow-sm text-gray-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="HIDDEN">Đã ẩn (${counts.HIDDEN})</button>
+          <button class="btn-product-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentProductFilter === 'REJECTED' ? 'bg-surface shadow-sm text-red-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="REJECTED">Từ chối (${counts.REJECTED})</button>
+          <button class="btn-product-filter px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${currentProductFilter === 'DRAFT' ? 'bg-surface shadow-sm text-amber-700 font-bold' : 'text-on-surface-variant hover:text-on-surface'}" data-filter="DRAFT">Bản nháp (${counts.DRAFT})</button>
+        </div>
+      </div>
   `;
 
-  if (myProducts.length === 0) {
+  if (filteredProducts.length === 0) {
     html += `
-      <div class="flex flex-col items-center justify-center py-12 text-center border border-dashed border-outline-variant rounded-xl">
+      <div class="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed border-outline-variant rounded-xl bg-surface-container-lowest/50 w-full">
         <span class="material-symbols-outlined text-4xl text-outline mb-2">checkroom</span>
-        <p class="font-medium text-on-surface">Bạn chưa có sản phẩm đăng bán nào</p>
-        <p class="text-body-sm text-on-surface-variant mt-1">Nhấn "Đăng bán mới" để bắt đầu bán hoặc trao đổi quần áo.</p>
+        <p class="font-medium text-on-surface">Không tìm thấy sản phẩm nào</p>
+        <p class="text-body-sm text-on-surface-variant mt-1">Chưa có sản phẩm nào ở trạng thái này.</p>
       </div>
     `;
   } else {
     html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
-    myProducts.forEach((prod) => {
-      const isHidden = (prod.status || '').toUpperCase() === 'HIDDEN';
-      const isDraft = (prod.status || '').toUpperCase() === 'DRAFT' || isDraftProduct(prod);
-      const statusBadge = isHidden
-        ? `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Đã ẩn</span>`
-        : `<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>Đang hiển thị</span>`;
+    filteredProducts.forEach((prod) => {
+      const isDraft = isDraftProduct(prod);
+      const statusStr = (prod.status || "AVAILABLE").toUpperCase();
+      const isHidden = statusStr === 'HIDDEN';
+      const isPending = statusStr === 'PENDING';
+      const isRejected = statusStr === 'REJECTED';
+      
+      let statusBadge = "";
+      if (isDraft) {
+        statusBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1">Bản nháp</span>`;
+      } else if (isHidden) {
+        statusBadge = `<span class="bg-gray-100 text-gray-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-gray-600"></span>Đã ẩn</span>`;
+      } else if (isPending) {
+        statusBadge = `<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>Chờ duyệt</span>`;
+      } else if (isRejected) {
+        statusBadge = `<span class="bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>Từ chối</span>`;
+      } else {
+        statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>Đang hiển thị</span>`;
+      }
 
       html += `
-        <div class="border border-outline-variant/30 rounded-xl overflow-hidden bg-surface flex flex-col justify-between hover:shadow-md transition-all group ${isHidden ? 'opacity-75 bg-surface-variant/20' : ''}">
+        <div class="border border-outline-variant/30 rounded-xl overflow-hidden bg-surface flex flex-col justify-between hover:shadow-md transition-all group ${isHidden || isDraft ? 'opacity-80 hover:opacity-100 bg-surface-variant/20' : ''}">
           <div>
             <div class="aspect-[4/3] w-full bg-surface-variant relative overflow-hidden">
               <img src="${prod.imageUrl || 'https://placehold.co/400x300/E4EBE4/6E7B6C?text=Product'}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -159,22 +206,38 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
             <div class="p-4">
               <h5 class="font-bold text-on-surface text-base truncate" title="${prod.title}">${prod.title || "Không tên"}</h5>
               <p class="text-primary font-bold text-sm mt-1">${formatPrice(prod.price)}</p>
-              <p class="text-xs text-on-surface-variant mt-2 line-clamp-2">${prod.description || 'Không có mô tả'}</p>
+              ${!isDraft ? `<p class="text-xs text-on-surface-variant mt-2 line-clamp-2">${prod.description || 'Không có mô tả'}</p>` : ''}
             </div>
           </div>
           <div class="px-4 pb-4 pt-2 border-t border-outline-variant/20 flex items-center justify-between gap-2">
             ${
               isDraft
-                ? `<a href="#/edit-listing?id=${prod.id}" class="flex-1 py-2 px-3 text-center rounded-lg border border-outline-variant text-on-surface font-semibold text-xs hover:bg-surface-variant hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5">
+                ? `
+                  <a href="#/edit-listing?id=${prod.id}" class="flex-1 py-2 px-3 text-center rounded-lg border border-primary text-primary font-semibold text-xs hover:bg-primary/10 transition-colors flex items-center justify-center gap-1.5">
                     <span class="material-symbols-outlined text-sm">edit</span>
                     Sửa
+                  </a>
+                  <button class="btn-submit-review flex-1 py-2 px-3 text-center rounded-lg border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" data-id="${prod.id}">
+                    <span class="material-symbols-outlined text-sm">send</span>
+                    Gửi duyệt
+                  </button>
+                `
+                : isRejected
+                ? `<a href="#/edit-listing?id=${prod.id}" class="w-full py-2 px-3 text-center rounded-lg border border-primary text-primary font-semibold text-xs hover:bg-primary/10 transition-colors flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">edit</span>
+                    Tiếp tục chỉnh sửa
                   </a>`
-                : ""
+                : `
+                  <a ${isPending ? 'style="pointer-events:none; opacity: 0.5;" title="Sản phẩm đang chờ duyệt, không thể sửa"' : `href="#/edit-listing?id=${prod.id}"`} class="flex-1 py-2 px-3 text-center rounded-lg border border-outline-variant text-on-surface font-semibold text-xs hover:bg-surface-variant hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">edit</span>
+                    Sửa
+                  </a>
+                  <button ${isPending ? 'disabled style="opacity: 0.5; cursor: not-allowed;" title="Sản phẩm đang chờ duyệt, không thể ẩn/hiện"' : ''} class="btn-toggle-hide flex-1 py-2 px-3 text-center rounded-lg border ${isHidden ? 'border-primary text-primary hover:bg-primary/10' : 'border-error/50 text-error hover:bg-error/10'} font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" data-id="${prod.id}" data-hidden="${isHidden}">
+                    <span class="material-symbols-outlined text-sm">${isHidden ? 'visibility' : 'visibility_off'}</span>
+                    ${isHidden ? 'Hiện' : 'Ẩn'}
+                  </button>
+                `
             }
-            <button class="btn-toggle-hide ${isDraft ? 'flex-1' : 'w-full'} py-2 px-3 text-center rounded-lg border ${isHidden ? 'border-primary text-primary hover:bg-primary/10' : 'border-error/50 text-error hover:bg-error/10'} font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" data-id="${prod.id}" data-hidden="${isHidden}">
-              <span class="material-symbols-outlined text-sm">${isHidden ? 'visibility' : 'visibility_off'}</span>
-              ${isHidden ? 'Hiện' : 'Ẩn'}
-            </button>
           </div>
         </div>
       `;
@@ -182,48 +245,22 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
     html += `</div>`;
   }
   html += `</div>`;
-
-  // Section 3: Drafts
-  if (myDrafts.length > 0) {
-    html += `
-      <div class="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm">
-        <h4 class="text-title-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-          <span class="material-symbols-outlined text-amber-600">drafts</span>
-          Sản phẩm Bản nháp (${myDrafts.length})
-        </h4>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    `;
-    myDrafts.forEach((draft) => {
-      html += `
-        <div class="border border-outline-variant/30 rounded-xl overflow-hidden bg-surface flex flex-col justify-between opacity-80 hover:opacity-100 transition-opacity">
-          <div>
-            <div class="aspect-[4/3] w-full bg-surface-variant relative">
-              <img src="${draft.imageUrl || 'https://placehold.co/400x300/E4EBE4/6E7B6C?text=Draft'}" class="w-full h-full object-cover" />
-              <span class="absolute top-2 right-2 bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">Bản nháp</span>
-            </div>
-            <div class="p-4">
-              <h5 class="font-bold text-on-surface">${draft.title || "Không tên"}</h5>
-              <p class="text-primary font-semibold text-sm mt-1">${formatPrice(draft.price)}</p>
-            </div>
-          </div>
-          <div class="p-4 pt-0">
-            <a href="#/edit-listing?id=${draft.id}" class="w-full py-2 block text-center rounded-lg bg-surface-variant text-on-surface-variant font-semibold text-xs hover:bg-primary hover:text-on-primary transition-colors">
-              Tiếp tục chỉnh sửa
-            </a>
-          </div>
-        </div>
-      `;
-    });
-    html += `</div></div>`;
-  }
-
+  
   html += `</div>`;
   container.innerHTML = html;
 
-  // Bind filter tab buttons
+  // Bind filter tab buttons for orders
   container.querySelectorAll(".btn-shop-filter").forEach((btn) => {
     btn.addEventListener("click", () => {
       currentShopFilter = btn.getAttribute("data-filter") || "ALL";
+      renderShopPanel(container, { sellerOrders, myDrafts, myProducts, onRefresh });
+    });
+  });
+
+  // Bind filter tab buttons for products
+  container.querySelectorAll(".btn-product-filter").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentProductFilter = btn.getAttribute("data-filter") || "ALL";
       renderShopPanel(container, { sellerOrders, myDrafts, myProducts, onRefresh });
     });
   });
@@ -283,6 +320,32 @@ export function renderShopPanel(container, { sellerOrders = [], myDrafts = [], m
         if (onRefresh) onRefresh();
       } catch (err) {
         showToast("Lỗi khi thao tác bài đăng: " + (err.message || 'Xin thử lại'), "error");
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    });
+  });
+
+  // Bind buttons: Submit Review
+  container.querySelectorAll(".btn-submit-review").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const productId = btn.getAttribute("data-id");
+      if (!productId) return;
+
+      if (!confirm("Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?")) {
+        return;
+      }
+
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Đang gửi...';
+
+      try {
+        await submitProductForReview(productId);
+        showToast("Đã gửi yêu cầu duyệt thành công! Vui lòng chờ phản hồi.", "success");
+        if (onRefresh) onRefresh();
+      } catch (err) {
+        showToast("Lỗi khi gửi duyệt: " + (err.message || 'Xin thử lại'), "error");
         btn.disabled = false;
         btn.innerHTML = originalText;
       }

@@ -102,11 +102,21 @@ export function isDraftProduct(product) {
   }
 
   const status = normalizeProductStatus(product.status);
+  
+  // Prioritize backend: if DRAFT, sync cache and return true
   if (status === "DRAFT") {
+    markDraftProductId(product.id || product.productId);
     return true;
   }
+  
+  // If backend explicitly says it's not a draft, unmark cache and return false
+  if (status === "AVAILABLE" || status === "HIDDEN" || status === "SOLD") {
+    unmarkDraftProductId(product.id || product.productId);
+    return false;
+  }
 
-  return getDraftProductIds().has(String(product.id));
+  // Fallback to cache ONLY if backend doesn't provide a clear status
+  return getDraftProductIds().has(String(product.id || product.productId));
 }
 
 /**
@@ -116,14 +126,14 @@ export function isDraftProduct(product) {
 export async function getAllProducts() {
   const now = Date.now();
   if (productsCache && now - productsCacheTime < CACHE_TTL) {
-    const availableOnly = (productsCache || []).filter(p => !p.status || p.status.toUpperCase() === "AVAILABLE");
+    const availableOnly = (productsCache || []).filter(p => !isDraftProduct(p) && (!p.status || p.status.toUpperCase() === "AVAILABLE"));
     return await enrichProductsWithLiveCategory(availableOnly);
   }
   try {
     const data = await apiFetch("/api/products");
     productsCache = data;
     productsCacheTime = now;
-    const availableOnly = (data || []).filter(p => !p.status || p.status.toUpperCase() === "AVAILABLE");
+    const availableOnly = (data || []).filter(p => !isDraftProduct(p) && (!p.status || p.status.toUpperCase() === "AVAILABLE"));
     return await enrichProductsWithLiveCategory(availableOnly);
   } catch (error) {
     console.error("getAllProducts failed:", error);
@@ -237,6 +247,35 @@ export async function unhideProduct(productId) {
     return data;
   } catch (error) {
     console.error("unhideProduct failed:", error);
+    throw error;
+  }
+}
+
+/**
+ * Submit a draft product for review.
+ * @param {string} productId - Product UUID.
+ * @returns {Promise<Object>} Response from submit API.
+ */
+export async function submitProductForReview(productId) {
+  try {
+    // Attempt dedicated endpoint first
+    const data = await apiFetch(`/api/products/submit-review?productId=${productId}`, {
+      method: "PUT",
+    });
+    unmarkDraftProductId(productId);
+    invalidateProductCache();
+    return data;
+  } catch (error) {
+    // Fallback to updateProduct if the dedicated endpoint isn't implemented (404)
+    if (error.status === 404 || (error.message && error.message.includes("404"))) {
+      console.warn("submit-review endpoint not found, falling back to updateProduct...");
+      const existingProduct = await getProductById(productId);
+      const data = await updateProduct(productId, { ...existingProduct, status: "PENDING" });
+      unmarkDraftProductId(productId);
+      invalidateProductCache();
+      return data;
+    }
+    console.error("submitProductForReview failed:", error);
     throw error;
   }
 }
