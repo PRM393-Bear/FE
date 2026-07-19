@@ -7,6 +7,7 @@ import { getCart, removeItem, clearCart } from "../services/cart.service.js";
 import { createOrder } from "../services/order.service.js";
 import { isAuthenticated } from "../services/auth.service.js";
 import { showToast } from "../utils/ui.js";
+import { apiFetch } from "../utils/api.js";
 
 function formatPrice(num) {
   if (num === undefined || num === null || isNaN(num)) return "0đ";
@@ -115,6 +116,25 @@ export function renderCartPage(container) {
                 </div>
               </div>
 
+              <div class="rounded-2xl border border-outline-variant/30 bg-surface/70 p-4 mb-4">
+                <div class="flex items-start gap-2 mb-3">
+                  <span class="material-symbols-outlined text-primary">auto_awesome</span>
+                  <div>
+                    <h4 class="text-sm font-bold text-on-surface">AI Stylist trong giỏ hàng</h4>
+                    <p class="text-xs text-on-surface-variant mt-0.5">Hỏi cách phối đồ, chọn món phù hợp hơn hoặc nhận lời khuyên nhanh.</p>
+                  </div>
+                </div>
+
+                <div id="ai-fit-chat-messages" class="rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-3 space-y-2 max-h-56 overflow-y-auto"></div>
+
+                <form id="ai-fit-chat-form" class="mt-3 flex gap-2">
+                  <input id="ai-fit-chat-input" type="text" placeholder="Ví dụ: Món này phối với gì?" class="flex-1 bg-surface border border-outline-variant/40 rounded-xl px-3 py-2 text-sm text-on-surface focus:outline-none focus:border-primary" autocomplete="off" />
+                  <button id="ai-fit-chat-submit" type="submit" class="px-3 py-2 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-colors">
+                    <span class="material-symbols-outlined text-base">send</span>
+                  </button>
+                </form>
+              </div>
+
               <button id="btn-checkout-all" class="w-full py-3.5 bg-primary text-on-primary rounded-xl font-bold shadow-md hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">shopping_cart_checkout</span>
                 Đặt hàng ngay (${items.length} món)
@@ -128,6 +148,58 @@ export function renderCartPage(container) {
         </div>
       </div>
     `;
+
+      const aiChatMessages = container.querySelector('#ai-fit-chat-messages');
+      const aiChatForm = container.querySelector('#ai-fit-chat-form');
+      const aiChatInput = container.querySelector('#ai-fit-chat-input');
+      const aiChatSubmitBtn = container.querySelector('#ai-fit-chat-submit');
+
+      if (aiChatMessages && aiChatForm && aiChatInput && aiChatSubmitBtn) {
+        const chatMessages = [
+          {
+            role: 'assistant',
+            content: 'Bạn có thể hỏi AI Stylist về cách phối đồ hoặc lựa chọn món phù hợp hơn trong giỏ hàng.'
+          }
+        ];
+
+        const renderAiChatMessages = () => {
+          aiChatMessages.innerHTML = chatMessages.map(msg => `
+            <div class="${msg.role === 'assistant' ? 'text-left' : 'text-right'}">
+              <div class="inline-block max-w-full rounded-2xl px-3 py-2 text-sm ${msg.role === 'assistant' ? 'bg-surface-variant text-on-surface' : 'bg-primary text-on-primary'}">
+                ${msg.content}
+              </div>
+            </div>
+          `).join('');
+          aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+        };
+
+        renderAiChatMessages();
+
+        aiChatForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const question = aiChatInput.value.trim();
+          if (!question) return;
+
+          chatMessages.push({ role: 'user', content: question });
+          renderAiChatMessages();
+          aiChatInput.value = '';
+          aiChatSubmitBtn.disabled = true;
+          aiChatSubmitBtn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span>';
+
+          try {
+            const itemSummary = items.slice(0, 6).map(item => item.productName || 'Sản phẩm').join(', ') || 'không có sản phẩm';
+            const prompt = `Bạn là AI Stylist của EcoCycle. Hãy tư vấn cách phối đồ hoặc chọn món phù hợp hơn cho các sản phẩm trong giỏ hàng hiện tại: ${itemSummary}. Câu hỏi của người dùng: ${question}. Trả lời bằng tiếng Việt, ngắn gọn, hữu ích và chỉ dùng văn bản, không tạo ảnh hoặc ảnh giả.`;
+            const answer = await apiFetch(`/api/chat/ask?question=${encodeURIComponent(prompt)}`);
+            chatMessages.push({ role: 'assistant', content: typeof answer === 'string' ? answer : 'AI chưa có câu trả lời phù hợp lúc này.' });
+          } catch (err) {
+            chatMessages.push({ role: 'assistant', content: `Không thể kết nối AI Stylist lúc này. ${err.message || ''}`.trim() });
+          } finally {
+            renderAiChatMessages();
+            aiChatSubmitBtn.disabled = false;
+            aiChatSubmitBtn.innerHTML = '<span class="material-symbols-outlined text-base">send</span>';
+          }
+        });
+      }
 
       // Attach event listeners
       container.querySelectorAll('.btn-remove-item').forEach(btn => {
