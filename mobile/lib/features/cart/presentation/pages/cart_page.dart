@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../data/cart_model.dart';
 import '../../data/outfit_suggestion_model.dart';
+import '../../../product/data/product_model.dart';
 import '../../../order/presentation/pages/my_orders_page.dart';
 import '../../../product/presentation/widgets/order_confirm_sheet.dart';
 
@@ -22,13 +23,22 @@ class _CartPageState extends State<CartPage> {
   bool _isLoading = true;
   bool _isCheckingOut = false;
   final Set<String> _removingIds = {};
-  List<CatalogSuggestionModel> _suggestions = [];
+  final _outfitMessageController = TextEditingController();
+  List<OutfitModel> _outfits = [];
+  Map<String, ProductModel> _outfitProductCache = {};
+  bool _isLoadingOutfits = false;
+  String? _outfitError;
 
   @override
   void initState() {
     super.initState();
     _fetchCart();
-    _fetchSuggestions();
+  }
+
+  @override
+  void dispose() {
+    _outfitMessageController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchCart() async {
@@ -127,76 +137,156 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
-  Future<void> _fetchSuggestions() async {
+  Future<void> _askOutfitAi(String message) async {
+    if (message.trim().isEmpty) return;
+    setState(() {
+      _isLoadingOutfits = true;
+      _outfitError = null;
+    });
     try {
-      final res = await ApiClient.dio
-          .get('/api/outfit', queryParameters: {'maxOutfits': 3});
+      final res = await ApiClient.dio.post(
+        '/api/outfit',
+        queryParameters: {'maxOutfits': 3},
+        data: {'message': message.trim()},
+      );
       final data = res.data;
-      final list = (data is Map ? data['catalog_suggestions'] : null) as List?;
-      if (list == null || !mounted) return;
+      final outfitsJson = (data is Map ? data['outfits'] : null) as List?;
+      final outfits = (outfitsJson ?? [])
+          .map((e) => OutfitModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      final allProductIds =
+          outfits.expand((o) => o.items.map((it) => it.productId)).toSet();
+      final results = await Future.wait(allProductIds.map((id) async {
+        try {
+          final pr = await ApiClient.dio.get('/api/products/$id');
+          return MapEntry(
+              id, ProductModel.fromJson(pr.data as Map<String, dynamic>));
+        } catch (_) {
+          return null;
+        }
+      }));
+      final productMap = <String, ProductModel>{};
+      for (final r in results) {
+        if (r != null) productMap[r.key] = r.value;
+      }
+
+      if (!mounted) return;
       setState(() {
-        _suggestions = list
-            .map((e) =>
-                CatalogSuggestionModel.fromJson(e as Map<String, dynamic>))
-            .toList();
+        _outfits = outfits;
+        _outfitProductCache = productMap;
+        _isLoadingOutfits = false;
+        _outfitError = outfits.isEmpty
+            ? ((data is Map ? data['message']?.toString() : null) ??
+                'Không tìm thấy gợi ý phù hợp.')
+            : null;
       });
     } catch (e) {
-      // AI service lỗi/chưa sẵn sàng -> bỏ qua, không hiện gì, không ảnh hưởng giỏ hàng chính
-      debugPrint('🔴 Fetch outfit suggestions error: $e');
-    }
-  }
-
-  Future<void> _addSuggestionToCart(CatalogSuggestionModel item) async {
-    try {
-      await ApiClient.dio
-          .post('/api/cart/add', queryParameters: {'productId': item.id});
+      debugPrint('🔴 Ask outfit AI error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Đã thêm "${item.name}" vào giỏ hàng'),
-        backgroundColor: AppColors.primary,
-      ));
-      _fetchCart();
-    } on DioException catch (e) {
-      debugPrint('🔴 Add suggestion to cart error: ${e.response?.data}');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Thêm vào giỏ thất bại, thử lại nhé'),
-        backgroundColor: AppColors.error,
-      ));
+      setState(() {
+        _isLoadingOutfits = false;
+        _outfitError = 'AI đang gặp sự cố, vui lòng thử lại sau.';
+      });
     }
   }
 
   Widget _buildSuggestionsSection() {
-    if (_suggestions.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child:
-              Text('Gợi ý phối đồ cho bạn ✨', style: AppTextStyles.headline3),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 215,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _suggestions.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) =>
-                _buildSuggestionCard(_suggestions[index]),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Gợi ý phối đồ AI', style: AppTextStyles.headline3),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _outfitMessageController,
+                  decoration: InputDecoration(
+                    hintText: 'Ví dụ: cho tôi bộ đồ đi biển...',
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                      borderSide: BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                  onSubmitted: _askOutfitAi,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: _isLoadingOutfits
+                    ? null
+                    : () => _askOutfitAi(_outfitMessageController.text),
+                icon: _isLoadingOutfits
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.send_rounded),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-      ],
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ['Đi biển', 'Đi làm', 'Hẹn hò', 'Dạo phố', 'Tiệc']
+                .map((q) => GestureDetector(
+                      onTap: () {
+                        _outfitMessageController.text = 'cho tôi bộ đồ $q';
+                        _askOutfitAi(_outfitMessageController.text);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(q,
+                            style: AppTextStyles.label
+                                .copyWith(color: AppColors.primary)),
+                      ),
+                    ))
+                .toList(),
+          ),
+          if (_outfitError != null) ...[
+            const SizedBox(height: 10),
+            Text(_outfitError!,
+                style: AppTextStyles.bodySmall
+                    .copyWith(color: AppColors.textSecondary)),
+          ],
+          if (_outfits.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 230,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _outfits.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) =>
+                    _buildOutfitCard(_outfits[index]),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildSuggestionCard(CatalogSuggestionModel item) {
+  Widget _buildOutfitCard(OutfitModel outfit) {
     return Container(
-      width: 140,
+      width: 260,
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
@@ -205,58 +295,62 @@ class _CartPageState extends State<CartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: item.imageUrl != null
-                ? Image.network(
-                    item.imageUrl!,
-                    height: 100,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _suggestionImagePlaceholder(),
-                  )
-                : _suggestionImagePlaceholder(),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.name,
-                    style: AppTextStyles.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Text('${_formatPrice(item.price.toDouble())} đ',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                SizedBox(
-                  width: double.infinity,
-                  height: 30,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, 30)),
-                    onPressed:
-                        item.inStock ? () => _addSuggestionToCart(item) : null,
-                    child: Text(item.inStock ? 'Thêm vào giỏ' : 'Hết hàng',
-                        style: const TextStyle(fontSize: 12)),
+          Text('Bộ ${outfit.outfitNumber}',
+              style: AppTextStyles.bodyLarge
+                  .copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Expanded(
+            child: ListView(
+              children: outfit.items.map((item) {
+                final product = _outfitProductCache[item.productId];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: product != null && product.imageUrl.isNotEmpty
+                            ? Image.network(product.imageUrl,
+                                width: 44, height: 44, fit: BoxFit.cover)
+                            : Container(
+                                width: 44,
+                                height: 44,
+                                color: AppColors.background,
+                                child: const Icon(Icons.image_outlined,
+                                    size: 18, color: AppColors.textSecondary),
+                              ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.bodySmall),
+                            if (product != null)
+                              Text('${product.price.toStringAsFixed(0)}đ',
+                                  style: AppTextStyles.bodySmall
+                                      .copyWith(color: AppColors.primary)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                );
+              }).toList(),
             ),
           ),
+          Text(outfit.colorReason,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.bodySmall
+                  .copyWith(color: AppColors.textSecondary, fontSize: 11)),
         ],
       ),
     );
   }
-
-  Widget _suggestionImagePlaceholder() => Container(
-        height: 100,
-        color: AppColors.background,
-        child: const Icon(Icons.checkroom_outlined, color: AppColors.textHint),
-      );
 
   String _formatPrice(double price) {
     return price.toStringAsFixed(0).replaceAllMapped(

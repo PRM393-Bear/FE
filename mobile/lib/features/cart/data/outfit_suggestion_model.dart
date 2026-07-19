@@ -1,33 +1,51 @@
-class CatalogSuggestionModel {
-  final String id;
+class OutfitItemModel {
+  final String productId;
   final String name;
-  final int price;
-  final bool inStock;
-  final String? imageUrl;
+  final String category;
+  final String color;
 
-  CatalogSuggestionModel({
-    required this.id,
+  OutfitItemModel({
+    required this.productId,
     required this.name,
-    required this.price,
-    required this.inStock,
-    this.imageUrl,
+    required this.category,
+    required this.color,
   });
 
-  factory CatalogSuggestionModel.fromJson(Map<String, dynamic> json) {
-    final images = json['images'] as List?;
-    String? img;
-    if (images != null && images.isNotEmpty) {
-      final first = images.first?.toString();
-      // Một số item mẫu chỉ có tên file giả (vd "beige-linen-1.jpg"), không phải URL thật
-      // -> chỉ nhận nếu là URL http thật, tránh Image.network load lỗi liên tục.
-      if (first != null && first.startsWith('http')) img = first;
-    }
-    return CatalogSuggestionModel(
-      id: json['id']?.toString() ?? '',
+  factory OutfitItemModel.fromJson(Map<String, dynamic> json) {
+    return OutfitItemModel(
+      productId: json['product_id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
-      price: (json['price'] as num?)?.toInt() ?? 0,
-      inStock: json['in_stock'] as bool? ?? true,
-      imageUrl: img,
+      category: json['category']?.toString() ?? '',
+      color: json['color']?.toString() ?? '',
+    );
+  }
+}
+
+class OutfitModel {
+  final int outfitNumber;
+  final double? score;
+  final List<OutfitItemModel> items;
+  final String description;
+  final String colorReason;
+
+  OutfitModel({
+    required this.outfitNumber,
+    this.score,
+    required this.items,
+    required this.description,
+    required this.colorReason,
+  });
+
+  factory OutfitModel.fromJson(Map<String, dynamic> json) {
+    final itemsList = (json['items'] as List?) ?? [];
+    return OutfitModel(
+      outfitNumber: (json['outfit_number'] as num?)?.toInt() ?? 0,
+      score: (json['score'] as num?)?.toDouble(),
+      items: itemsList
+          .map((e) => OutfitItemModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      description: json['description']?.toString() ?? '',
+      colorReason: json['color_reason']?.toString() ?? '',
     );
   }
 }
