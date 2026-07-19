@@ -8,6 +8,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "/ws": {
+        target: "https://prm393-backend.onrender.com",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

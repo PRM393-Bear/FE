@@ -41,13 +41,13 @@ export async function getMyWardrobe() {
 
 /**
  * Request AI Styling recommendations by occasion and body shape.
- * Calls backend OutfitController endpoint: POST /api/outfit/occasion
+ * Calls backend OutfitController endpoint: POST /api/outfit
  * @param {Object} payload - { message, occasion, bodyShape, productTitle, productCategory, productColor, productImageUrl, bodyImageUrl }
  * @param {number} maxOutfits - Number of outfits to request (default 3)
  */
 export async function getAIOutfitsByOccasion(payload, maxOutfits = 3) {
   try {
-    return await apiFetch(`/api/outfit/occasion?maxOutfits=${maxOutfits}`, {
+    return await apiFetch(`/api/outfit?maxOutfits=${maxOutfits}`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
