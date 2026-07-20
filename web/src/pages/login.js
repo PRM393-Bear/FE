@@ -29,9 +29,8 @@ export function renderLoginPage(container) {
         <div class="auth-brand-content">
           <h1 class="auth-brand-title">Lifecycle Marketplace</h1>
           <p class="auth-brand-subtitle">"Mỗi món đồ đều có vòng đời mới"</p>
-          
           <div class="auth-brand-illustration">
-            <img alt="Virtual Wardrobe Illustration" src="https://lh3.googleusercontent.com/aida/AP1WRLtwewqhuiutg-sAzMrjrZMTBUUnQcqojShMdlMu3R9E_Cgbz4D4SHn-r9fG6v1aHoGgG6QKzxmfFvbEqEJaL50wJBpZqNiR6ixNko2MNwYPJOaMg50aiTPlpW8LS82aA8DJ06rzHckrn4vioyFwFywp2wCC2EGNlZ6JrrvBlbVLE2Q0N8_dNeC9tqiSL5kepNSDuQOMHrADhxEnBgn298O_rgnLcdmFe42vYV_H66NjcRSoslyzPNuaUDc"/>
+            <img alt="Virtual Wardrobe Illustration" src="/login.png" />
           </div>
           
           <div class="auth-brand-tagline">
