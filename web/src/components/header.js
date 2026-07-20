@@ -117,7 +117,7 @@ export function renderHeader(opts = {}) {
           ` : ''}
           
           <div class="site-header__user-dropdown">
-            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrlaW40yOoCWpNiBstKzrHVSAW72kTTU7p7v-pQe_rDsKJlX4PUBigCH7nF9WKXRK45Hq6mv2ZViHgaMBqK_PzLjMsrJQtoQ7WPS8GcEarFolyXAqS7jbNSdJlJcUyBz0_sENDF3UKiHJHXNm6vDX5pGfiZ8hjHKTp5MmI7N_p6LIdCDQXHfQKbP1-icv_i8Xmu9xMsG4F9g8qj582KVvK_iG9i5t-tv9IOPrLI1X22ZoC-_ytAYpEbfSxleQikMrt6CY9cmPiUP2J" alt="User profile" class="site-header__avatar" />
+            <img src="/user-avatar.jpg" alt="User profile" class="site-header__avatar" />
             
             <div class="site-header__dropdown-menu">
               ${!isPendingOrg && (user?.role === 'organization' || user?.role === 'org') ? '<a href="#/profile" class="site-header__dropdown-item font-bold text-primary">Dashboard Tổ Chức</a>' : ''}
