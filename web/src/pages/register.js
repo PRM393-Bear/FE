@@ -48,7 +48,7 @@ export function renderRegisterPage(container) {
           </p>
           
           <div class="auth-brand-illustration" style="margin: 0 auto; width: 100%; max-width: 400px;">
-            <img alt="People sharing a donation box illustration" src="https://lh3.googleusercontent.com/aida/AP1WRLtwewqhuiutg-sAzMrjrZMTBUUnQcqojShMdlMu3R9E_Cgbz4D4SHn-r9fG6v1aHoGgG6QKzxmfFvbEqEJaL50wJBpZqNiR6ixNko2MNwYPJOaMg50aiTPlpW8LS82aA8DJ06rzHckrn4vioyFwFywp2wCC2EGNlZ6JrrvBlbVLE2Q0N8_dNeC9tqiSL5kepNSDuQOMHrADhxEnBgn298O_rgnLcdmFe42vYV_H66NjcRSoslyzPNuaUDc"/>
+            <img alt="People sharing a donation box illustration" src="/home-community.jpg"/>
           </div>
           
           <div style="display: flex; align-items: center; gap: 12px; margin-top: var(--stack-xl); color: rgba(255,255,255,0.8); font-size: 14px; font-weight: 500;">

@@ -23,7 +23,7 @@ export async function renderHomePage(container) {
               <button class="carousel-btn carousel-btn--primary">Bắt đầu ngay</button>
             </div>
             <div class="carousel-image-wrapper">
-              <img alt="Lifecycle Marketplace Hero" class="carousel-image" src="https://lh3.googleusercontent.com/aida/AP1WRLs9VWj7rZ8ol_qjWYOVCZi1b76y0Q3tV9BlbBZZ2R7duxgyhwmif7a_XiWxJdOniM7ARK0U9WFHOAWuLz9SVlIbq0k0I87ttScHvpdMLNVJmnZoKOb16I37R_aRsRn9mKkz2T827BrgGLkDENo3llX3F1IUEJxWHsFPbLFh6r7TYpPrR0s46uMTE2KCjLMbheW_5tKtaTD9Tw1i2zm_R3eKEYcW1nBtW26IwmmvOBlaqqupLhHShIYc4ns"/>
+              <img alt="Lifecycle Marketplace Hero" class="carousel-image" src="/home.jpg"/>
             </div>
           </div>
 
@@ -36,7 +36,7 @@ export async function renderHomePage(container) {
               <button class="carousel-btn carousel-btn--secondary">Tìm tổ chức</button>
             </div>
             <div class="carousel-image-wrapper">
-              <img alt="Donation Feature Hero" class="carousel-image" src="https://lh3.googleusercontent.com/aida/AP1WRLuqVSlwS7eAayzLaS3KMJDI-fGQPcUldpB-bf1thEIsHGUpK5v1_IgkkBbiv6IwomahULoOBiAeC5NmU1VijbIu7s0fgz9mqekX1pMcKWlDuKdOcC63NyDupQXyNfqJ9nmMTWejIC5sxQ1k6zFVwoGo-CepI64-67Dm4u1eNFEwaFVuB6_lADEUq3IsMeAGQznoLykQ9XeM0dgE1MlTJPVB7uObSKRhvUHOAAxHAnOIdX2JkVtQ4_lO-U0J"/>
+              <img alt="Donation Feature Hero" class="carousel-image" src="/home-donation.jpg"/>
             </div>
           </div>
 
@@ -100,7 +100,7 @@ export async function renderHomePage(container) {
             <!-- Event 1 -->
             <a href="#" class="event-card">
               <div class="event-image-wrapper">
-                <img class="event-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3udAxb397SbCWObrh_btqhw1cQr4SE1VpVtBDWkdzDFST4Y5NCNQEuCfkns164cTB1C3RXjVFnTonO-7vWOW2c3ReBjKMxMzYwWzs8_Rkti-WNxIHttGpMiSOA6O_lVk3PnHVlzd912svmvppofjpdyIi_aam8sG3Hn3i8-vg81VsreuqoHv9c1w-S2weB1Dt1B2167bERtXiNz_CDzVztj_ZDE17Pw_a9DBTeIxV2P9X8WpUZWyTOlTHQxMNIRlnW2IRizegX7ID" />
+                <img class="event-image" src="/home-event.jpg" />
                 <span class="event-badge">Sắp diễn ra</span>
               </div>
               <div class="event-body">
@@ -113,7 +113,7 @@ export async function renderHomePage(container) {
             <!-- Event 2 -->
             <a href="#" class="event-card">
               <div class="event-image-wrapper">
-                <img class="event-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrprTWEU8DXJclSX_aHjeKZQSj_J-cs8EQxXeQftFvFUHhz6vl-Hc9tFzbukWCyhoHeH4wYrAYTkzvG08Vl70OgJzHdYgxtZMT1euWqQiz5kaAZn1UeOB5RqxtCo6OpkWgDDS8lOZ3ifLoLaAI9wVCnqN8nexivYVbo7QrXMxVAm_f2xMKRCw1iIcPSVbDsCNZP7Puv_hu7ym5SfQwQRzDvL-ZDyYTyQ6uIoJKhNLM_jPpv-ptw5UpUjkln3-o6Gc8ZOB7mfd17A9G" />
+                <img class="event-image" src="/home-event.jpg" />
               </div>
               <div class="event-body">
                 <h4 class="event-title">Quyên góp sách cũ cho trẻ em vùng cao</h4>
@@ -125,7 +125,7 @@ export async function renderHomePage(container) {
             <!-- Event 3 -->
             <a href="#" class="event-card">
               <div class="event-image-wrapper">
-                <img class="event-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeGqJDttVsNNQmVb1PqnoMU4mkzuZvR9Wc7lL1KkpASMtZOJulE6ILv8ZuOa6hzWZkryudNaBMy9ytkktbMipU7RaB7CGP6bejdVH0MYIj3MMiU24ZVr5fXQLSpaT1yNOsEIuOysbpYD9J0AcQ1BhjmbNFWQZRb7zwopBlH6oZMEWAuaBRiCofztdY1J-kPEXZajGcQe4ZYPZwXFAo9UvhD001Lr_NXPLCu1xNGRVGiiGx6rPKzaQaWFAzOqfWcvDRMMD5mZq6rZEB" />
+                <img class="event-image" src="/home-event.jpg" />
               </div>
               <div class="event-body">
                 <h4 class="event-title">Thu gom rác thải điện tử tái chế</h4>
@@ -150,9 +150,9 @@ export async function renderHomePage(container) {
         <div class="community-masonry">
           <!-- Post 1 -->
           <div class="post-card">
-            <img class="post-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnXvovWhHid6pPmLKGYqbUXkqpw9LAt34OhRJyC-ljKCH1DyZpfy4oe5VG1aNyOh7ckDWYHvG6VxCACROpuYReRcTVHbe4PevtqV8XjY4nD-oaiopXjiudJYPIRJwyVAp3n3GF4xjmmAVqCMvXR47BgBnuS3I8rlv4lJ4lUx2KNBpbgyBL11-rP4MoW1NRHySXaFfJv9gY5yoiNlAQY4kzQ8XJmmzdWRrvbHu3edOwDR3nJjMrTsbrTRZT0w7MxntHFJEMysT37ADM" />
+            <img class="post-image" src="/home-comunity.jpg" />
             <div class="post-user">
-              <img class="post-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA45i0uHxtTq-y9oTqDFU_9Pf6HeLmUvQoPa4fIvIlto_DU_yacWsopaDsxIaLWVncDe7dAlKOnTXiu1vd75MOpT9RURFYeWzp4QKxmUVBJJTLQDRY1dU-b8DnN7SHvfXyQ0VqKrquHNZADZtmv5HQ6lur2GOLGy4ib9qHlD6s7qpr-shCBLKD2GYTp0wjXxAXd1AlEcw0EqQ1Zd5faa1fNTYpwJ3NCZjA7K_USFHpCIaO1eh8Lj5diaNiReraksm03n2JeKpl46fb5" />
+              <img class="post-avatar" src="/user-avatar.jpg" />
               <span class="post-username">Minh Anh</span>
             </div>
             <p class="post-text">Vừa mới "săn" được chiếc áo khoác denim cực chất trên Lifecycle. Phối đồ xuống phố thôi nào! #thoitrang #lifestyle</p>
@@ -162,16 +162,16 @@ export async function renderHomePage(container) {
           <div class="post-card">
             <p class="post-text post-text--quote">"Cảm ơn Lifecycle đã giúp mình tặng được bộ sách giáo khoa cho một em nhỏ khó khăn. Cảm thấy thật ấm lòng!"</p>
             <div class="post-user">
-              <img class="post-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSHJ9fVJVta6oo4TDVTjE4GGg-1Y9Fhk7K5L7laMMRwXYnME9vt4FXFRsHHEPGXGk6mhIKcyGi9VfFkQOrswlY2IW2GtRThxzMR8vsD55i8Q_uUicSmfrUwWutccJO8JhK7NHkpD51F9FgefrKgTp0sqvR3A-VgpmACS3dbC3-hfYtGCWWWvYTe-1tVzH8yBTWqwxMlT4yV_uVuscpakUXAtxdtOwwu52DzWnJeKlYFyc-HuqcHnnK3UGFg3IgcSlB-GVx2AXEek7J" />
+              <img class="post-avatar" src="/user-avatar.jpg" />
               <span class="post-username">Hoàng Nam</span>
             </div>
           </div>
 
           <!-- Post 3 -->
           <div class="post-card">
-            <img class="post-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOniDcbgdqflqWrY7G9CRlA6uNxyzg5w6bbujiH5FVMwfs66vbao9v_j5P0wcbxIc-hsdYgga8oMLM9bcukG1mWhLDV5Kl7YrAHK_5Yt2A0wiT0xs_-ey0_Q_HbJYKaIYwx7bjRKACBsp5GWBUqQ6lLMnuszi5KNE4wtfjkrRf45K3q0DUTE9oBymMGEeUWMGnZCgHSJc1rbB3Vu4TkFSMq5QhGAfRfI6Hn7HSuFlfbsSNfOQ46ahwlMW89ev9WYS6-OqnfQWV-mcT" />
+            <img class="post-image" src="/home-comunity.jpg" />
             <div class="post-user">
-              <img class="post-avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCohuAbNDaF1FFHdR1Xr_gzOczYFiJDoNUIEBhEJrX2aYTRBoJii1UQ0I6lxdAjt98RJqcjBQyNYsQze60uthN7OrvdYD8qoysFMSjrqzZEXy7ZEH6jR3o58TExPpYMUYWFkFx5KshB_yD9ekrwihKoBlWQLlk9nEBoED3Um3atIgERrfbVk6I1O_BwqH3GWFotdzMNhgSb3uVzPek8ZaPrTbfMeXVRad_0gBQ-x0U5SHVARw6YEBEGp0oYGE9irDbCFgPmHuIrksKh" />
+              <img class="post-avatar" src="/user-avatar.jpg" />
               <span class="post-username">Thanh Trúc</span>
             </div>
             <p class="post-text">Góc làm việc mới decor hoàn toàn bằng đồ 2nd-hand. Vừa rẻ vừa độc bản!</p>

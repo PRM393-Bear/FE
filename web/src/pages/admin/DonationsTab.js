@@ -20,7 +20,7 @@ export function renderDonationsTab() {
                 <p class="text-label-md font-bold text-on-surface leading-none">Admin Nguyễn</p>
                 <p class="text-label-sm text-on-surface-variant opacity-70">Quản trị viên</p>
               </div>
-              <img alt="Administrator Profile" class="w-10 h-10 rounded-full border-2 border-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCD9hhQ7imU1OcP9ZuaAj-txVZJ9mesZyPCCubq9_3HyM9crEa34Etk5pQ1Y2A2gv4o2T9f2FddVeqZQy3v5xDT2uforX9X869WqAQHD9zDiFh5GGURfK7pNuAoitnM1oympNIMcxitFbdxdz7cBKwXI0D-fCfsel9T4LXKiMoJe6Opoixm0OG2YZB_f7qyds7HS-EkSa8PGiQZn8c59Kf0oMgP_LtMTLSyrF321YBHRVRJVu_P6xIxDZVLww-WDz6WVd6w9-x0K_zy"/>
+              <img alt="Administrator Profile" class="w-10 h-10 rounded-full border-2 border-primary/20" src="/user-avatar.jpg"/>
             </div>
           </div>
         </header>
@@ -122,7 +122,7 @@ export async function attachDonationsListeners(container) {
             items: bp.itemName || "Vật phẩm quyên góp",
             date: new Date(bp.createdAt).toLocaleDateString("vi-VN"),
             status: "PENDING",
-            orgAvatar: "https://i.pravatar.cc/40?img=60",
+            orgAvatar: "/user-avatar.jpg",
             description: bp.description,
             username: bp.username,
             trackingCode: bp.trackingCode

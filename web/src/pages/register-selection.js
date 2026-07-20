@@ -26,7 +26,7 @@ export function renderRegisterSelectionPage(container) {
             </h3>
             <p class="rs-card-desc">Mua bán đồ cũ, tặng đồ, tham gia cộng đồng tiêu dùng bền vững.</p>
             <div class="rs-illustration">
-              <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqLBGjIXO1k_Iu8hII4XuvshSBg0YzR8FB-fC8FMB9lHEDIOPrqEBFA0XkQelovVKPZwgKQ9jpmfv6bdRPkI6xIbh45WZXNQZ310KwxURyq9lbQDPeBe88ZeU32XVLVe-MvLNg29s8UdAhv_arXMXXrVmPmj5v4GPVR7Pjlc1ENmXDDN46BcIpHUiwdtJxVbQKng4HNwTN1c8BSDSQFLSRM8ltr5yOlSSm7VaEPkaV6gGbPVzXKmEw2bip3Fi89AqFkRmzDhdwU1aP"/>
+              <img src="/register-personal.jpg"/>
             </div>
             <ul class="rs-features">
               <li class="rs-feature-item">
@@ -59,8 +59,8 @@ export function renderRegisterSelectionPage(container) {
               🏢 Tổ chức
             </h3>
             <p class="rs-card-desc">Quy mô lớn, quản lý nhân viên, chức năng ERP nâng cao.</p>
-            <div class="rs-illustration" style="background-color: #f0f0f0;">
-              <span class="material-symbols-outlined" style="font-size: 64px; color: var(--on-surface-variant);">domain</span>
+            <div class="rs-illustration">
+              <img src="/register-organization.jpg"/>
             </div>
             <ul class="rs-features">
               <li class="rs-feature-item">
