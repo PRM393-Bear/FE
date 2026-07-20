@@ -2,6 +2,7 @@ import "../styles/chat.css";
 import { chatService } from "../services/chat.service.js";
 import { getUser, getUserIdFromToken, isAuthenticated } from "../services/auth.service.js";
 import { uploadImageApi } from "../services/auth.service.js";
+import { showToast } from "../utils/ui.js";
 
 let isChatOpen = false;
 let currentChatUserId = null;
@@ -302,7 +303,9 @@ window.openChatWith = async (userId, userName) => {
     }
   } catch (err) {
     console.error("Failed to load history", err);
-    chatMessagesContent.innerHTML = `<div class="text-error text-center p-4 text-sm">Không thể tải lịch sử</div>`;
+    showToast("Không thể tải lịch sử trò chuyện hiện tại. Vui lòng thử lại sau.", "error");
+    messages = [];
+    renderMessages();
   }
 };
 
@@ -360,14 +363,21 @@ function scrollToBottom() {
 
 async function sendMessage() {
   const content = messageInput.value.trim();
-  if (!content || !currentChatUserId) return;
+  if (!currentChatUserId) {
+    showToast("Không thể gửi tin nhắn. Người nhận không xác định.", "error");
+    return;
+  }
+  if (!content) {
+    showToast("Nhập nội dung tin nhắn trước khi gửi.", "warning");
+    return;
+  }
 
   messageInput.value = "";
-  
-  // Optimistic UI update (optional, but since backend handles DB and pushes via STOMP to BOTH, we can just wait for STOMP response. 
-  // Let's just wait for the STOMP message to arrive to render it, which usually takes 50ms).
-  
-  chatService.sendMessage(currentChatUserId, content);
+
+  const sent = chatService.sendMessage(currentChatUserId, content);
+  if (!sent) {
+    showToast("Không thể gửi tin nhắn. Đang kết nối lại chat...", "error");
+  }
 }
 
 async function sendImage(file) {

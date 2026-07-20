@@ -7,16 +7,19 @@ class ChatService {
   constructor() {
     this.client = null;
     this.connected = false;
+    this.connecting = false;
     this.messageCallbacks = [];
     this.receiptCallbacks = [];
     this.notificationCallbacks = [];
   }
 
   connect(onConnectSuccess, onConnectError) {
-    if (this.connected) return;
+    if (this.connected || this.connecting) return;
 
     const token = getToken();
     if (!token) return;
+
+    this.connecting = true;
 
     // We use the SockJS fallback since that's configured on the backend
     const socketUrl = `${BASE_URL || window.location.origin}/ws`;
@@ -36,8 +39,7 @@ class ChatService {
 
     this.client.onConnect = (frame) => {
       this.connected = true;
-      if (onConnectSuccess) onConnectSuccess();
-
+      this.connecting = false;
       // Subscribe to private messages
       this.client.subscribe('/user/queue/messages', (message) => {
         if (message.body) {
@@ -66,14 +68,15 @@ class ChatService {
     this.client.onStompError = (frame) => {
       console.error('Broker reported error: ' + frame.headers['message']);
       console.error('Additional details: ' + frame.body);
+      this.connecting = false;
+      this.connected = false;
       if (onConnectError) onConnectError(frame);
     };
-
     this.client.activate();
   }
 
   disconnect() {
-    if (this.client !== null) {
+    if (this.client) {
       this.client.deactivate();
     }
     this.connected = false;
@@ -112,9 +115,11 @@ class ChatService {
         destination: '/app/chat.send',
         body: JSON.stringify({ receiverId, content, imageUrl })
       });
-    } else {
-      console.warn("Cannot send message: Not connected to WebSocket");
+      return true;
     }
+
+    console.warn("Cannot send message: Not connected to WebSocket");
+    return false;
   }
 
   markAsRead(roomId, senderId) {
