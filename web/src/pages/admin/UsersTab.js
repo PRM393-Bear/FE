@@ -385,8 +385,14 @@ function attachBanButtons() {
           });
           showToast(targetIsBanned ? 'Đã khóa tài khoản!' : 'Đã mở khóa tài khoản!', 'success');
           modal.classList.add('hidden');
-          // Refresh data
-          allUsersCache = await getAllUsers();
+          // Refresh data locally instead of refetching all users
+          const updatedUserIndex = allUsersCache.findIndex(u => u.userId === userId);
+          if (updatedUserIndex !== -1) {
+            allUsersCache[updatedUserIndex].isBlocked = targetIsBanned;
+            if (allUsersCache[updatedUserIndex].hasOwnProperty('blocked')) {
+              allUsersCache[updatedUserIndex].blocked = targetIsBanned;
+            }
+          }
           renderFilteredUsers();
         } catch (err) {
           showToast('Lỗi: ' + (err.message || 'Không thể thực hiện thao tác'), 'error');
