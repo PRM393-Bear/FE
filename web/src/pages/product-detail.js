@@ -106,6 +106,7 @@ export async function renderProductDetailPage(container, productId) {
     const tokenUserId = getUserIdFromToken();
     const myUsername = localUser.username || localUser.userName;
     const myUserId = tokenUserId || localUser.id || localUser.userId;
+    const sellerChatId = product.sellerId || product.sellerUserId || product.userId || product.ownerId || "";
 
     const isOwner = Boolean(
       (myUserId && (
@@ -126,6 +127,20 @@ export async function renderProductDetailPage(container, productId) {
 
     const isDraft = (String(product.status || '').trim().toUpperCase() === 'DRAFT') || isDraftProduct(product);
 
+    const chatButtonHtml = sellerChatId
+      ? `
+        <button class="pd-btn-chat" type="button" onclick="if (window.openChatWith) window.openChatWith('${sellerChatId}', '${sellerName.replace(/'/g, "\\'")}'); else alert('Vui lòng tải lại trang để sử dụng chat.');">
+          <span class="material-symbols-outlined">chat</span>
+          Chat với seller
+        </button>
+      `
+      : `
+        <button class="pd-btn-chat" type="button" disabled>
+          <span class="material-symbols-outlined">chat</span>
+          Chat không khả dụng
+        </button>
+      `;
+
     let actionsHtml = `
       <div class="flex flex-col sm:flex-row gap-3 w-full">
         <button class="pd-btn-buy flex-1 !bg-surface-variant !text-primary border border-primary/40 hover:!bg-primary/10 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm" id="btn-add-to-cart">
@@ -138,10 +153,7 @@ export async function renderProductDetailPage(container, productId) {
         </button>
       </div>
       <div class="pd-secondary-actions mt-3">
-        <button class="pd-btn-chat" onclick="alert('Tính năng Nhắn tin sẽ sớm ra mắt!')">
-          <span class="material-symbols-outlined">chat</span>
-          Chat với seller
-        </button>
+        ${chatButtonHtml}
         <button class="pd-btn-fav" aria-label="Add to favorites">
           <span class="material-symbols-outlined">favorite</span>
         </button>
