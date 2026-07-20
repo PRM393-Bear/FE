@@ -1,4 +1,4 @@
-import { getAllUsers, banUser, createStaff } from '../../services/admin.service.js';
+import { getAllUsers, banUser, createStaff, getListBanned } from '../../services/admin.service.js';
 import { recordLocalAuditLog } from '../../services/audit.service.js';
 import { showToast } from '../../utils/ui.js';
 
@@ -367,14 +367,26 @@ function attachBanButtons() {
       const newConfirmBtn = confirmBtn.cloneNode(true);
       confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
-      newConfirmBtn.addEventListener('click', async () => {
+      newConfirmBtn.addEventListener('click', () => {
         const reason = reasonInput?.value?.trim() || (isCurrentlyBlocked ? 'Mở khóa tài khoản' : 'Vi phạm điều khoản cộng đồng EcoCycle');
-        newConfirmBtn.disabled = true;
-        newConfirmBtn.textContent = 'Đang xử lý...';
-        try {
-          // Backend isBlocked parameter: true = ban (when !isCurrentlyBlocked), false = unban (when isCurrentlyBlocked)
-          const targetIsBanned = !isCurrentlyBlocked;
-          await banUser(userId, targetIsBanned, reason);
+        
+        // Optimistic UI update
+        const targetIsBanned = !isCurrentlyBlocked;
+        const updatedUserIndex = allUsersCache.findIndex(u => u.userId === userId);
+        
+        if (updatedUserIndex !== -1) {
+          allUsersCache[updatedUserIndex].isBlocked = targetIsBanned;
+          if (allUsersCache[updatedUserIndex].hasOwnProperty('blocked')) {
+            allUsersCache[updatedUserIndex].blocked = targetIsBanned;
+          }
+        }
+        
+        modal.classList.add('hidden');
+        renderFilteredUsers();
+        showToast(targetIsBanned ? 'Đang khóa tài khoản...' : 'Đang mở khóa tài khoản...', 'info');
+
+        // Async API call in background
+        banUser(userId, targetIsBanned, reason).then(() => {
           recordLocalAuditLog({
             action: targetIsBanned ? 'BAN_USER' : 'UNBAN_USER',
             username: 'Admin',
@@ -383,22 +395,18 @@ function attachBanButtons() {
             detail: `${targetIsBanned ? 'Khóa' : 'Mở khóa'} tài khoản "${user.fullName || user.userName}" từ Admin Console | lý do: ${reason} | ip=127.0.0.1`,
             status: 'SUCCESS'
           });
-          showToast(targetIsBanned ? 'Đã khóa tài khoản!' : 'Đã mở khóa tài khoản!', 'success');
-          modal.classList.add('hidden');
-          // Refresh data locally instead of refetching all users
-          const updatedUserIndex = allUsersCache.findIndex(u => u.userId === userId);
+          showToast(targetIsBanned ? 'Khóa tài khoản thành công!' : 'Mở khóa tài khoản thành công!', 'success');
+        }).catch((err) => {
+          showToast('Lỗi: ' + (err.message || 'Không thể thực hiện thao tác'), 'error');
+          // Revert optimistic update
           if (updatedUserIndex !== -1) {
-            allUsersCache[updatedUserIndex].isBlocked = targetIsBanned;
+            allUsersCache[updatedUserIndex].isBlocked = isCurrentlyBlocked;
             if (allUsersCache[updatedUserIndex].hasOwnProperty('blocked')) {
-              allUsersCache[updatedUserIndex].blocked = targetIsBanned;
+              allUsersCache[updatedUserIndex].blocked = isCurrentlyBlocked;
             }
           }
           renderFilteredUsers();
-        } catch (err) {
-          showToast('Lỗi: ' + (err.message || 'Không thể thực hiện thao tác'), 'error');
-          newConfirmBtn.disabled = false;
-          newConfirmBtn.textContent = isCurrentlyBlocked ? 'Mở khóa' : 'Khóa tài khoản';
-        }
+        });
       });
     });
   });
@@ -428,6 +436,23 @@ export async function attachUsersListeners(container) {
   // Load users
   try {
     allUsersCache = await getAllUsers();
+    
+    // Fix missing blocked status by explicitly fetching banned users
+    try {
+      const bannedUsers = await getListBanned(true);
+      if (Array.isArray(bannedUsers)) {
+        const bannedIds = new Set(bannedUsers.map(u => u.userId));
+        allUsersCache.forEach(user => {
+          if (bannedIds.has(user.userId)) {
+            user.isBlocked = true;
+            user.blocked = true;
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Failed to fetch explicit banned list:', e);
+    }
+
     renderFilteredUsers();
   } catch (error) {
     console.error('Error loading users:', error);
