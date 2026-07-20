@@ -704,7 +704,7 @@ body {
 /* FAB Add */
 .fab-add {
   position: fixed;
-  bottom: 40px;
+  bottom: 120px;
   right: 40px;
   width: 64px;
   height: 64px;
@@ -719,6 +719,13 @@ body {
   cursor: pointer;
   z-index: 40;
   transition: transform 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .fab-add {
+    bottom: 100px;
+    right: 24px;
+  }
 }
 
 .fab-add .material-symbols-outlined {
