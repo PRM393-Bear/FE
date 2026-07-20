@@ -84,7 +84,7 @@ export function renderHeader(opts = {}) {
       ${!isPendingOrg ? `
       <nav class="site-header__nav">
         <a href="#/" class="site-header__nav-link ${opts.activePage === 'home' || !opts.activePage ? 'is-active' : ''}">Trang chủ</a>
-        <a href="#/products" class="site-header__nav-link ${opts.activePage === 'products' || opts.activePage === 'explore' ? 'is-active' : ''}">Khám phá</a>
+        <a href="#/products" class="site-header__nav-link ${opts.activePage === 'products' || opts.activePage === 'explore' ? 'is-active' : ''}">Sản phẩm</a>
         <a href="#/map" class="site-header__nav-link ${opts.activePage === 'map' ? 'is-active' : ''}">Bản đồ</a>
         <a href="#/donate" class="site-header__nav-link ${opts.activePage === 'donate' ? 'is-active' : ''}">Quyên góp</a>
       </nav>

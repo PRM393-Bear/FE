@@ -735,7 +735,6 @@
   display: flex;
   gap: 24px;
   width: 100%;
-  min-width: max-content; /* Ensure items don't squeeze */
 }
 
 /* 4 items visible on desktop */
