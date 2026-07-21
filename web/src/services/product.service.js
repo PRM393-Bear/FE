@@ -350,5 +350,34 @@ export async function searchProductsByKeywordApi(keyword) {
   }
 }
 
+/**
+ * Delete a product by ID.
+ * @param {string} productId - Product UUID.
+ * @returns {Promise<Object>} Response from delete API.
+ */
+export async function deleteProductApi(productId) {
+  try {
+    const data = await apiFetch(`/api/products?productId=${productId}`, {
+      method: "DELETE",
+    });
+    unmarkDraftProductId(productId);
+    invalidateProductCache();
+    return data;
+  } catch (error) {
+    console.error("deleteProductApi failed:", error);
+    throw error;
+  }
+}
 
-
+/**
+ * Get rejected products for the current user.
+ * @returns {Promise<Array>} List of rejected products.
+ */
+export async function getMyRejectedProductsApi() {
+  try {
+    return await apiFetch("/api/products/my-rejected");
+  } catch (error) {
+    console.error("getMyRejectedProductsApi failed:", error);
+    return [];
+  }
+}

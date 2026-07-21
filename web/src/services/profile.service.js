@@ -54,6 +54,12 @@ export async function updateUserProfile(userId, { fullName, email, phone, userna
   return res;
 }
 
+export async function deleteMyAccount() {
+  return await apiFetch("/api/user/me", {
+    method: "DELETE",
+  });
+}
+
 export async function getProfileById(id) {
   try {
     return await apiFetch(`/api/profile/${id}`);
@@ -210,6 +216,14 @@ export async function getAllOrganizationsApi() {
 export async function getAllDonationEventsApi() {
   return await apiFetch("/api/donation-events");
 }
+
+export async function filterDonationEventsApi(payload) {
+  return await apiFetch("/api/donation-events/filter", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 
 export async function getDonationEventsByOrgIdApi(orgId) {
   try {

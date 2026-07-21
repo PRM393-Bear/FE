@@ -11,7 +11,7 @@ import {
 } from "../../services/profile.service.js";
 import { getOrdersByBuyer, getOrdersBySeller } from "../../services/order.service.js";
 import { getMyWardrobe } from "../../services/wardrobe.service.js";
-import { isDraftProduct, getMyProducts } from "../../services/product.service.js";
+import { isDraftProduct, getMyProducts, getMyRejectedProductsApi } from "../../services/product.service.js";
 import { apiFetch } from "../../utils/api.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
@@ -88,11 +88,12 @@ export default function ProfilePage() {
         }
         setDonations(Array.isArray(requestsRes) ? requestsRes : []);
       } else {
-        const [bOrders, sOrders, wItems, prods, orgsList, allEvents, allReqs] = await Promise.all([
+        const [bOrders, sOrders, wItems, prods, rejectedProds, orgsList, allEvents, allReqs] = await Promise.all([
           getOrdersByBuyer().catch(() => []),
           getOrdersBySeller().catch(() => []),
           getMyWardrobe().catch(() => []),
           getMyProducts().catch(() => []),
+          getMyRejectedProductsApi().catch(() => []),
           getAllOrganizationsApi().catch(() => []),
           getAllDonationEventsApi().catch(() => []),
           apiFetch("/api/donation-requests/my-requests", { method: "GET" }).catch(() => [])
@@ -100,8 +101,20 @@ export default function ProfilePage() {
         setBuyerOrders(bOrders);
         setSellerOrders(sOrders);
         setWardrobe(wItems);
-        setMyProducts(prods.filter(p => !isDraftProduct(p)));
-        setDrafts(prods.filter(p => isDraftProduct(p)));
+        
+        // Merge rejected products with my products, avoiding duplicates by ID
+        const allProds = [...prods];
+        const existingIds = new Set(allProds.map(p => p.id || p.productId));
+        if (Array.isArray(rejectedProds)) {
+          rejectedProds.forEach(rp => {
+            if (!existingIds.has(rp.id || rp.productId)) {
+              allProds.push(rp);
+            }
+          });
+        }
+        
+        setMyProducts(allProds.filter(p => !isDraftProduct(p)));
+        setDrafts(allProds.filter(p => isDraftProduct(p)));
         setOrgs(orgsList);
         setMyEvents(allEvents);
         setDonations(Array.isArray(allReqs) ? allReqs : []);

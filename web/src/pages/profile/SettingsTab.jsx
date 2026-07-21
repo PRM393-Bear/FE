@@ -3,10 +3,15 @@ import {
   updateUserProfile, 
   changePassword, 
   getMyOrganizationDetailApi, 
-  updateOrganizationDetailApi 
+  updateOrganizationDetailApi,
+  deleteMyAccount
 } from "../../services/profile.service.js";
 import { createOrganizationDetailApi } from "../../services/auth.service.js";
+import { createShop } from "../../services/shop.service.js";
 import { showToast } from "../../utils/ui.js";
+import { useConfirm } from "../../hooks/useConfirm.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { useNavigate } from "react-router-dom";
 
 const DEFAULT_ACCEPTED_TYPES = [
   "Quần áo",
@@ -24,6 +29,11 @@ export default function SettingsTab({ profile, orgDetail: passedOrgDetail, onRef
   const [savingOrg, setSavingOrg] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPw, setSavingPw] = useState(false);
+  const [deletingAcc, setDeletingAcc] = useState(false);
+
+  const { confirm, ConfirmComponent } = useConfirm();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   // Profile Form State
   const [profileForm, setProfileForm] = useState({
@@ -43,6 +53,17 @@ export default function SettingsTab({ profile, orgDetail: passedOrgDetail, onRef
   const [showOldPw, setShowOldPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+
+  // Shop Form State
+  const [shopForm, setShopForm] = useState({
+    shopName: "",
+    address: "",
+    description: "",
+    phone: "",
+    latitude: 0,
+    longitude: 0
+  });
+  const [savingShop, setSavingShop] = useState(false);
 
   // Org Form State
   const [orgForm, setOrgForm] = useState({
@@ -186,6 +207,46 @@ export default function SettingsTab({ profile, orgDetail: passedOrgDetail, onRef
       showToast("Đổi mật khẩu thất bại: " + msg, "error");
     } finally {
       setSavingPw(false);
+    }
+  };
+
+  const handleShopSubmit = async (e) => {
+    e.preventDefault();
+    if (!shopForm.shopName || !shopForm.address || !shopForm.phone) {
+      showToast("Vui lòng điền tên cửa hàng, địa chỉ và số điện thoại.", "warning");
+      return;
+    }
+    setSavingShop(true);
+    try {
+      await createShop(shopForm);
+      showToast("Tạo cửa hàng thành công!", "success");
+      setShopForm({ shopName: "", address: "", description: "", phone: "", latitude: 0, longitude: 0 });
+    } catch (err) {
+      showToast("Lỗi khi tạo cửa hàng: " + err.message, "error");
+    } finally {
+      setSavingShop(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const ok = await confirm({
+      title: "Xóa tài khoản",
+      message: "Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản của mình? Mọi dữ liệu liên quan sẽ bị xóa hoặc ẩn khỏi hệ thống. Thao tác này không thể hoàn tác.",
+      confirmText: "Xóa vĩnh viễn",
+      isDanger: true,
+    });
+    if (!ok) return;
+
+    setDeletingAcc(true);
+    try {
+      await deleteMyAccount();
+      showToast("Đã xóa tài khoản thành công.", "success");
+      logout();
+      navigate("/login");
+    } catch (err) {
+      showToast("Lỗi khi xóa tài khoản: " + (err.message || "Không thể thực hiện"), "error");
+    } finally {
+      setDeletingAcc(false);
     }
   };
 
@@ -564,6 +625,67 @@ export default function SettingsTab({ profile, orgDetail: passedOrgDetail, onRef
         </form>
       </div>
 
+      {/* Shop Setting (For Non-Org Users only) */}
+      {!isOrg && (
+        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-4 sm:p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="material-symbols-outlined text-2xl text-primary">store</span>
+            <h3 className="text-headline-sm font-bold text-on-surface">Đăng ký Cửa hàng</h3>
+          </div>
+          <p className="text-body-md text-on-surface-variant mb-6">Đăng ký thông tin cửa hàng của bạn để người mua dễ dàng liên hệ.</p>
+          <form onSubmit={handleShopSubmit} className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-label-md font-semibold text-on-surface">Tên cửa hàng <span className="text-error">*</span></label>
+                <input type="text" value={shopForm.shopName} onChange={e => setShopForm({...shopForm, shopName: e.target.value})} className="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 font-medium" required />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-label-md font-semibold text-on-surface">Số điện thoại <span className="text-error">*</span></label>
+                <input type="tel" value={shopForm.phone} onChange={e => setShopForm({...shopForm, phone: e.target.value})} className="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 font-medium" required />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-label-md font-semibold text-on-surface">Địa chỉ <span className="text-error">*</span></label>
+              <input type="text" value={shopForm.address} onChange={e => setShopForm({...shopForm, address: e.target.value})} className="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 font-medium" required />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-label-md font-semibold text-on-surface">Mô tả cửa hàng</label>
+              <textarea value={shopForm.description} onChange={e => setShopForm({...shopForm, description: e.target.value})} rows="3" className="px-4 py-2.5 rounded-xl border border-outline-variant bg-surface text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 font-medium"></textarea>
+            </div>
+            
+            <div className="flex justify-end pt-4 border-t border-outline-variant/30">
+              <button type="submit" disabled={savingShop} className="w-full sm:w-auto px-6 py-2.5 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
+                {savingShop ? <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-lg">storefront</span>}
+                Tạo cửa hàng
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Danger Zone */}
+      <div className="bg-error-container/20 border border-error/30 rounded-2xl p-4 sm:p-8 shadow-sm">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="material-symbols-outlined text-2xl text-error">warning</span>
+          <h3 className="text-headline-sm font-bold text-error">Vùng Nguy Hiểm</h3>
+        </div>
+        <p className="text-body-md text-on-surface-variant mb-6">
+          Xóa tài khoản của bạn khỏi hệ thống EcoCycle vĩnh viễn. Mọi dữ liệu liên quan bao gồm bài đăng, đánh giá, yêu cầu quyên góp sẽ bị xóa. Thao tác này không thể hoàn tác.
+        </p>
+        <div className="flex justify-start">
+          <button 
+            type="button" 
+            onClick={handleDeleteAccount}
+            disabled={deletingAcc} 
+            className="px-6 py-2.5 bg-error text-on-error font-semibold rounded-xl hover:bg-error/90 transition-colors shadow-sm flex items-center justify-center gap-2"
+          >
+            {deletingAcc ? <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-lg">delete_forever</span>}
+            Xóa vĩnh viễn tài khoản
+          </button>
+        </div>
+      </div>
+
+      {ConfirmComponent}
     </div>
   );
 }
