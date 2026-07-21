@@ -26,6 +26,7 @@ export default function ProductDetail() {
   
   const [buying, setBuying] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [isCartSuccess, setIsCartSuccess] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [togglingHide, setTogglingHide] = useState(false);
 
@@ -119,11 +120,16 @@ export default function ProductDetail() {
       await addToCart(product.id);
       showToast("Đã thêm sản phẩm vào giỏ hàng!", "success");
       window.dispatchEvent(new CustomEvent("ecocycle:cart-updated"));
-      setTimeout(() => setAddingToCart(false), 1500); // keep the success state briefly
+      setIsCartSuccess(true);
+      setTimeout(() => {
+        setAddingToCart(false);
+        setIsCartSuccess(false);
+      }, 1500); // keep the success state briefly
     } catch (err) {
       console.error("Lỗi thêm giỏ hàng:", err);
       showToast(`Thêm vào giỏ thất bại: ${err.message}`, "error");
       setAddingToCart(false);
+      setIsCartSuccess(false);
     }
   };
 
@@ -354,13 +360,13 @@ export default function ProductDetail() {
                   <div className="flex flex-col sm:flex-row gap-3 w-full">
                     <button 
                       onClick={handleAddToCart}
-                      disabled={addingToCart}
+                      disabled={addingToCart || isCartSuccess}
                       className="pd-btn-buy flex-1 !bg-surface-variant !text-primary border border-primary/40 hover:!bg-primary/10 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm disabled:opacity-70"
                     >
-                      <span className={`material-symbols-outlined ${addingToCart && !document.querySelector('#btn-add-to-cart')?.innerHTML.includes('check') ? 'animate-spin' : ''}`}>
-                        {addingToCart ? 'progress_activity' : 'add_shopping_cart'}
+                      <span className={`material-symbols-outlined ${addingToCart && !isCartSuccess ? 'animate-spin' : ''}`}>
+                        {isCartSuccess ? 'check' : addingToCart ? 'progress_activity' : 'add_shopping_cart'}
                       </span>
-                      {addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ'}
+                      {isCartSuccess ? 'Đã thêm' : addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ'}
                     </button>
                     <button 
                       onClick={handleBuyNow}

@@ -44,6 +44,9 @@ export default function RegisterOrg() {
   
   const [uploadedDocs, setUploadedDocs] = useState([]); // Array of { url, boxId, label }
   
+  const logoInputRef = useRef(null);
+  const docsInputRefs = useRef({});
+
   // Phase 4
   const [agreed, setAgreed] = useState(false);
 
@@ -324,11 +327,11 @@ export default function RegisterOrg() {
             </header>
             <form onSubmit={submitPhase3}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
-                <div className="org-logo-upload" onClick={() => document.getElementById('logoInput').click()}>
+                <div className="org-logo-upload" onClick={() => logoInputRef.current?.click()}>
                   {!logoPreview && <span className="material-symbols-outlined" style={{ color: 'var(--outline)' }}>add_a_photo</span>}
                   {logoPreview && <img style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} src={logoPreview} alt="Logo" />}
                 </div>
-                <input type="file" id="logoInput" accept="image/jpeg, image/png, image/webp" style={{ display: 'none' }} onChange={handleLogoUpload} />
+                <input type="file" ref={logoInputRef} id="logoInput" accept="image/jpeg, image/png, image/webp" style={{ display: 'none' }} onChange={handleLogoUpload} />
                 <div>
                   <p className="org-label">Logo Tổ chức</p>
                   <p style={{ fontSize: '14px', color: 'var(--on-surface-variant)' }}>Định dạng JPG, PNG, WEBP. Tối đa 5MB.</p>
@@ -406,7 +409,7 @@ export default function RegisterOrg() {
                           </label>
                           {box.tag && <span style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', fontSize: '10px', padding: '2px 6px', borderRadius: '9999px', fontWeight: 'bold', textTransform: 'uppercase' }}>{box.tag}</span>}
                         </div>
-                        <div className={`org-verify-box ${count > 0 ? 'has-files' : ''}`} onClick={() => document.getElementById(`file_${box.id}`).click()}>
+                        <div className={`org-verify-box ${count > 0 ? 'has-files' : ''}`} onClick={() => docsInputRefs.current[box.id]?.click()}>
                           {count > 0 && lastDoc ? (
                             <img className="org-verify-box-preview" src={lastDoc.url} alt="Preview" />
                           ) : (
@@ -416,7 +419,7 @@ export default function RegisterOrg() {
                             </>
                           )}
                           {count > 0 && <span className="org-verify-box-count" style={{ display: 'block' }}>{count} ảnh</span>}
-                          <input type="file" id={`file_${box.id}`} className="org-verify-input" accept="image/jpeg, image/png, image/webp" multiple onChange={(e) => handleDocUpload(e, box.id, box.label)} />
+                          <input type="file" ref={el => docsInputRefs.current[box.id] = el} id={`file_${box.id}`} className="org-verify-input" accept="image/jpeg, image/png, image/webp" multiple onChange={(e) => handleDocUpload(e, box.id, box.label)} />
                         </div>
                       </div>
                     );
