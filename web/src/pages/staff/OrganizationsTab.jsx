@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { getPendingOrganizations, approveOrganization, rejectOrganization } from "../../services/staff.service.js";
 import { showToast } from "../../utils/ui.js";
+import { formatApiError } from "../../utils/api.js";
+import { useConfirm } from "../../hooks/useConfirm.jsx";
 
 export default function OrganizationsTab() {
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
+  const { confirm, ConfirmComponent } = useConfirm();
 
   const loadData = async () => {
     setLoading(true);
@@ -14,7 +17,7 @@ export default function OrganizationsTab() {
       setOrganizations(orgs || []);
     } catch (err) {
       console.error("Error loading pending organizations for staff:", err);
-      showToast("Lỗi khi tải dữ liệu từ máy chủ. Vui lòng thử lại sau.", "error");
+      showToast(formatApiError(err, "tải dữ liệu từ máy chủ"), "error");
     } finally {
       setLoading(false);
     }
@@ -29,11 +32,17 @@ export default function OrganizationsTab() {
     if (message.includes("not in pending status")) {
       return "Tổ chức này không còn ở trạng thái chờ duyệt. Vui lòng làm mới danh sách.";
     }
-    return message || "Không thể thực hiện thao tác kiểm duyệt tổ chức.";
+    return formatApiError(error, "kiểm duyệt tổ chức");
   };
 
   const handleApprove = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn PHÊ DUYỆT tài khoản tổ chức này để họ tham gia nhận quyên góp?")) return;
+    const ok = await confirm({
+      title: "Phê duyệt tổ chức",
+      message: "Bạn có chắc chắn muốn PHÊ DUYỆT tài khoản tổ chức này để họ tham gia nhận quyên góp?",
+      confirmText: "Phê duyệt"
+    });
+    if (!ok) return;
+
     setProcessingId(id);
     try {
       await approveOrganization(id);
@@ -47,9 +56,17 @@ export default function OrganizationsTab() {
   };
 
   const handleReject = async (id) => {
-    const reason = window.prompt("Nhập lý do từ chối hồ sơ tổ chức (sẽ gửi đến email người dùng):", "Hồ sơ không đáp ứng đủ điều kiện xác thực hoặc minh chứng chưa hợp lệ");
+    const reason = await confirm({
+      type: "prompt",
+      title: "Từ chối tổ chức",
+      message: "Bạn có chắc chắn muốn TỪ CHỐI tài khoản tổ chức này?",
+      promptPlaceholder: "Nhập lý do từ chối hồ sơ (sẽ gửi đến email người dùng)...",
+      defaultValue: "Hồ sơ không đáp ứng đủ điều kiện xác thực hoặc minh chứng chưa hợp lệ",
+      confirmText: "Từ chối",
+      cancelText: "Hủy"
+    });
     if (reason === null) return;
-    if (!window.confirm("Bạn có chắc chắn muốn TỪ CHỐI tài khoản tổ chức này?")) return;
+
     setProcessingId(id);
     try {
       await rejectOrganization(id, reason.trim() || "Hồ sơ không hợp lệ");
@@ -64,6 +81,7 @@ export default function OrganizationsTab() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {ConfirmComponent}
       {/* Header banner */}
       <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/30 flex justify-between items-center flex-wrap gap-4">
         <div>

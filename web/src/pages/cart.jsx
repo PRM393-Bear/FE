@@ -3,8 +3,9 @@ import { getCart, removeItem, clearCart } from "../services/cart.service.js";
 import { createOrder } from "../services/order.service.js";
 import { isAuthenticated } from "../services/auth.service.js";
 import { showToast } from "../utils/ui.js";
-import { apiFetch } from "../utils/api.js";
+import { apiFetch, formatApiError } from "../utils/api.js";
 import { useNavigate } from "react-router-dom";
+import { useConfirm } from "../hooks/useConfirm.jsx";
 
 function formatPrice(num) {
   if (num === undefined || num === null || isNaN(num)) return "0đ";
@@ -13,6 +14,7 @@ function formatPrice(num) {
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { confirm, ConfirmComponent } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cart, setCart] = useState({ items: [], totalPrice: 0 });
@@ -63,12 +65,20 @@ export default function Cart() {
       await loadCart();
       window.dispatchEvent(new CustomEvent('ecocycle:cart-updated'));
     } catch (err) {
-      showToast('Lỗi xóa sản phẩm: ' + (err.message || 'Xin thử lại'), 'error');
+      showToast(formatApiError(err, "xóa sản phẩm"), 'error');
     }
   };
 
   const handleClearCart = async () => {
-    if (!window.confirm('Bạn có chắc muốn xóa toàn bộ sản phẩm trong giỏ hàng?')) return;
+    const ok = await confirm({
+      title: "Xóa toàn bộ giỏ hàng",
+      message: "Bạn có chắc muốn xóa toàn bộ sản phẩm trong giỏ hàng?",
+      type: "danger",
+      confirmText: "Xóa tất cả",
+      cancelText: "Hủy"
+    });
+    if (!ok) return;
+
     setClearing(true);
     try {
       await clearCart();
@@ -76,7 +86,7 @@ export default function Cart() {
       await loadCart();
       window.dispatchEvent(new CustomEvent('ecocycle:cart-updated'));
     } catch (err) {
-      showToast('Lỗi thao tác: ' + (err.message || 'Xin thử lại'), 'error');
+      showToast(formatApiError(err, "làm trống giỏ hàng"), 'error');
     } finally {
       setClearing(false);
     }
@@ -97,7 +107,7 @@ export default function Cart() {
         navigate('/profile');
       }, 600);
     } catch (err) {
-      showToast('Lỗi đặt hàng: ' + (err.message || 'Xin thử lại'), 'error');
+      showToast(formatApiError(err, "đặt hàng"), 'error');
     } finally {
       setCheckingOut(false);
     }
@@ -166,6 +176,7 @@ export default function Cart() {
 
   return (
     <div className="min-h-screen bg-surface pt-[104px] pb-16">
+      {ConfirmComponent}
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-outline-variant/30">
           <div>

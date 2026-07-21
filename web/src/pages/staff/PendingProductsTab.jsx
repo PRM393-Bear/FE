@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { getPendingProducts, approveProduct, rejectProduct } from "../../services/staff.service.js";
 import { showToast } from "../../utils/ui.js";
+import { formatApiError } from "../../utils/api.js";
+import { useConfirm } from "../../hooks/useConfirm.jsx";
 
 function formatPrice(num) {
   if (num === undefined || num === null || isNaN(num)) return "0đ";
@@ -11,7 +13,7 @@ export default function PendingProductsTab() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  const [rejectModal, setRejectModal] = useState({ isOpen: false, id: null, reason: "" });
+  const { confirm, ConfirmComponent } = useConfirm();
   const [processingApproveId, setProcessingApproveId] = useState(null);
   const [processingReject, setProcessingReject] = useState(false);
 
@@ -22,7 +24,7 @@ export default function PendingProductsTab() {
       setProducts(prods || []);
     } catch (err) {
       console.error(err);
-      showToast("Lỗi khi tải danh sách sản phẩm chờ duyệt", "error");
+      showToast(formatApiError(err, "tải danh sách sản phẩm chờ duyệt"), "error");
     } finally {
       setLoading(false);
     }
@@ -33,21 +35,36 @@ export default function PendingProductsTab() {
   }, []);
 
   const handleApprove = async (id, title) => {
-    if (!window.confirm(`Xác nhận duyệt cho phép hiển thị bài đăng "${title}"?`)) return;
+    const ok = await confirm({
+      title: "Xác nhận duyệt bài",
+      message: `Xác nhận duyệt cho phép hiển thị bài đăng "${title}"?`,
+      confirmText: "Duyệt ngay"
+    });
+    if (!ok) return;
+
     setProcessingApproveId(id);
     try {
       await approveProduct(id);
       showToast(`Đã duyệt thành công bài đăng "${title}"!`, "success");
       await loadData();
     } catch (err) {
-      showToast("Lỗi duyệt: " + err.message, "error");
+      showToast(formatApiError(err, "duyệt bài đăng"), "error");
     } finally {
       setProcessingApproveId(null);
     }
   };
 
-  const handleRejectConfirm = async () => {
-    const { id, reason } = rejectModal;
+  const handleReject = async (id, title) => {
+    const reason = await confirm({
+      type: "prompt",
+      title: "Từ chối bài đăng",
+      message: `Vui lòng nhập rõ lý do từ chối bài đăng "${title}" để người bán nắm thông tin và chỉnh sửa phù hợp.`,
+      promptPlaceholder: "VD: Hình ảnh mờ nhạt không rõ chi tiết, thông tin không chính xác...",
+      confirmText: "Xác nhận Từ Chối",
+      cancelText: "Hủy"
+    });
+    
+    if (reason === null) return;
     if (!reason.trim()) {
       showToast("Vui lòng nhập lý do từ chối!", "warning");
       return;
@@ -57,10 +74,9 @@ export default function PendingProductsTab() {
     try {
       await rejectProduct(id, reason.trim());
       showToast("Đã từ chối bài đăng!", "info");
-      setRejectModal({ isOpen: false, id: null, reason: "" });
       await loadData();
     } catch (err) {
-      showToast("Lỗi: " + err.message, "error");
+      showToast(formatApiError(err, "từ chối bài đăng"), "error");
     } finally {
       setProcessingReject(false);
     }
@@ -78,41 +94,7 @@ export default function PendingProductsTab() {
         </button>
       </div>
 
-      {/* Reject Modal */}
-      {rejectModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-surface border border-outline-variant rounded-2xl p-6 max-w-md w-full shadow-2xl animate-scale-up">
-            <h4 className="text-title-lg font-bold text-error flex items-center gap-2">
-              <span className="material-symbols-outlined">warning</span> Từ chối bài đăng
-            </h4>
-            <p className="text-body-sm text-on-surface-variant mt-1">Vui lòng nhập rõ lý do từ chối bài đăng này để người bán nắm thông tin và chỉnh sửa phù hợp.</p>
-            
-            <textarea 
-              value={rejectModal.reason}
-              onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
-              rows="4" 
-              placeholder="VD: Hình ảnh mờ nhạt không rõ chi tiết, thông tin không chính xác hoặc vi phạm chính sách cộng đồng..." 
-              className="w-full mt-4 p-3 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface text-sm focus:outline-none focus:border-error"
-            ></textarea>
-            
-            <div className="flex justify-end gap-3 mt-5">
-              <button 
-                onClick={() => setRejectModal({ isOpen: false, id: null, reason: "" })} 
-                className="px-4 py-2 rounded-xl border border-outline-variant text-on-surface-variant text-sm font-semibold hover:bg-surface-variant transition-colors"
-              >
-                Hủy
-              </button>
-              <button 
-                onClick={handleRejectConfirm} 
-                disabled={processingReject}
-                className="px-5 py-2 rounded-xl bg-error text-on-error text-sm font-bold shadow hover:bg-error/90 transition-colors disabled:opacity-50"
-              >
-                {processingReject ? "Đang xử lý..." : "Xác nhận Từ Chối"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {ConfirmComponent}
 
       {/* Pending List Grid */}
       <div className="min-h-[300px]">
@@ -158,7 +140,7 @@ export default function PendingProductsTab() {
                       Duyệt ngay
                     </button>
                     <button 
-                      onClick={() => setRejectModal({ isOpen: true, id: prod.id, reason: "" })}
+                      onClick={() => handleReject(prod.id, prod.title || "Sản phẩm")}
                       disabled={processingApproveId === prod.id}
                       className="flex-1 py-2.5 px-4 bg-error/10 text-error border border-error/20 rounded-xl font-bold text-xs hover:bg-error/20 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                     >

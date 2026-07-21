@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { showToast } from "../../utils/ui.js";
 import { getAllDonationRequests } from "../../services/admin.service.js";
-import { BASE_URL } from "../../utils/api.js";
+import { BASE_URL, formatApiError } from "../../utils/api.js";
+import { useConfirm } from "../../hooks/useConfirm.jsx";
 
 export default function DonationsTab() {
   const [donationRequests, setDonationRequests] = useState([]);
@@ -10,6 +11,7 @@ export default function DonationsTab() {
   const [currentFilter, setCurrentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   
+  const { confirm, ConfirmComponent } = useConfirm();
   const [reassignModal, setReassignModal] = useState({ isOpen: false, donationId: null, selectedOrg: "" });
 
   const loadData = async () => {
@@ -77,7 +79,13 @@ export default function DonationsTab() {
   }, []);
 
   const handleComplete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn hoàn tất yêu cầu quyên góp này?")) return;
+    const ok = await confirm({
+      title: "Hoàn tất quyên góp",
+      message: "Bạn có chắc chắn muốn hoàn tất yêu cầu quyên góp này?",
+      confirmText: "Hoàn tất"
+    });
+    if (!ok) return;
+
     try {
       const token = localStorage.getItem("ecocycle_token");
       const res = await fetch(`${BASE_URL}/api/donation-requests/${id}/completed`, {
@@ -99,7 +107,7 @@ export default function DonationsTab() {
       showToast("Đã hoàn tất yêu cầu quyên góp thành công!", "success");
       loadData();
     } catch (e) {
-      showToast("Lỗi hoàn tất: " + e.message, "error");
+      showToast(formatApiError(e, "hoàn tất"), "error");
     }
   };
 
@@ -131,7 +139,7 @@ export default function DonationsTab() {
       setReassignModal({ isOpen: false, donationId: null, selectedOrg: approvedOrganizations[0]?.id.toString() || "" });
       loadData();
     } catch (err) {
-      showToast("Lỗi điều phối: " + err.message, "error");
+      showToast(formatApiError(err, "điều phối"), "error");
     }
   };
 
@@ -151,6 +159,7 @@ export default function DonationsTab() {
 
   return (
     <main className="ml-64 flex-1 flex flex-col min-h-screen bg-surface w-full max-w-[calc(100%-16rem)]" style={{ fontFamily: "'Be Vietnam Pro', sans-serif" }}>
+      {ConfirmComponent}
       {/* TopNavBar */}
       <header className="flex justify-between items-center px-margin-desktop bg-surface-container-lowest shadow-sm border-b border-outline-variant h-20 sticky top-0 z-40">
         <div className="flex items-center flex-1 max-w-xl">

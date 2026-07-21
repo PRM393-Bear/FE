@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { confirmOrder, shipOrder } from "../../services/order.service.js";
 import { hideProduct, unhideProduct, isDraftProduct, submitProductForReview } from "../../services/product.service.js";
 import { showToast } from "../../utils/ui.js";
+import { formatApiError } from "../../utils/api.js";
+import { useConfirm } from "../../hooks/useConfirm.jsx";
 
 function formatPrice(num) {
   if (num === undefined || num === null || isNaN(num)) return "0đ";
@@ -12,6 +14,7 @@ function formatPrice(num) {
 export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts = [], onRefresh }) {
   const [currentShopFilter, setCurrentShopFilter] = useState("ALL");
   const [currentProductFilter, setCurrentProductFilter] = useState("ALL");
+  const { confirm, ConfirmComponent } = useConfirm();
 
   const handleConfirmOrder = async (orderId) => {
     try {
@@ -19,7 +22,7 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
       showToast("Xác nhận bán hàng thành công!", "success");
       if (onRefresh) onRefresh();
     } catch (err) {
-      showToast("Lỗi khi duyệt đơn: " + err.message, "error");
+      showToast(formatApiError(err, "duyệt đơn"), "error");
     }
   };
 
@@ -29,7 +32,7 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
       showToast("Đã cập nhật trạng thái đang giao hàng!", "success");
       if (onRefresh) onRefresh();
     } catch (err) {
-      showToast("Lỗi cập nhật: " + err.message, "error");
+      showToast(formatApiError(err, "cập nhật đơn hàng"), "error");
     }
   };
 
@@ -44,18 +47,24 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
       }
       if (onRefresh) onRefresh();
     } catch (err) {
-      showToast("Lỗi khi thao tác bài đăng: " + (err.message || 'Xin thử lại'), "error");
+      showToast(formatApiError(err, "thao tác bài đăng"), "error");
     }
   };
 
   const handleSubmitReview = async (productId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?")) return;
+    const ok = await confirm({
+      title: "Gửi yêu cầu duyệt",
+      message: "Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?",
+      confirmText: "Gửi duyệt"
+    });
+    if (!ok) return;
+
     try {
       await submitProductForReview(productId);
       showToast("Đã gửi yêu cầu duyệt thành công! Vui lòng chờ phản hồi.", "success");
       if (onRefresh) onRefresh();
     } catch (err) {
-      showToast("Lỗi khi gửi duyệt: " + (err.message || 'Xin thử lại'), "error");
+      showToast(formatApiError(err, "gửi duyệt"), "error");
     }
   };
 
@@ -91,6 +100,7 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
 
   return (
     <div className="shop-panel flex flex-col gap-8">
+      {ConfirmComponent}
       {/* Header banner */}
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm flex justify-between items-center flex-wrap gap-4">
         <div>

@@ -402,11 +402,11 @@ export default function Register() {
                   </div>
 
                   <div className="social-grid">
-                    <button type="button" className="btn-social btn-google" onClick={() => showToast("Đăng ký bằng Google sẽ sớm được hỗ trợ", "error")}>
+                    <button type="button" className="btn-social btn-google" onClick={() => showToast("Đăng ký bằng Google sẽ sớm được hỗ trợ", "warning")}>
                       <IconRenderer iconStr={ICON_GOOGLE} />
                       <span>Google</span>
                     </button>
-                    <button type="button" className="btn-social btn-facebook" onClick={() => showToast("Đăng ký bằng Facebook sẽ sớm được hỗ trợ", "error")}>
+                    <button type="button" className="btn-social btn-facebook" onClick={() => showToast("Đăng ký bằng Facebook sẽ sớm được hỗ trợ", "warning")}>
                       <IconRenderer iconStr={ICON_FACEBOOK} />
                       <span>Facebook</span>
                     </button>

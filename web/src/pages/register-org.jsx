@@ -103,7 +103,7 @@ export default function RegisterOrg() {
   const handleGeocode = async () => {
     const addr = orgData.address.trim();
     if (!addr) {
-      showToast('Vui lòng nhập địa chỉ trước khi tìm tọa độ.', 'error');
+      showToast('Vui lòng nhập địa chỉ trước khi tìm tọa độ.', 'warning');
       return;
     }
     try {
@@ -113,7 +113,7 @@ export default function RegisterOrg() {
         setCoords({ lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) });
         showToast('Đã lấy tọa độ thành công.', 'success');
       } else {
-        showToast('Không tìm thấy tọa độ. Vui lòng thử địa chỉ khác.', 'error');
+        showToast('Không tìm thấy tọa độ. Vui lòng thử địa chỉ khác.', 'warning');
         setCoords({ lat: null, lon: null });
       }
     } catch (err) {
@@ -167,11 +167,11 @@ export default function RegisterOrg() {
   const submitPhase3 = (e) => {
     e.preventDefault();
     if (!coords.lat || !coords.lon) {
-      showToast('Vui lòng nhấn "Tìm tọa độ" để xác định vị trí.', 'error');
+      showToast('Vui lòng nhấn "Tìm tọa độ" để xác định vị trí.', 'warning');
       return;
     }
     if (uploadedDocs.length === 0) {
-      showToast('Vui lòng tải lên ít nhất 1 giấy tờ xác minh (Hình ảnh).', 'error');
+      showToast('Vui lòng tải lên ít nhất 1 giấy tờ xác minh (Hình ảnh).', 'warning');
       return;
     }
     setCurrentStep(4);

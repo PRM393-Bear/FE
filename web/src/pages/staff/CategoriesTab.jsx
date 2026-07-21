@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from "../../services/staff.service.js";
 import { showToast } from "../../utils/ui.js";
+import { formatApiError } from "../../utils/api.js";
+import { useConfirm } from "../../hooks/useConfirm.jsx";
 
 export default function CategoriesTab() {
   const [categories, setCategories] = useState([]);
@@ -10,6 +12,8 @@ export default function CategoriesTab() {
   const [formState, setFormState] = useState({ id: "", name: "", description: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  
+  const { confirm, ConfirmComponent } = useConfirm();
 
   const loadCategories = async () => {
     setLoading(true);
@@ -64,21 +68,29 @@ export default function CategoriesTab() {
       setShowForm(false);
       await loadCategories();
     } catch (err) {
-      showToast("Lỗi: " + err.message, "error");
+      showToast(formatApiError(err, "lưu danh mục"), "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa danh mục "${name}" không?`)) return;
+    const ok = await confirm({
+      title: "Xóa danh mục",
+      message: `Bạn có chắc chắn muốn xóa danh mục "${name}" không?`,
+      type: "danger",
+      confirmText: "Xóa",
+      cancelText: "Hủy"
+    });
+    if (!ok) return;
+
     setDeletingId(id);
     try {
       await deleteCategory(id);
       showToast(`Đã xóa danh mục "${name}"!`, "success");
       await loadCategories();
     } catch (err) {
-      showToast("Lỗi xóa: " + err.message, "error");
+      showToast(formatApiError(err, "xóa danh mục"), "error");
     } finally {
       setDeletingId(null);
     }
@@ -86,6 +98,7 @@ export default function CategoriesTab() {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
+      {ConfirmComponent}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30 shadow-sm">
         <div>
           <h3 className="text-headline-sm font-bold text-on-surface">Quản lý Danh mục (Categories)</h3>
