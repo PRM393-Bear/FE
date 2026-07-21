@@ -67,3 +67,9 @@ export async function getOrderHistory(status) {
   return await apiFetch(`/api/orders/history${query}`);
 }
 
+export async function updatePickupPhoto(orderId, photoUrl) {
+  return await apiFetch(`/api/orders/${orderId}/pickup-photo?photoUrl=${encodeURIComponent(photoUrl)}`, {
+    method: "PUT",
+  });
+}
+

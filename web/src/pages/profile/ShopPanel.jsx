@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { confirmOrder, shipOrder } from "../../services/order.service.js";
-import { hideProduct, unhideProduct, isDraftProduct, submitProductForReview } from "../../services/product.service.js";
+import { confirmOrder, shipOrder, updatePickupPhoto } from "../../services/order.service.js";
+import { hideProduct, unhideProduct, isDraftProduct, submitProductForReview, deleteProductApi, uploadProductImage } from "../../services/product.service.js";
 import { showToast } from "../../utils/ui.js";
+import { formatApiError } from "../../utils/api.js";
+import { useConfirm } from "../../hooks/useConfirm.jsx";
 
 function formatPrice(num) {
   if (num === undefined || num === null || isNaN(num)) return "0đ";
@@ -12,6 +14,7 @@ function formatPrice(num) {
 export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts = [], onRefresh }) {
   const [currentShopFilter, setCurrentShopFilter] = useState("ALL");
   const [currentProductFilter, setCurrentProductFilter] = useState("ALL");
+  const { confirm, ConfirmComponent } = useConfirm();
 
   const handleConfirmOrder = async (orderId) => {
     try {
@@ -19,17 +22,37 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
       showToast("Xác nhận bán hàng thành công!", "success");
       if (onRefresh) onRefresh();
     } catch (err) {
-      showToast("Lỗi khi duyệt đơn: " + err.message, "error");
+      showToast(formatApiError(err, "duyệt đơn"), "error");
     }
   };
 
   const handleShipOrder = async (orderId) => {
     try {
-      await shipOrder(orderId);
+      await shipOrder(orderId, "TRACKING-" + Math.floor(Math.random() * 100000));
       showToast("Đã cập nhật trạng thái đang giao hàng!", "success");
       if (onRefresh) onRefresh();
     } catch (err) {
-      showToast("Lỗi cập nhật: " + err.message, "error");
+      showToast(formatApiError(err, "cập nhật đơn hàng"), "error");
+    }
+  };
+
+  const handleUploadPickupPhoto = async (e, orderId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      showToast("Đang tải ảnh lên...", "info");
+      const res = await uploadProductImage(file);
+      const url = res?.url || res?.imageUrl || res;
+      if (typeof url === 'string') {
+        await updatePickupPhoto(orderId, url);
+        showToast("Đã cập nhật ảnh lấy hàng!", "success");
+        if (onRefresh) onRefresh();
+      } else {
+        throw new Error("Không nhận được URL ảnh");
+      }
+    } catch (err) {
+      showToast(formatApiError(err, "tải ảnh"), "error");
     }
   };
 
@@ -44,18 +67,42 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
       }
       if (onRefresh) onRefresh();
     } catch (err) {
-      showToast("Lỗi khi thao tác bài đăng: " + (err.message || 'Xin thử lại'), "error");
+      showToast(formatApiError(err, "thao tác bài đăng"), "error");
     }
   };
 
   const handleSubmitReview = async (productId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?")) return;
+    const ok = await confirm({
+      title: "Gửi yêu cầu duyệt",
+      message: "Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?",
+      confirmText: "Gửi duyệt"
+    });
+    if (!ok) return;
+
     try {
       await submitProductForReview(productId);
       showToast("Đã gửi yêu cầu duyệt thành công! Vui lòng chờ phản hồi.", "success");
       if (onRefresh) onRefresh();
     } catch (err) {
-      showToast("Lỗi khi gửi duyệt: " + (err.message || 'Xin thử lại'), "error");
+      showToast(formatApiError(err, "gửi duyệt"), "error");
+    }
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    const ok = await confirm({
+      title: "Xóa sản phẩm",
+      message: "Bạn có chắc chắn muốn xóa sản phẩm này không? Thao tác này không thể hoàn tác.",
+      confirmText: "Xóa",
+      isDanger: true,
+    });
+    if (!ok) return;
+
+    try {
+      await deleteProductApi(productId);
+      showToast("Đã xóa sản phẩm thành công!", "success");
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      showToast(formatApiError(err, "xóa sản phẩm"), "error");
     }
   };
 
@@ -91,6 +138,7 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
 
   return (
     <div className="shop-panel flex flex-col gap-8">
+      {ConfirmComponent}
       {/* Header banner */}
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-2xl p-6 shadow-sm flex justify-between items-center flex-wrap gap-4">
         <div>
@@ -163,9 +211,21 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
                         </button>
                       )}
                       {statusStr === "CONFIRMED" && (
-                        <button onClick={() => handleShipOrder(ord.id)} className="px-3.5 py-1.5 bg-secondary text-on-secondary rounded-lg text-xs font-semibold hover:bg-secondary/90 transition-colors shadow-sm flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm">local_shipping</span> Gửi cho shipper
-                        </button>
+                        <div className="flex gap-2">
+                          <label className="px-3.5 py-1.5 bg-surface-variant text-on-surface-variant rounded-lg text-xs font-semibold hover:bg-outline-variant transition-colors shadow-sm flex items-center gap-1 cursor-pointer">
+                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUploadPickupPhoto(e, ord.id)} />
+                            <span className="material-symbols-outlined text-sm">add_a_photo</span> Ảnh gửi
+                          </label>
+                          <button onClick={() => handleShipOrder(ord.id)} className="px-3.5 py-1.5 bg-secondary text-on-secondary rounded-lg text-xs font-semibold hover:bg-secondary/90 transition-colors shadow-sm flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">local_shipping</span> Giao hàng
+                          </button>
+                        </div>
+                      )}
+                      {statusStr === "SHIPPING" && (
+                        <label className="px-3.5 py-1.5 bg-surface-variant text-on-surface-variant rounded-lg text-xs font-semibold hover:bg-outline-variant transition-colors shadow-sm flex items-center gap-1 cursor-pointer">
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUploadPickupPhoto(e, ord.id)} />
+                          <span className="material-symbols-outlined text-sm">add_a_photo</span> Cập nhật ảnh
+                        </label>
                       )}
                     </div>
                   </div>
@@ -238,32 +298,38 @@ export default function ShopPanel({ sellerOrders = [], myDrafts = [], myProducts
                       {!isDraft && <p className="text-xs text-on-surface-variant mt-2 line-clamp-2">{prod.description || 'Không có mô tả'}</p>}
                     </div>
                   </div>
-                  <div className="px-4 pb-4 pt-2 border-t border-outline-variant/20 flex items-center justify-between gap-2">
+                    <div className="px-4 pb-4 pt-2 border-t border-outline-variant/20 flex flex-wrap items-center justify-between gap-2">
                     {isDraft ? (
                       <>
-                        <Link to={`/edit-listing?id=${prod.id}`} className="flex-1 py-2 px-3 text-center rounded-lg border border-primary text-primary font-semibold text-xs hover:bg-primary/10 transition-colors flex items-center justify-center gap-1.5">
-                          <span className="material-symbols-outlined text-sm">edit</span>
-                          Sửa
+                        <Link to={`/edit-listing?id=${prod.id}`} className="flex-1 min-w-[70px] py-2 px-2 text-center rounded-lg border border-primary text-primary font-semibold text-xs hover:bg-primary/10 transition-colors flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">edit</span> Sửa
                         </Link>
-                        <button onClick={() => handleSubmitReview(prod.id)} className="flex-1 py-2 px-3 text-center rounded-lg border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5">
-                          <span className="material-symbols-outlined text-sm">send</span>
-                          Gửi duyệt
+                        <button onClick={() => handleSubmitReview(prod.id)} className="flex-1 min-w-[80px] py-2 px-2 text-center rounded-lg border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">send</span> Duyệt
+                        </button>
+                        <button onClick={() => handleDeleteProduct(prod.id)} className="min-w-[60px] py-2 px-2 text-center rounded-lg border border-error/50 text-error hover:bg-error/10 font-semibold text-xs transition-colors flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">delete</span>
                         </button>
                       </>
                     ) : isRejected ? (
-                      <Link to={`/edit-listing?id=${prod.id}`} className="w-full py-2 px-3 text-center rounded-lg border border-primary text-primary font-semibold text-xs hover:bg-primary/10 transition-colors flex items-center justify-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm">edit</span>
-                        Tiếp tục chỉnh sửa
-                      </Link>
+                      <>
+                        <Link to={`/edit-listing?id=${prod.id}`} className="flex-1 min-w-[100px] py-2 px-2 text-center rounded-lg border border-primary text-primary font-semibold text-xs hover:bg-primary/10 transition-colors flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">edit</span> Sửa lại
+                        </Link>
+                        <button onClick={() => handleDeleteProduct(prod.id)} className="min-w-[60px] py-2 px-2 text-center rounded-lg border border-error/50 text-error hover:bg-error/10 font-semibold text-xs transition-colors flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">delete</span>
+                        </button>
+                      </>
                     ) : (
                       <>
-                        <Link to={`/edit-listing?id=${prod.id}`} style={isPending ? { pointerEvents: 'none', opacity: 0.5 } : {}} title={isPending ? "Sản phẩm đang chờ duyệt, không thể sửa" : ""} className="flex-1 py-2 px-3 text-center rounded-lg border border-outline-variant text-on-surface font-semibold text-xs hover:bg-surface-variant hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5">
-                          <span className="material-symbols-outlined text-sm">edit</span>
-                          Sửa
+                        <Link to={`/edit-listing?id=${prod.id}`} style={isPending ? { pointerEvents: 'none', opacity: 0.5 } : {}} title={isPending ? "Sản phẩm đang chờ duyệt, không thể sửa" : ""} className="flex-1 min-w-[70px] py-2 px-2 text-center rounded-lg border border-outline-variant text-on-surface font-semibold text-xs hover:bg-surface-variant hover:border-primary/50 transition-colors flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">edit</span> Sửa
                         </Link>
-                        <button onClick={() => handleToggleHide(prod.id, isHidden)} disabled={isPending} style={isPending ? { opacity: 0.5, cursor: 'not-allowed' } : {}} title={isPending ? "Sản phẩm đang chờ duyệt, không thể ẩn/hiện" : ""} className={`flex-1 py-2 px-3 text-center rounded-lg border ${isHidden ? 'border-primary text-primary hover:bg-primary/10' : 'border-error/50 text-error hover:bg-error/10'} font-semibold text-xs transition-colors flex items-center justify-center gap-1.5`}>
-                          <span className="material-symbols-outlined text-sm">{isHidden ? 'visibility' : 'visibility_off'}</span>
-                          {isHidden ? 'Hiện' : 'Ẩn'}
+                        <button onClick={() => handleToggleHide(prod.id, isHidden)} disabled={isPending} style={isPending ? { opacity: 0.5, cursor: 'not-allowed' } : {}} title={isPending ? "Sản phẩm đang chờ duyệt, không thể ẩn/hiện" : ""} className={`flex-1 min-w-[70px] py-2 px-2 text-center rounded-lg border ${isHidden ? 'border-primary text-primary hover:bg-primary/10' : 'border-outline-variant text-on-surface hover:bg-surface-variant'} font-semibold text-xs transition-colors flex items-center justify-center gap-1`}>
+                          <span className="material-symbols-outlined text-[14px]">{isHidden ? 'visibility' : 'visibility_off'}</span> {isHidden ? 'Hiện' : 'Ẩn'}
+                        </button>
+                        <button onClick={() => handleDeleteProduct(prod.id)} disabled={isPending} style={isPending ? { opacity: 0.5, cursor: 'not-allowed' } : {}} className="min-w-[60px] py-2 px-2 text-center rounded-lg border border-error/50 text-error hover:bg-error/10 font-semibold text-xs transition-colors flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">delete</span>
                         </button>
                       </>
                     )}

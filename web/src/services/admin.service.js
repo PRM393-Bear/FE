@@ -64,3 +64,21 @@ export async function rejectOrganization(id, reason = "Hồ sơ không đáp ứ
     method: "PATCH",
   });
 }
+
+export async function getUserChartByRole() {
+  try {
+    return await apiFetch("/api/user/chart/by-role");
+  } catch (error) {
+    console.error("Failed to fetch user chart by role:", error);
+    return [];
+  }
+}
+
+export async function getUserChartByStatus() {
+  try {
+    return await apiFetch("/api/user/chart/by-status");
+  } catch (error) {
+    console.error("Failed to fetch user chart by status:", error);
+    return [];
+  }
+}

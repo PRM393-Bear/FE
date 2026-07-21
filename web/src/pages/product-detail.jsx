@@ -7,10 +7,13 @@ import { createOrder } from "../services/order.service.js";
 import { addToCart } from "../services/cart.service.js";
 import { getUser, getUserIdFromToken } from "../services/auth.service.js";
 import { showToast } from "../utils/ui.js";
+import { formatApiError } from "../utils/api.js";
+import { useConfirm } from "../hooks/useConfirm.jsx";
 
 export default function ProductDetail() {
   const { id: productId } = useParams();
   const navigate = useNavigate();
+  const { confirm, ConfirmComponent } = useConfirm();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -26,6 +29,7 @@ export default function ProductDetail() {
   
   const [buying, setBuying] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [isCartSuccess, setIsCartSuccess] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [togglingHide, setTogglingHide] = useState(false);
 
@@ -107,7 +111,7 @@ export default function ProductDetail() {
       navigate("/profile?tab=panel-wardrobe&sub=wardrobe-orders");
     } catch (err) {
       console.error("Lỗi đặt mua hàng:", err);
-      showToast(`Đặt mua thất bại: ${err.message}`, "error");
+      showToast(formatApiError(err, "đặt mua hàng"), "error");
     } finally {
       setBuying(false);
     }
@@ -119,23 +123,34 @@ export default function ProductDetail() {
       await addToCart(product.id);
       showToast("Đã thêm sản phẩm vào giỏ hàng!", "success");
       window.dispatchEvent(new CustomEvent("ecocycle:cart-updated"));
-      setTimeout(() => setAddingToCart(false), 1500); // keep the success state briefly
+      setIsCartSuccess(true);
+      setTimeout(() => {
+        setAddingToCart(false);
+        setIsCartSuccess(false);
+      }, 1500); // keep the success state briefly
     } catch (err) {
       console.error("Lỗi thêm giỏ hàng:", err);
-      showToast(`Thêm vào giỏ thất bại: ${err.message}`, "error");
+      showToast(formatApiError(err, "thêm vào giỏ"), "error");
       setAddingToCart(false);
+      setIsCartSuccess(false);
     }
   };
 
   const handleSubmitReview = async () => {
-    if (!window.confirm("Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?")) return;
+    const ok = await confirm({
+      title: "Gửi yêu cầu duyệt",
+      message: "Bạn có chắc chắn muốn gửi yêu cầu duyệt sản phẩm này không?",
+      confirmText: "Gửi duyệt"
+    });
+    if (!ok) return;
+
     try {
       setSubmittingReview(true);
       await submitProductForReview(product.id);
       showToast("Đã gửi yêu cầu duyệt thành công!", "success");
       await fetchProductData();
     } catch (err) {
-      showToast("Lỗi khi gửi duyệt: " + err.message, "error");
+      showToast(formatApiError(err, "gửi duyệt"), "error");
     } finally {
       setSubmittingReview(false);
     }
@@ -153,7 +168,7 @@ export default function ProductDetail() {
       }
       await fetchProductData();
     } catch (err) {
-      showToast("Lỗi khi thao tác: " + err.message, "error");
+      showToast(formatApiError(err, "thao tác ẩn/hiện"), "error");
     } finally {
       setTogglingHide(false);
     }
@@ -241,6 +256,7 @@ export default function ProductDetail() {
 
   return (
     <div className="pd-container">
+      {ConfirmComponent}
       {/* Breadcrumbs */}
       <nav className="pd-breadcrumb">
         <Link to="/">Trang chủ</Link>
@@ -256,7 +272,7 @@ export default function ProductDetail() {
           <div className="pd-gallery">
             <div className="pd-image-wrapper">
               <img src={mainImageUrl} alt={product.title || "Product Image"} className="pd-image-main" />
-              <button className="pd-zoom-btn" onClick={() => alert('Đang hiển thị ảnh kích thước đầy đủ!')}>
+              <button className="pd-zoom-btn" onClick={() => showToast('Đang hiển thị ảnh kích thước đầy đủ!', 'info')}>
                 <span className="material-symbols-outlined">zoom_in</span>
               </button>
             </div>
@@ -354,13 +370,13 @@ export default function ProductDetail() {
                   <div className="flex flex-col sm:flex-row gap-3 w-full">
                     <button 
                       onClick={handleAddToCart}
-                      disabled={addingToCart}
+                      disabled={addingToCart || isCartSuccess}
                       className="pd-btn-buy flex-1 !bg-surface-variant !text-primary border border-primary/40 hover:!bg-primary/10 transition-colors flex items-center justify-center gap-2 font-bold py-3 px-4 rounded-xl shadow-sm disabled:opacity-70"
                     >
-                      <span className={`material-symbols-outlined ${addingToCart && !document.querySelector('#btn-add-to-cart')?.innerHTML.includes('check') ? 'animate-spin' : ''}`}>
-                        {addingToCart ? 'progress_activity' : 'add_shopping_cart'}
+                      <span className={`material-symbols-outlined ${addingToCart && !isCartSuccess ? 'animate-spin' : ''}`}>
+                        {isCartSuccess ? 'check' : addingToCart ? 'progress_activity' : 'add_shopping_cart'}
                       </span>
-                      {addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ'}
+                      {isCartSuccess ? 'Đã thêm' : addingToCart ? 'Đang thêm...' : 'Thêm vào giỏ'}
                     </button>
                     <button 
                       onClick={handleBuyNow}
@@ -376,7 +392,7 @@ export default function ProductDetail() {
                   <div className="pd-secondary-actions mt-3">
                     <button 
                       className="pd-btn-chat" 
-                      onClick={() => window.openChatWith && sellerChatId ? window.openChatWith(sellerChatId, sellerName) : alert('Vui lòng tải lại trang để sử dụng chat.')}
+                      onClick={() => window.openChatWith && sellerChatId ? window.openChatWith(sellerChatId, sellerName) : showToast('Vui lòng tải lại trang để sử dụng chat.', 'error')}
                       disabled={!sellerChatId}
                     >
                       <span className="material-symbols-outlined">chat</span>

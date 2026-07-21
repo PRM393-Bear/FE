@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/products.css";
 import { getAllProducts, filterProductsApi, searchProductsByKeywordApi } from "../services/product.service.js";
 import { getAllCategories } from "../services/staff.service.js";
+import { showToast } from "../utils/ui.js";
 
 function formatPrice(price) {
   if (!price && price !== 0) return "Liên hệ";
@@ -292,7 +293,7 @@ export default function Products() {
       <Link to={`/product/${product.id}`} key={product.id} className="product-card group">
         <div className="product-card__image-container">
           <img src={imageUrl} alt={product.title} className="product-card__image" loading="lazy" />
-          <button className="product-card__favorite" aria-label="Add to favorites" onClick={(e) => e.preventDefault()}>
+          <button className="product-card__favorite" aria-label="Add to favorites" onClick={(e) => { e.preventDefault(); showToast('Tính năng yêu thích đang được phát triển', 'info'); }}>
             <span className="material-symbols-outlined">favorite</span>
           </button>
           {isPremium && <div className="product-card__premium-badge">Đồ tuyển</div>}

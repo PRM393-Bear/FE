@@ -5,6 +5,7 @@ import UsersTab from "./UsersTab.jsx";
 import DonationsTab from "./DonationsTab.jsx";
 import AuditLogsTab from "./AuditLogsTab.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { showToast } from "../../utils/ui.js";
 
 export default function Admin() {
   const location = useLocation();
@@ -51,7 +52,7 @@ export default function Admin() {
             <span className="material-symbols-outlined">group</span>
             <span className="font-label-md">Quản lý User</span>
           </Link>
-          <button onClick={() => alert('Tính năng đang phát triển')} className="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright pl-4 hover:bg-on-surface-variant/10 transition-colors duration-200 text-left">
+          <button onClick={() => showToast('Tính năng đang phát triển', 'info')} className="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright pl-4 hover:bg-on-surface-variant/10 transition-colors duration-200 text-left">
             <span className="material-symbols-outlined">package_2</span>
             <span className="font-label-md">Giao dịch</span>
           </button>
@@ -63,13 +64,13 @@ export default function Admin() {
             <span className="material-symbols-outlined">policy</span>
             <span className="font-label-md">Lưu vết hệ thống (Audit Logs)</span>
           </Link>
-          <button onClick={() => alert('Tính năng đang phát triển')} className="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright pl-4 hover:bg-on-surface-variant/10 transition-colors duration-200 text-left">
+          <button onClick={() => showToast('Tính năng đang phát triển', 'info')} className="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright pl-4 hover:bg-on-surface-variant/10 transition-colors duration-200 text-left">
             <span className="material-symbols-outlined">settings</span>
             <span className="font-label-md">Cài đặt</span>
           </button>
         </nav>
         <div className="mt-auto px-stack-lg border-t border-outline/20 pt-stack-lg flex flex-col gap-2">
-          <button className="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright transition-colors duration-200">
+          <button onClick={() => showToast('Tính năng đang phát triển', 'info')} className="flex items-center gap-stack-md py-3 text-surface-variant font-label-md hover:text-surface-bright transition-colors duration-200">
             <span className="material-symbols-outlined">account_circle</span>
             <span className="font-label-md">Admin Profile</span>
           </button>

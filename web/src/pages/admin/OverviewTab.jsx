@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getAllUsers, getAllDonationRequests } from "../../services/admin.service.js";
+import { getAllUsers, getAllDonationRequests, getUserChartByRole, getUserChartByStatus } from "../../services/admin.service.js";
 import { getAllProducts } from "../../services/product.service.js";
 
 export default function OverviewTab() {
@@ -9,6 +9,9 @@ export default function OverviewTab() {
     products: "--",
     donations: "--"
   });
+  
+  const [roleChart, setRoleChart] = useState(null);
+  const [statusChart, setStatusChart] = useState(null);
 
   const [pendingActions, setPendingActions] = useState([
     {
@@ -52,6 +55,13 @@ export default function OverviewTab() {
           products: products.length.toLocaleString("vi"),
           donations: donations.length.toLocaleString("vi")
         });
+
+        // Fetch charts
+        const roleData = await getUserChartByRole();
+        const statusData = await getUserChartByStatus();
+        setRoleChart(roleData);
+        setStatusChart(statusData);
+
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu tổng quan:", error);
       }
@@ -146,16 +156,71 @@ export default function OverviewTab() {
         {/* Bento Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
           {/* Line Chart Area */}
-          <div className="lg:col-span-2 bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-center items-center h-72 text-center">
-            <span className="material-symbols-outlined text-4xl text-outline mb-2 animate-pulse">query_stats</span>
-            <h4 className="font-headline-sm text-on-surface font-semibold">Biểu đồ Giao dịch chưa sẵn sàng</h4>
-            <p className="text-body-sm text-on-surface-variant max-w-md mt-1">Hệ thống đang tích hợp API phân tích dữ liệu thời gian thực từ máy chủ. Vui lòng quay lại sau.</p>
+          <div className="lg:col-span-2 bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col h-72">
+            <h4 className="font-headline-sm text-on-surface font-semibold mb-4">Phân bố Vai trò Người dùng</h4>
+            <div className="flex-1 flex flex-col justify-center gap-3 w-full max-w-md mx-auto">
+              {!roleChart ? (
+                <div className="text-center text-on-surface-variant flex flex-col items-center">
+                  <span className="material-symbols-outlined text-4xl text-outline mb-2 animate-pulse">query_stats</span>
+                  <p className="text-sm">Đang tải dữ liệu...</p>
+                </div>
+              ) : (
+                Object.entries(roleChart).length > 0 || (Array.isArray(roleChart) && roleChart.length > 0) ? (
+                  (Array.isArray(roleChart) ? roleChart : Object.entries(roleChart).map(([k, v]) => ({ name: k, count: v }))).map((item, idx) => {
+                    const name = item.name || item.roleName || item.role || item[0] || `Role ${idx}`;
+                    const count = item.count || item.value || item[1] || 0;
+                    const maxCount = Array.isArray(roleChart) ? Math.max(...roleChart.map(x => x.count || x.value || 0), 1) : Math.max(...Object.values(roleChart), 1);
+                    const pct = Math.max((count / maxCount) * 100, 5);
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-on-surface-variant w-32 truncate text-right">{String(name).replace('ROLE_', '')}</span>
+                        <div className="flex-1 h-3 bg-surface-variant rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${pct}%` }}></div>
+                        </div>
+                        <span className="text-xs font-bold text-on-surface w-10">{count}</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-center text-sm text-on-surface-variant">Không có dữ liệu</p>
+                )
+              )}
+            </div>
           </div>
           {/* Donut Chart Area */}
-          <div className="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col justify-center items-center h-72 text-center">
-            <span className="material-symbols-outlined text-4xl text-outline mb-2 animate-pulse">pie_chart</span>
-            <h4 className="font-headline-sm text-on-surface font-semibold">Danh mục Sản phẩm</h4>
-            <p className="text-body-sm text-on-surface-variant max-w-xs mt-1">Đang tích hợp dữ liệu phân bổ từ kho API.</p>
+          <div className="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col h-72">
+            <h4 className="font-headline-sm text-on-surface font-semibold mb-4">Trạng thái Người dùng</h4>
+            <div className="flex-1 flex flex-col justify-center gap-3 w-full">
+              {!statusChart ? (
+                <div className="text-center text-on-surface-variant flex flex-col items-center">
+                  <span className="material-symbols-outlined text-4xl text-outline mb-2 animate-pulse">pie_chart</span>
+                  <p className="text-sm">Đang tải dữ liệu...</p>
+                </div>
+              ) : (
+                Object.entries(statusChart).length > 0 || (Array.isArray(statusChart) && statusChart.length > 0) ? (
+                  (Array.isArray(statusChart) ? statusChart : Object.entries(statusChart).map(([k, v]) => ({ name: k, count: v }))).map((item, idx) => {
+                    const name = item.name || item.status || item[0] || `Status ${idx}`;
+                    const count = item.count || item.value || item[1] || 0;
+                    const total = (Array.isArray(statusChart) ? statusChart : Object.entries(statusChart).map(([k,v]) => ({count:v}))).reduce((acc, curr) => acc + (curr.count || curr.value || 0), 0);
+                    const pct = total ? Math.round((count / total) * 100) : 0;
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-surface-variant/30">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-emerald-500' : idx === 1 ? 'bg-rose-500' : 'bg-amber-500'}`}></span>
+                          <span className="text-sm font-semibold text-on-surface">{name}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-bold text-on-surface mr-2">{count}</span>
+                          <span className="text-xs text-on-surface-variant">{pct}%</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-center text-sm text-on-surface-variant">Không có dữ liệu</p>
+                )
+              )}
+            </div>
           </div>
         </div>
 
