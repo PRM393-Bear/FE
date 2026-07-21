@@ -39,54 +39,6 @@ function getFallbackForStatus(status, action = "thực hiện thao tác") {
 }
 
 /**
- * Standardized Response Parser:
- * Safely extracts payload whether content-type is JSON, plain text, form-data, or empty (204 / 200 ok.build).
- */
-export async function parseApiResponse(res) {
-  const ct = (res.headers.get("content-type") || "").toLowerCase();
-  const cl = res.headers.get("content-length");
-
-  // Handle empty bodies (204 No Content, 205 Reset Content, or Content-Length: 0)
-  if (res.status === 204 || res.status === 205 || cl === "0") {
-    return {
-      body: res.ok ? { success: true, status: res.status, message: "Thao tác thành công" } : null,
-      isJson: true,
-      isHtml: false
-    };
-  }
-
-  let rawText = "";
-  try {
-    rawText = await res.text();
-  } catch {
-    return { body: null, isJson: false, isHtml: false };
-  }
-
-  if (!rawText || rawText.trim() === "") {
-    return {
-      body: res.ok ? { success: true, status: res.status, message: "Thao tác thành công" } : null,
-      isJson: true,
-      isHtml: false
-    };
-  }
-
-  const trimmed = rawText.trim();
-  const isHtml = trimmed.startsWith("<!DOCTYPE") || trimmed.startsWith("<html") || trimmed.startsWith("<body") || trimmed.startsWith("<h1");
-
-  // Try parsing JSON if content-type indicates json OR if string looks like JSON object/array
-  if (ct.includes("application/json") || trimmed.startsWith("{") || trimmed.startsWith("[")) {
-    try {
-      const parsedJson = JSON.parse(rawText);
-      return { body: parsedJson, isJson: true, isHtml: false };
-    } catch {
-      return { body: rawText, isJson: false, isHtml };
-    }
-  }
-
-  return { body: rawText, isJson: false, isHtml };
-}
-
-/**
  * Global API Error Formatter:
  * Transforms raw errors, Java stack traces, network timeouts, and JSON error objects into clean, user-friendly Vietnamese text.
  */
@@ -122,6 +74,7 @@ export function formatApiError(err, action = "thực hiện thao tác") {
 
   return rawMsg && !rawMsg.includes("[object Object]") && !rawMsg.includes("java.") ? rawMsg : getFallbackForStatus(500, action);
 }
+import axios from "axios";
 
 export async function apiFetch(path, options = {}, _isRetry = false) {
   const token = getToken();
@@ -134,9 +87,12 @@ export async function apiFetch(path, options = {}, _isRetry = false) {
 
   let res;
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
-      ...options,
+    res = await axios({
+      url: `${BASE_URL}${path}`,
+      method: options.method || "GET",
       headers,
+      data: options.body,
+      validateStatus: () => true, // resolve all statuses so we handle 401 manually
     });
   } catch (networkErr) {
     const err = new Error("Failed to fetch");
@@ -153,21 +109,26 @@ export async function apiFetch(path, options = {}, _isRetry = false) {
       return await apiFetch(path, options, true);
     } else {
       removeToken();
-      if (window.location.hash !== "#/login") {
-        window.location.hash = "#/login";
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
       }
     }
   }
 
-  // Parse body regardless of status
-  const { body, isHtml } = await parseApiResponse(res);
+  const body = res.data;
+  const isHtml = typeof body === "string" && (body.includes("<!DOCTYPE") || body.includes("<html"));
 
-  if (!res.ok) {
+  if (res.status >= 200 && res.status < 300) {
+    if (res.status === 204 || res.status === 205 || body === "") {
+      return { success: true, status: res.status, message: "Thao tác thành công" };
+    }
+    return body;
+  } else {
     let message = `HTTP ${res.status}`;
     if (typeof body === "object" && body !== null) {
       message = body.message || body.error || body.details || JSON.stringify(body);
     } else if (typeof body === "string" && body.trim() !== "") {
-      if (isHtml || body.includes("<!DOCTYPE") || body.includes("<html") || body.includes("java.")) {
+      if (isHtml || body.includes("java.")) {
         message = getFallbackForStatus(res.status, "xử lý yêu cầu");
       } else {
         message = body;
@@ -183,6 +144,4 @@ export async function apiFetch(path, options = {}, _isRetry = false) {
     err.isNetworkError = false;
     throw err;
   }
-
-  return body;
 }
