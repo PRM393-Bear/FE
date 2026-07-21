@@ -13,6 +13,7 @@ import {
 import { isAuthenticated } from "../services/auth.service.js";
 import { getAllCategories } from "../services/staff.service.js";
 import { compressImage } from "../utils/image.js";
+import { showToast } from "../utils/ui.js";
 
 export default function CreateListing() {
   const navigate = useNavigate();
@@ -82,7 +83,7 @@ export default function CreateListing() {
           if (product) {
             const isDraft = (String(product.status || '').trim().toUpperCase() === 'DRAFT') || isDraftProduct(product);
             if (!isDraft) {
-              alert("Chỉ những sản phẩm với trạng thái Bản nháp (DRAFT) mới có thể chỉnh sửa.");
+              showToast("Chỉ những sản phẩm với trạng thái Bản nháp (DRAFT) mới có thể chỉnh sửa.", "error");
               navigate("/profile?tab=panel-shop");
               return;
             }
@@ -190,7 +191,7 @@ export default function CreateListing() {
   const handleFiles = async (files) => {
     const spaceLeft = 10 - selectedImages.length;
     if (spaceLeft <= 0) {
-      alert("Bạn chỉ được tải lên tối đa 10 ảnh sản phẩm.");
+      showToast("Bạn chỉ được tải lên tối đa 10 ảnh sản phẩm.", "error");
       return;
     }
     const filesToProcess = Array.from(files).slice(0, spaceLeft);
@@ -271,16 +272,16 @@ export default function CreateListing() {
 
     if (status === "AVAILABLE") {
       if (selectedImages.length === 0) {
-        alert("Vui lòng tải lên ít nhất 1 ảnh sản phẩm.");
+        showToast("Vui lòng tải lên ít nhất 1 ảnh sản phẩm.", "error");
         return false;
       }
       if (!category.name || !brand || !condition || !color || !finalSize || !price || !title || !description) {
-        alert("Vui lòng điền đầy đủ tất cả các trường thông tin bắt buộc.");
+        showToast("Vui lòng điền đầy đủ tất cả các trường thông tin bắt buộc.", "error");
         return false;
       }
     } else {
       if (!title) {
-        alert("Vui lòng nhập Tên sản phẩm trước khi lưu bản nháp.");
+        showToast("Vui lòng nhập Tên sản phẩm trước khi lưu bản nháp.", "error");
         return false;
       }
     }
@@ -292,7 +293,7 @@ export default function CreateListing() {
     const lowerDesc = (description || "").toLowerCase();
     for (const kw of nonFashionKeywords) {
       if (lowerTitle.includes(kw) || lowerDesc.includes(kw)) {
-        alert("Hệ thống EcoCycle chỉ hỗ trợ đăng bán các sản phẩm Thời trang. Các mặt hàng điện tử, xe cộ, gia dụng không thuộc phạm vi hỗ trợ.");
+        showToast("Hệ thống EcoCycle chỉ hỗ trợ đăng bán các sản phẩm Thời trang. Các mặt hàng điện tử, xe cộ, gia dụng không thuộc phạm vi hỗ trợ.", "error");
         return false;
       }
     }
@@ -349,14 +350,14 @@ export default function CreateListing() {
         if (status === "DRAFT") successMsg = "Lưu bản nháp thành công!";
         else successMsg = finalStatus === "PENDING" ? "Đăng bán thành công! Sản phẩm đang chờ quản trị viên duyệt." : "Đăng bán sản phẩm thành công!";
       }
-      alert(successMsg);
+      showToast(successMsg, "success");
       
       navigate("/profile");
       return true;
     } catch (err) {
       console.error(err);
       setLoading(false);
-      alert("Đã xảy ra lỗi: " + err.message);
+      showToast("Đã xảy ra lỗi: " + err.message, "error");
       return false;
     }
   };

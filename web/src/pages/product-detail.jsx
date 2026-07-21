@@ -262,7 +262,7 @@ export default function ProductDetail() {
           <div className="pd-gallery">
             <div className="pd-image-wrapper">
               <img src={mainImageUrl} alt={product.title || "Product Image"} className="pd-image-main" />
-              <button className="pd-zoom-btn" onClick={() => alert('Đang hiển thị ảnh kích thước đầy đủ!')}>
+              <button className="pd-zoom-btn" onClick={() => showToast('Đang hiển thị ảnh kích thước đầy đủ!', 'info')}>
                 <span className="material-symbols-outlined">zoom_in</span>
               </button>
             </div>
@@ -382,7 +382,7 @@ export default function ProductDetail() {
                   <div className="pd-secondary-actions mt-3">
                     <button 
                       className="pd-btn-chat" 
-                      onClick={() => window.openChatWith && sellerChatId ? window.openChatWith(sellerChatId, sellerName) : alert('Vui lòng tải lại trang để sử dụng chat.')}
+                      onClick={() => window.openChatWith && sellerChatId ? window.openChatWith(sellerChatId, sellerName) : showToast('Vui lòng tải lại trang để sử dụng chat.', 'error')}
                       disabled={!sellerChatId}
                     >
                       <span className="material-symbols-outlined">chat</span>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import "../styles/home.css";
 import { getAllProducts } from "../services/product.service.js";
 import { getAllCategories } from "../services/staff.service.js";
+import { showToast } from "../utils/ui.js";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -139,7 +140,7 @@ export default function Home() {
               <span className="carousel-badge carousel-badge--primary">AI Powered</span>
               <h2 className="carousel-title">Mua bán đồ cũ thông minh hơn với AI</h2>
               <p className="carousel-desc">Công nghệ nhận diện hình ảnh giúp bạn định giá và mô tả sản phẩm tự động chỉ trong vài giây.</p>
-              <button className="carousel-btn carousel-btn--primary">Bắt đầu ngay</button>
+              <button className="carousel-btn carousel-btn--primary" onClick={() => showToast('Tính năng sắp ra mắt', 'info')}>Bắt đầu ngay</button>
             </div>
             <div className="carousel-image-wrapper">
               <img alt="Lifecycle Marketplace Hero" className="carousel-image" src="/home.jpg"/>
@@ -150,7 +151,7 @@ export default function Home() {
               <span className="carousel-badge carousel-badge--secondary">Impact</span>
               <h2 className="carousel-title">Tặng đồ — Kết nối yêu thương</h2>
               <p className="carousel-desc">Lan tỏa sự tử tế bằng cách trao tặng những món đồ bạn không còn sử dụng cho các tổ chức cộng đồng.</p>
-              <button className="carousel-btn carousel-btn--secondary">Tìm tổ chức</button>
+              <button className="carousel-btn carousel-btn--secondary" onClick={() => navigate('/map')}>Tìm tổ chức</button>
             </div>
             <div className="carousel-image-wrapper">
               <img alt="Donation Feature Hero" className="carousel-image" src="/home-donation.jpg"/>
@@ -221,7 +222,7 @@ export default function Home() {
                     <Link to={`/product/${product.id}`} key={product.id} className="product-card">
                       <div className="product-image-wrapper">
                         <img className="product-image" src={imageUrl} loading="lazy" alt="product" />
-                        <button className="product-fav-btn" onClick={(e) => e.preventDefault()}><span className="material-symbols-outlined">favorite</span></button>
+                        <button className="product-fav-btn" onClick={(e) => { e.preventDefault(); showToast('Tính năng yêu thích đang được phát triển', 'info'); }}><span className="material-symbols-outlined">favorite</span></button>
                         <span className={`product-condition-badge ${badge.className}`}>{badge.text}</span>
                       </div>
                       <h4 className="product-title">{product.title || "Sản phẩm không có tên"}</h4>
@@ -259,10 +260,10 @@ export default function Home() {
               <h3 className="section-title">Sự kiện quyên góp sắp diễn ra</h3>
               <p className="section-desc">Tham gia cộng đồng và chia sẻ yêu thương</p>
             </div>
-            <a href="#" className="section-link">Xem tất cả <span className="material-symbols-outlined">arrow_forward</span></a>
+            <a href="#/" onClick={(e) => { e.preventDefault(); showToast('Tính năng đang phát triển', 'info'); }} className="section-link">Xem tất cả <span className="material-symbols-outlined">arrow_forward</span></a>
           </header>
           <div className="events-grid">
-            <a href="#" className="event-card">
+            <a href="#/" onClick={(e) => { e.preventDefault(); showToast('Tính năng đang phát triển', 'info'); }} className="event-card">
               <div className="event-image-wrapper">
                 <img className="event-image" src="/home-event.jpg" alt="event" />
                 <span className="event-badge">Sắp diễn ra</span>
@@ -273,7 +274,7 @@ export default function Home() {
                 <div className="event-info"><span className="material-symbols-outlined">location_on</span> Công viên Thống Nhất, Hà Nội</div>
               </div>
             </a>
-            <a href="#" className="event-card">
+            <a href="#/" onClick={(e) => { e.preventDefault(); showToast('Tính năng đang phát triển', 'info'); }} className="event-card">
               <div className="event-image-wrapper">
                 <img className="event-image" src="/home-event.jpg" alt="event" />
               </div>
@@ -283,7 +284,7 @@ export default function Home() {
                 <div className="event-info"><span className="material-symbols-outlined">location_on</span> Văn phòng Lifecycle, Q.1, TP.HCM</div>
               </div>
             </a>
-            <a href="#" className="event-card">
+            <a href="#/" onClick={(e) => { e.preventDefault(); showToast('Tính năng đang phát triển', 'info'); }} className="event-card">
               <div className="event-image-wrapper">
                 <img className="event-image" src="/home-event.jpg" alt="event" />
               </div>
@@ -304,7 +305,7 @@ export default function Home() {
             <h3 className="section-title">Bài đăng từ cộng đồng</h3>
             <p className="section-desc">Xem cách mọi người tái sử dụng đồ cũ</p>
           </div>
-          <a href="#" className="section-link">Xem cộng đồng <span className="material-symbols-outlined">arrow_forward</span></a>
+          <a href="#/" onClick={(e) => { e.preventDefault(); showToast('Tính năng đang phát triển', 'info'); }} className="section-link">Xem cộng đồng <span className="material-symbols-outlined">arrow_forward</span></a>
         </header>
         <div className="community-masonry">
           <div className="post-card">
@@ -339,7 +340,7 @@ export default function Home() {
           <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>home</span>
           <span>Trang chủ</span>
         </Link>
-        <a href="#" className="mobile-nav-item">
+        <a href="#/" onClick={(e) => { e.preventDefault(); showToast('Tính năng yêu thích đang phát triển', 'info'); }} className="mobile-nav-item">
           <span className="material-symbols-outlined">favorite</span>
           <span>Yêu thích</span>
         </a>
@@ -349,7 +350,7 @@ export default function Home() {
           </div>
           <span>Bán đồ</span>
         </Link>
-        <a href="#" className="mobile-nav-item">
+        <a href="#/" onClick={(e) => { e.preventDefault(); showToast('Tính năng thông báo đang phát triển', 'info'); }} className="mobile-nav-item">
           <span className="material-symbols-outlined">notifications</span>
           <span>Thông báo</span>
         </a>

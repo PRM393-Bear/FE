@@ -40,7 +40,7 @@ export default function OrganizationsTab() {
       showToast("Phê duyệt tổ chức thành công!", "success");
       await loadData();
     } catch (err) {
-      alert("Lỗi khi duyệt tổ chức: " + getApprovalErrorMessage(err));
+      showToast("Lỗi khi duyệt tổ chức: " + getApprovalErrorMessage(err), "error");
     } finally {
       setProcessingId(null);
     }
@@ -56,7 +56,7 @@ export default function OrganizationsTab() {
       showToast("Từ chối tổ chức thành công!", "success");
       await loadData();
     } catch (err) {
-      alert("Lỗi khi từ chối tổ chức: " + getApprovalErrorMessage(err));
+      showToast("Lỗi khi từ chối tổ chức: " + getApprovalErrorMessage(err), "error");
     } finally {
       setProcessingId(null);
     }
