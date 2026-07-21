@@ -9,6 +9,7 @@ let currentChatUserId = null;
 let currentRoomId = null;
 let rooms = [];
 let messages = [];
+let chatPollInterval = null;
 
 // DOM Elements
 let chatContainer;
@@ -71,6 +72,7 @@ export function initChat() {
   document.getElementById("chat-close-btn").addEventListener("click", () => {
     isChatOpen = false;
     updateChatVisibility();
+    stopPolling();
   });
 
   backBtn.addEventListener("click", () => {
@@ -78,6 +80,7 @@ export function initChat() {
     currentRoomId = null;
     roomListView.classList.remove("hidden");
     chatWindowView.classList.add("hidden");
+    stopPolling();
     loadRooms();
   });
 
@@ -301,6 +304,9 @@ window.openChatWith = async (userId, userName) => {
         room.lastMessage.status = "READ";
       }
     }
+    
+    // Start polling to simulate real-time M2M chat
+    startPolling();
   } catch (err) {
     console.error("Failed to load history", err);
     showToast("Không thể tải lịch sử trò chuyện hiện tại. Vui lòng thử lại sau.", "error");
@@ -377,6 +383,17 @@ async function sendMessage() {
   const sent = chatService.sendMessage(currentChatUserId, content);
   if (!sent) {
     showToast("Không thể gửi tin nhắn. Đang kết nối lại chat...", "error");
+  } else {
+    // Optimistic Update
+    const myId = getUserIdFromToken();
+    messages.push({
+      senderId: myId,
+      roomId: currentRoomId,
+      content: content,
+      status: "SENT",
+      createdAt: new Date().toISOString()
+    });
+    renderMessages();
   }
 }
 
@@ -384,10 +401,49 @@ async function sendImage(file) {
   if (!currentChatUserId) return;
   try {
     const url = await uploadImageApi(file);
-    chatService.sendMessage(currentChatUserId, "", url);
+    const sent = chatService.sendMessage(currentChatUserId, "", url);
+    if (sent) {
+      // Optimistic Update
+      const myId = getUserIdFromToken();
+      messages.push({
+        senderId: myId,
+        roomId: currentRoomId,
+        content: "",
+        imageUrl: url,
+        status: "SENT",
+        createdAt: new Date().toISOString()
+      });
+      renderMessages();
+    }
   } catch (e) {
     console.error("Upload failed", e);
     alert("Không thể gửi ảnh!");
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  chatPollInterval = setInterval(async () => {
+    if (isChatOpen && currentChatUserId && chatWindowView && !chatWindowView.classList.contains("hidden")) {
+      try {
+        const newMessages = await chatService.getChatHistory(currentChatUserId);
+        if (newMessages.length > messages.length) {
+          messages = newMessages;
+          renderMessages();
+          if (messages.length > 0) {
+            currentRoomId = messages[0].roomId;
+            chatService.markAsRead(currentRoomId, currentChatUserId);
+          }
+        }
+      } catch (e) {}
+    }
+  }, 3000);
+}
+
+function stopPolling() {
+  if (chatPollInterval) {
+    clearInterval(chatPollInterval);
+    chatPollInterval = null;
   }
 }
 
